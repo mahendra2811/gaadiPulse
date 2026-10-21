@@ -54,12 +54,16 @@ Route required data includes session check, authorized vehicle context and route
 ## App state contracts
 Do not cache a prior vehicle's financial totals under a new selected vehicle. Query keys include user, vehicle and filter. Logout clears local copies according to privacy policy; offline drafts are never silently uploaded after permission revocation.
 
-## Implemented Stage 1 organization
+## Implemented organization after all three prompts
 
-Routes under `app/` are entrypoints/layouts. Auth and settings screens live in `src/features/auth/`; garage screens, schema, API and hooks in `src/features/garage/`. Shared UI lives in `src/components/ui/`; vehicle switcher in `src/components/navigation/`. Supabase, secure chunked session adapter, SQLite drafts, i18n, theme, connectivity and page-load coordinator are in `src/lib/`. Zustand stores only active selection; query keys contain account and vehicle where appropriate. Account switching clears queries and SQLite drafts. No financial data is persisted yet.
+`app/` contains route entrypoints and layouts. Feature modules own auth/settings, garage, records, progress, members, meters, reminders, reports and development storage. Fuel, expense, document, reminder, meter-event and progress entry share typed record primitives instead of duplicating services for each table. `useRecords(kind, vehicleId)` and `usePermissions(vehicleId)` supply the corresponding read contracts. Canonical meter history remains a separate service because baselines, approvals, corrections and resets have different provenance.
 
-Every public relation in the migration enables RLS. Vehicles and membership mutations are RPC-only. The creator becomes protected primary Owner atomically in `save_vehicle`. Grants resolve from verified `auth.users.email`; no body email/user ID is accepted by self-resolution. There are no Edge Functions because database RPCs handle the required privileged transactions without exposing secrets.
+TanStack Query keys include account and vehicle. Record lists, reporting snapshots and latest observations have separate namespaces. Zustand stores active selection only. SQLite stores account-scoped form drafts, permission-bound short-lived caches and durable outbox operations. Browser development uses browser persistence. The debug-only development identity uses a separate local namespace and never creates a Supabase session.
 
-Vehicle writes use operation UUID receipts and compare `updated_at` for edits. The receipt does not permit a revoked caller to retrieve the previous vehicle. Membership changes serialize on the vehicle row. No client SELECT/INSERT/UPDATE on financial relations exists in Stage 1.
+Database writes use authorized RPCs, operation receipts, revision checks and audit entries. All public application tables enable RLS. Progress/form reads use sanitized RPCs that remove Owner-only fields for Pilots. Immutable versions retain historical definitions. Four additive migrations implement the database; they have not been executed together during this deferred-testing phase.
 
-Later-stage planned directories are not created as empty modules. Fuel/Expenses tabs explicitly describe Stage 2, and Home identifies Stage 3 Daily Progress. The source kit's full screen map remains the target across all three stages.
+Sync serializes queued operations with retry backoff, session checks and cancellation on identity changes. Conflicts and rejections require explicit recovery. Confirmed reports exclude provisional operations. Explicit sign-out removes personal working copies; automatic expiration preserves drafts/outbox for the same account. See SYNC_PROTOCOL.md for cache leases and revocation behavior.
+
+Reminders use local notifications from actual date/readings rather than inferred travel. Reports use canonical observations, integer-paise accounting and valid full-to-full fuel intervals. Native exports load Print/Sharing on demand. Privileged account anonymization lives in an operator-authenticated Edge Function and service-role-only database function; its scheduling and provider secrets remain external setup.
+
+See SCREEN_MAP.md for actual routes, STAGE_3_HANDOFF.md for the final source handoff, and QA_TEST_MATRIX.md for unexecuted validation.

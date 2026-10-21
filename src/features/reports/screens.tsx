@@ -13,18 +13,14 @@ import {
 import { VehicleHeader } from "@/src/components/navigation/VehicleHeader";
 import { useActiveVehicle } from "@/src/features/garage/hooks";
 import { useSession, useAccountId } from "@/src/features/auth/session";
-import {
-  kinds,
-  type RecordEntry,
-  type Kind,
-} from "@/src/features/records/schema";
+import { kinds, type Kind } from "@/src/features/records/schema";
 import { listRecords, readPermission } from "@/src/features/records/api";
 import { usePermissions, useRecords } from "@/src/features/records/hooks";
 import { r } from "@/src/features/records/copy";
 import { recordsCsv, exportText, exportPdf } from "./export";
 import { money } from "@/src/utils/money";
 import { expenseAccounting } from "@/src/utils/expenseAccounting";
-import { measuredIntervals, type Observation } from "@/src/utils/meter";
+import { measuredIntervals } from "@/src/utils/meter";
 import { fuelIntervals, type FuelPoint } from "@/src/utils/fuelEconomy";
 import { formVersions } from "@/src/features/progress/api";
 import {
@@ -46,7 +42,7 @@ export function Reports() {
     access.data?.[readPermission(kind)] === true;
   const queries = useQueries({
     queries: kinds.map((kind) => ({
-      queryKey: [user, v?.id, "report-records",kind],
+      queryKey: [user, v?.id, "report-records", kind],
       enabled: !!v && !!user && canRead(kind),
       queryFn: () => listRecords(user!, v!.id, kind, development),
     })),
@@ -99,6 +95,19 @@ export function Reports() {
             v?.timezone ?? "Asia/Kolkata",
           )) >= start,
   );
+  const memberSummary = new Map<
+    string,
+    { total: number; statuses: Record<string, number> }
+  >();
+  for (const row of rows.filter((row) => row.kind === "progress")) {
+    const member = memberSummary.get(row.created_by) ?? {
+      total: 0,
+      statuses: {},
+    };
+    member.total++;
+    member.statuses[row.status] = (member.statuses[row.status] ?? 0) + 1;
+    memberSummary.set(row.created_by, member);
+  }
   const expenseRows = rows.filter((row) => row.kind === "expenses");
   const fuel = rows.filter((row) => row.kind === "fuel");
   const cash = [...fuel, ...expenseRows].reduce(
@@ -116,31 +125,7 @@ export function Reports() {
   const operating =
     fuel.reduce((s, row) => s + Number(row.payload.amount_paise ?? 0), 0) +
     accounting.reduce((s, a) => s + a.operating, 0);
-  const derivedObservations: Observation[] = rows
-    .filter(
-      (row) =>
-        row.kind === "meters" ||
-        row.kind === "fuel" ||
-        row.kind === "expenses" ||
-        (row.kind === "progress" && row.status === "APPROVED"),
-    )
-    .flatMap((row) =>
-      (["KM", "HOURS"] as const).flatMap((type) => {
-        const value = row.payload[type === "KM" ? "km" : "hours"];
-        return value !== null && value !== undefined && row.payload.reading_at
-          ? [
-              {
-                id: `${row.id}.${type}`,
-                reading_type: type,
-                value: Number(value),
-                observed_at: String(row.payload.reading_at),
-                is_reset: row.payload.is_reset === true,
-              },
-            ]
-          : [];
-      }),
-    );
-  const observations = observationQuery.data ?? derivedObservations;
+  const observations = observationQuery.data ?? [];
   const measured = measuredIntervals(observations).filter(
     (interval) =>
       dateInZone(new Date(interval.from), v?.timezone ?? "Asia/Kolkata") >=
@@ -152,12 +137,17 @@ export function Reports() {
         observations,
       )
     : [];
-  const queryError = queries.find(
-    (q, index) => canRead(kinds[index]) && q.error,
-  )?.error;
-  const loading = queries.some(
-    (q, index) => canRead(kinds[index]) && q.isPending,
-  );
+  const queryError =
+    queries.find((q, index) => canRead(kinds[index]) && q.error)?.error ??
+    observationQuery.error ??
+    forms.error;
+  const loading =
+    queries.some((q, index) => canRead(kinds[index]) && q.isPending) ||
+    (!!v && canRead("progress") && forms.isPending) ||
+    (!!v &&
+      access.data?.["reports.read"] === true &&
+      access.data?.["meters.read"] === true &&
+      observationQuery.isPending);
   const exportData = async (format: "json" | "csv" | "pdf") => {
     if (!v || loading || queryError) return;
     setBusy(true);
@@ -272,7 +262,16 @@ export function Reports() {
       setBusy(false);
     }
   };
-  if(access.error)return <Screen title={r('reports')}><ErrorState message={access.error.message} retry={()=>void access.refetch()}/><AppButton secondary label={r('back')} onPress={()=>router.back()}/></Screen>;
+  if (access.error)
+    return (
+      <Screen title={r("reports")}>
+        <ErrorState
+          message={access.error.message}
+          retry={() => void access.refetch()}
+        />
+        <AppButton secondary label={r("back")} onPress={() => router.back()} />
+      </Screen>
+    );
   return (
     <Screen
       title={r("reports")}
@@ -300,7 +299,17 @@ export function Reports() {
           {queryError ? (
             <ErrorState
               message={queryError.message}
-              retry={() => void Promise.all(queries.map((q) => q.refetch()))}
+              retry={() =>
+                void Promise.all([
+                  ...queries
+                    .filter((_, index) => canRead(kinds[index]))
+                    .map((q) => q.refetch()),
+                  ...(canRead("progress") ? [forms.refetch()] : []),
+                  ...(access.data?.["meters.read"]
+                    ? [observationQuery.refetch()]
+                    : []),
+                ])
+              }
             />
           ) : (
             <>
@@ -363,6 +372,28 @@ export function Reports() {
               ) : (
                 <AppText>{r("unknown")}</AppText>
               )}
+              {canRead("progress") && (
+                <>
+                  <AppText large>{r("memberSummary")}</AppText>
+                  {[...memberSummary].map(([id, summary]) => (
+                    <Card key={id}>
+                      <AppText>
+                        {r("member")}: {id}
+                      </AppText>
+                      <AppText>
+                        {r("submissions")}: {summary.total}
+                      </AppText>
+                      {Object.entries(summary.statuses).map(
+                        ([status, count]) => (
+                          <AppText key={status}>
+                            {r(status as Parameters<typeof r>[0])}: {count}
+                          </AppText>
+                        ),
+                      )}
+                    </Card>
+                  ))}
+                </>
+              )}
               {forms.data?.map((version) =>
                 version.definition.fields
                   .filter((field) => field.reportable)
@@ -380,6 +411,14 @@ export function Reports() {
                                   row.kind === "progress" &&
                                   row.status === "APPROVED" &&
                                   row.payload.form_version_id === version.id,
+                              )
+                              .sort(
+                                (a, b) =>
+                                  String(a.payload.progress_date).localeCompare(
+                                    String(b.payload.progress_date),
+                                  ) ||
+                                  a.created_at.localeCompare(b.created_at) ||
+                                  a.id.localeCompare(b.id),
                               )
                               .map(
                                 (row) =>
@@ -438,11 +477,11 @@ export function Maintenance() {
     >
       <VehicleHeader />
       <AppButton
-        label={r("add")}
+        label={r("addMaintenance")}
         onPress={() =>
           router.push({
             pathname: "/records/[kind]/[action]",
-            params: { kind: "expenses", action: "add" },
+            params: { kind: "expenses", action: "add", category: "SERVICE" },
           })
         }
       />

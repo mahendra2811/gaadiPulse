@@ -208,7 +208,7 @@ async function saveLocal(
   localWrites = result.catch(() => {});
   return result;
 }
-export async function sendOperation(op: Operation,signal?:AbortSignal) {
+export async function sendOperation(op: Operation, signal?: AbortSignal) {
   const rpc = op.kind === "progress" ? "submit_progress" : "save_record";
   const args =
     op.kind === "progress"
@@ -228,8 +228,10 @@ export async function sendOperation(op: Operation,signal?:AbortSignal) {
           p_expected: op.expected,
           p_status: op.record_status,
         };
-  const request=client().rpc(rpc,args);
-  const {data,error}=await (signal?request.abortSignal(signal):request);
+  const request = client().rpc(rpc, args);
+  const { data, error } = await (signal
+    ? request.abortSignal(signal)
+    : request);
   if (error) throw new Error(error.message);
   return String(data);
 }
@@ -276,7 +278,7 @@ export async function saveRecord(
   try {
     const result = await sendOperation(op);
     await removeOperation(user, operation);
-    await writeLocal(`user.${user}.lastSync`,new Date().toISOString());
+    await writeLocal(`user.${user}.lastSync`, new Date().toISOString());
     return { id: result, pending: false };
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
@@ -290,16 +292,21 @@ export async function saveRecord(
   }
 }
 let syncing = false;
-let syncGeneration=0;let syncController:AbortController|null=null;
-export function cancelSynchronization(){syncGeneration++;syncController?.abort();syncController=null;}
+let syncGeneration = 0;
+let syncController: AbortController | null = null;
+export function cancelSynchronization() {
+  syncGeneration++;
+  syncController?.abort();
+  syncController = null;
+}
 export async function synchronize(user: string, force = false) {
   if (syncing) return { completed: 0 };
   let completed = 0;
-  const generation=syncGeneration;
+  const generation = syncGeneration;
   syncing = true;
   try {
     for (const op of await operations(user)) {
-      if(generation!==syncGeneration)return {completed};
+      if (generation !== syncGeneration) return { completed };
       if (
         op.status === "REJECTED" ||
         op.status === "CONFLICT" ||
@@ -307,16 +314,21 @@ export async function synchronize(user: string, force = false) {
       )
         continue;
       const current = await client().auth.getSession();
-      if (generation!==syncGeneration||current.data.session?.user.id !== user) return { completed };
+      if (
+        generation !== syncGeneration ||
+        current.data.session?.user.id !== user
+      )
+        return { completed };
       await putOperation({ ...op, status: "SYNCING" });
       try {
-        const controller=new AbortController();syncController=controller;
-        await sendOperation(op,controller.signal);
-        if(generation!==syncGeneration)return {completed};
+        const controller = new AbortController();
+        syncController = controller;
+        await sendOperation(op, controller.signal);
+        if (generation !== syncGeneration) return { completed };
         await removeOperation(user, op.operation_id);
         completed++;
       } catch (e) {
-        if(generation!==syncGeneration)return {completed};
+        if (generation !== syncGeneration) return { completed };
         const message = e instanceof Error ? e.message : String(e);
         const status = classifySyncError(message);
         await putOperation({
@@ -332,8 +344,10 @@ export async function synchronize(user: string, force = false) {
       }
     }
   } finally {
-    syncing = false;syncController=null;
-    if(completed>0&&generation===syncGeneration)await writeLocal(`user.${user}.lastSync`,new Date().toISOString());
+    syncing = false;
+    syncController = null;
+    if (completed > 0 && generation === syncGeneration)
+      await writeLocal(`user.${user}.lastSync`, new Date().toISOString());
   }
   return { completed };
 }
@@ -369,4 +383,16 @@ export async function addExpenseCategory(
     p_label: label,
   });
   if (error) throw new Error(error.message);
+}
+
+export async function recordAudit(vehicle: string, id: string) {
+  const { data, error } = await client()
+    .from("audit_events")
+    .select("id,actor_id,action,context,created_at")
+    .eq("vehicle_id", vehicle)
+    .contains("context", { id })
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error) throw new Error(error.message);
+  return data ?? [];
 }

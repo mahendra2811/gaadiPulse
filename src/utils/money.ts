@@ -48,4 +48,6 @@ export function solveFuel(amount: string, quantity: string, price: string) {
     unit_price_paise: Number(p),
   };
 }
-export function nonnegativePaise(value:string){return /^0+(\.0{1,2})?$/.test(value.trim())?0:paise(value);}
+export function nonnegativePaise(value: string) {
+  return /^0+(\.0{1,2})?$/.test(value.trim()) ? 0 : paise(value);
+}

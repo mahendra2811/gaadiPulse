@@ -1,7 +1,19 @@
 export const recordCopy = {
- reviewCurrentForm:"Review current form",reviewNewVersion:"Your previous answers remain in a local draft. Review the new fields before saving; answers are not silently migrated.",
- notificationsEnabled:"Local reminder notifications enabled.",
- switchVehicle:"Switch vehicle",localDrafts:"Saved form drafts",
+  addMeter: "Add meter reading",
+  addMaintenance: "Add maintenance",
+  auditLatest: "Latest 100 changes",
+  auditEmpty: "No recorded changes found.",
+
+  memberSummary: "Submission and review summary",
+  member: "Member",
+  submissions: "Submissions",
+
+  reviewCurrentForm: "Review current form",
+  reviewNewVersion:
+    "Your previous answers remain in a local draft. Review the new fields before saving; answers are not silently migrated.",
+  notificationsEnabled: "Local reminder notifications enabled.",
+  switchVehicle: "Switch vehicle",
+  localDrafts: "Saved form drafts",
   PETROL: "Petrol",
   DIESEL: "Diesel",
   ELECTRIC: "Electric charge",

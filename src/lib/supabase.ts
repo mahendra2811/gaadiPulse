@@ -6,7 +6,10 @@ import { env } from "./env";
 // Chunk tokens because SecureStore values have platform-dependent size limits.
 export const secureStorage = {
   async getItem(key: string) {
-    if (Platform.OS === "web") return typeof sessionStorage==='undefined'?null:sessionStorage.getItem(key);
+    if (Platform.OS === "web")
+      return typeof sessionStorage === "undefined"
+        ? null
+        : sessionStorage.getItem(key);
     const count = Number((await SecureStore.getItemAsync(`${key}.count`)) ?? 0);
     if (!count) return null;
     const chunks = await Promise.all(
@@ -18,7 +21,8 @@ export const secureStorage = {
   },
   async setItem(key: string, value: string) {
     if (Platform.OS === "web") {
-      if(typeof sessionStorage!=='undefined')sessionStorage.setItem(key, value);
+      if (typeof sessionStorage !== "undefined")
+        sessionStorage.setItem(key, value);
       return;
     }
     await this.removeItem(key);
@@ -29,7 +33,7 @@ export const secureStorage = {
   },
   async removeItem(key: string) {
     if (Platform.OS === "web") {
-      if(typeof sessionStorage!=='undefined')sessionStorage.removeItem(key);
+      if (typeof sessionStorage !== "undefined") sessionStorage.removeItem(key);
       return;
     }
     const count = Number((await SecureStore.getItemAsync(`${key}.count`)) ?? 0);

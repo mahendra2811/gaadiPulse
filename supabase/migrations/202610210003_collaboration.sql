@@ -158,7 +158,7 @@ create function public.link_maintenance_reminder() returns trigger language plpg
  if nullif(meta->>'next_date','') is not null then perform (meta->>'next_date')::timestamptz;end if;
  if nullif(meta->>'next_km','') is not null and (meta->>'next_km')::numeric<0 or nullif(meta->>'next_hours','') is not null and (meta->>'next_hours')::numeric<0 then raise exception 'INVALID_THRESHOLD';end if;
  if target is null then insert into public.reminders(id,vehicle_id,created_by,client_operation_id,payload) values(gen_random_uuid(),new.vehicle_id,auth.uid(),gen_random_uuid(),jsonb_build_object('origin','MAINTENANCE','title',new.payload->>'title','due_at',meta->>'next_date','threshold_km',meta->>'next_km','threshold_hours',meta->>'next_hours','recurrence','NONE','pilot_visible',true,'metadata',jsonb_build_object('expense_id',new.id)));
- else update public.reminders set status='ACTIVE',revision=revision+1,updated_at=clock_timestamp(),payload=payload||jsonb_build_object('title',new.payload->>'title,'due_at',meta->>'next_date','threshold_km',meta->>'next_km','threshold_hours',meta->>'next_hours') where id=target;end if;
+ else update public.reminders set status='ACTIVE',revision=revision+1,updated_at=clock_timestamp(),payload=payload||jsonb_build_object('title',new.payload->>'title','due_at',meta->>'next_date','threshold_km',meta->>'next_km','threshold_hours',meta->>'next_hours') where id=target;end if;
  return new;end; $$;
 create trigger maintenance_reminder after insert or update on public.expenses for each row execute function public.link_maintenance_reminder();
 revoke all on function public.link_maintenance_reminder() from public,anon,authenticated;

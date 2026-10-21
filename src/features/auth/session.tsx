@@ -1,4 +1,4 @@
-import { cancelSynchronization } from '@/src/features/records/api';
+import { cancelSynchronization } from "@/src/features/records/api";
 import { clearDeviceNotifications } from "@/src/features/reminders/notifications";
 import { clearOperations } from "@/src/lib/sync/outbox";
 import { removeUserLocal, removeUserCaches } from "@/src/lib/localStore";
@@ -29,7 +29,7 @@ type AuthState = {
   retry: () => void;
   signOut: () => Promise<void>;
 };
-const Context=createContext<AuthState|null>(null);
+const Context = createContext<AuthState | null>(null);
 export function SessionProvider({ children }: { children: ReactNode }) {
   const query = useQueryClient();
   const previousUser = useRef<string | null>(null);
@@ -70,7 +70,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           useUI.getState().setActive(active);
         }
       } catch (e) {
-        if(alive&&generation===authGeneration.current&&/EMAIL_NOT_VERIFIED|ACCOUNT_DELETION_PENDING/.test(e instanceof Error?e.message:String(e)))setSession(null);
+        if (
+          alive &&
+          generation === authGeneration.current &&
+          /EMAIL_NOT_VERIFIED|ACCOUNT_DELETION_PENDING/.test(
+            e instanceof Error ? e.message : String(e),
+          )
+        )
+          setSession(null);
         if (alive && generation === authGeneration.current)
           setError(e instanceof Error ? e.message : String(e));
       } finally {
@@ -159,7 +166,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     </Context.Provider>
   );
 }
-export function useSession(){const state=useContext(Context);if(!state)throw new Error("SessionProvider is unavailable");return state;}
+export function useSession() {
+  const state = useContext(Context);
+  if (!state) throw new Error("SessionProvider is unavailable");
+  return state;
+}
 
 export function useAccountId() {
   const { session, development } = useSession();

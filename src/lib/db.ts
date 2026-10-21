@@ -76,4 +76,28 @@ export async function draftCount(user: string) {
     )?.count ?? 0
   );
 }
-export async function listDrafts(user:string):Promise<{key:string;value:unknown;updated_at:string}[]>{if(Platform.OS==='web'){const prefix=`gaadipulse.draft.${user}.`;return Object.keys(localStorage).filter(key=>key.startsWith(prefix)).map(key=>({key:key.slice(prefix.length),value:JSON.parse(localStorage.getItem(key)!),updated_at:''}));}const rows=await(await db()).getAllAsync<{draft_key:string;payload:string;updated_at:string}>('SELECT draft_key,payload,updated_at FROM drafts WHERE user_id=? ORDER BY updated_at DESC',user);return rows.map(row=>({key:row.draft_key,value:JSON.parse(row.payload),updated_at:row.updated_at}));}
+export async function listDrafts(
+  user: string,
+): Promise<{ key: string; value: unknown; updated_at: string }[]> {
+  if (Platform.OS === "web") {
+    const prefix = `gaadipulse.draft.${user}.`;
+    return Object.keys(localStorage)
+      .filter((key) => key.startsWith(prefix))
+      .map((key) => ({
+        key: key.slice(prefix.length),
+        value: JSON.parse(localStorage.getItem(key)!),
+        updated_at: "",
+      }));
+  }
+  const rows = await (
+    await db()
+  ).getAllAsync<{ draft_key: string; payload: string; updated_at: string }>(
+    "SELECT draft_key,payload,updated_at FROM drafts WHERE user_id=? ORDER BY updated_at DESC",
+    user,
+  );
+  return rows.map((row) => ({
+    key: row.draft_key,
+    value: JSON.parse(row.payload),
+    updated_at: row.updated_at,
+  }));
+}

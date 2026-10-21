@@ -1,4 +1,6 @@
-import { notificationPermission } from '@/src/features/reminders/notifications';
+import { VehicleHeader } from "@/src/components/navigation/VehicleHeader";
+import { SignOutButton } from "./SignOutButton";
+import { notificationPermission } from "@/src/features/reminders/notifications";
 import { r } from "@/src/features/records/copy";
 import { useActiveVehicle } from "@/src/features/garage/hooks";
 import { usePermissions } from "@/src/features/records/hooks";
@@ -14,7 +16,6 @@ import {
   InputField,
   Choice,
   ErrorState,
-  ConfirmDialog,
   useToast,
 } from "@/src/components/ui";
 import { t } from "@/src/lib/i18n";
@@ -25,6 +26,32 @@ export function More() {
   const access = usePermissions(active.vehicle?.id);
   return (
     <Screen title={t("more")}>
+      <SignOutButton />
+      <VehicleHeader />
+      {active.error && (
+        <ErrorState
+          message={active.error.message}
+          retry={() => void active.refetch()}
+        />
+      )}
+      {access.error && (
+        <ErrorState
+          message={access.error.message}
+          retry={() => void access.refetch()}
+        />
+      )}
+      <AppButton label={t("add")} onPress={() => router.push("/garage/add")} />
+      {access.data?.["meters.create"] && (
+        <AppButton
+          label={r("addMeter")}
+          onPress={() =>
+            router.push({
+              pathname: "/records/[kind]/[action]",
+              params: { kind: "meters", action: "add" },
+            })
+          }
+        />
+      )}
       {(["meters", "progress", "documents", "reminders"] as const)
         .filter(
           (kind) =>
@@ -44,6 +71,17 @@ export function More() {
             }
           />
         ))}
+      {access.data?.["expenses.create"] && (
+        <AppButton
+          label={r("addMaintenance")}
+          onPress={() =>
+            router.push({
+              pathname: "/records/[kind]/[action]",
+              params: { kind: "expenses", action: "add", category: "SERVICE" },
+            })
+          }
+        />
+      )}
       {access.data?.["expenses.read"] && (
         <AppButton
           secondary
@@ -103,7 +141,7 @@ export function More() {
 }
 export function Settings() {
   const auth = useSession();
-  const toast=useToast();
+  const toast = useToast();
   const [error, setError] = useState("");
   return (
     <Screen title={t("settings")}>
@@ -111,8 +149,29 @@ export function Settings() {
         label={t("profile")}
         onPress={() => router.push("/settings/profile")}
       />
-      {__DEV__&&!auth.development&&<AppButton secondary label={t('developmentContinue')} onPress={()=>void auth.startDevelopment().catch(e=>setError(String(e)))}/>}
-      <AppButton secondary label={r('notificationPermission')} onPress={()=>{void notificationPermission().then(allowed=>toast(r(allowed?'notificationsEnabled':'notificationDenied'),allowed?'info':'warning')).catch(e=>setError(String(e)));}}/>
+      {__DEV__ && !auth.development && (
+        <AppButton
+          secondary
+          label={t("developmentContinue")}
+          onPress={() =>
+            void auth.startDevelopment().catch((e) => setError(String(e)))
+          }
+        />
+      )}
+      <AppButton
+        secondary
+        label={r("notificationPermission")}
+        onPress={() => {
+          void notificationPermission()
+            .then((allowed) =>
+              toast(
+                r(allowed ? "notificationsEnabled" : "notificationDenied"),
+                allowed ? "info" : "warning",
+              ),
+            )
+            .catch((e) => setError(String(e)));
+        }}
+      />
       <AppText>{t("language")}</AppText>
       <AppText>{t("english")}</AppText>
       <AppButton label={t("hindi")} disabled onPress={() => undefined} />
@@ -126,15 +185,7 @@ export function Settings() {
         label={t("legal")}
         onPress={() => router.push("/auth/legal")}
       />
-      <AppButton
-        secondary
-        label={t(auth.development?"exitDevelopment":"logout")}
-        onPress={() =>
-          ConfirmDialog(t(auth.development?"exitDevelopment":"logout"), t(auth.development?"exitDevelopmentBody":"signoutBody"), () => {
-            void auth.signOut().catch((e) => setError(String(e)));
-          })
-        }
-      />
+      <SignOutButton />
       {error && <ErrorState message={error} retry={() => setError("")} />}
     </Screen>
   );
@@ -155,7 +206,6 @@ export function Profile() {
     if (query.data && !hydrated.current) {
       hydrated.current = true;
       /* Server profile initializes an editable local draft after fetch. */
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setName(query.data.display_name);
       setTheme(query.data.theme);
       setTimezone(query.data.timezone);
@@ -180,7 +230,8 @@ export function Profile() {
         queryKey: [user, "profile"],
       });
       toast(t("saved"));
-      router.replace("/(tabs)");
+      if (router.canGoBack()) router.back();
+      else router.replace("/(tabs)");
     } catch (e) {
       setError(String(e));
     } finally {

@@ -1,5 +1,5 @@
-import { usePermissions } from '@/src/features/records/hooks';
-import { r } from '@/src/features/records/copy';
+import { usePermissions } from "@/src/features/records/hooks";
+import { r } from "@/src/features/records/copy";
 import { Dashboard } from "@/src/features/dashboard/Dashboard";
 import { developmentReadings } from "@/src/features/development/repository";
 import { meterObservationSchema } from "@/src/lib/observations";
@@ -81,7 +81,7 @@ export function VehicleDetails() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const query = useVehicles();
   const vehicle = query.data?.find((v) => v.id === id);
-  const access=usePermissions(id);
+  const access = usePermissions(id);
   const qc = useQueryClient();
   const toast = useToast();
   const [error, setError] = useState("");
@@ -117,7 +117,65 @@ export function VehicleDetails() {
           <AppText>{t(vehicle.role === "OWNER" ? "owner" : "pilot")}</AppText>
           <AppText muted>{t("roleInfo")}</AppText>
           <AppText muted>{t("noPhoto")}</AppText>
-          {(['fuel','expenses','progress','documents','reminders'] as const).filter(kind=>access.data?.[kind==='progress'?'progress.view':`${kind}.read`]).map(kind=><AppButton key={kind} secondary label={r(kind)} onPress={()=>router.push({pathname:'/records/[kind]',params:{kind,vehicle:id}})}/>)}
+          {(["fuel", "expenses", "progress", "documents", "reminders"] as const)
+            .filter(
+              (kind) =>
+                access.data?.[
+                  kind === "progress" ? "progress.view" : `${kind}.read`
+                ],
+            )
+            .map((kind) => (
+              <AppButton
+                key={kind}
+                secondary
+                label={r(kind)}
+                onPress={() =>
+                  router.push({
+                    pathname: "/records/[kind]",
+                    params: { kind, vehicle: id },
+                  })
+                }
+              />
+            ))}
+          {access.data?.["meters.read"] && (
+            <AppButton
+              secondary
+              label={r("meters")}
+              onPress={() =>
+                router.push({
+                  pathname: "/records/[kind]",
+                  params: { kind: "meters", vehicle: id },
+                })
+              }
+            />
+          )}
+          {access.data?.["meters.create"] && (
+            <AppButton
+              label={r("addMeter")}
+              onPress={() =>
+                router.push({
+                  pathname: "/records/[kind]/[action]",
+                  params: { kind: "meters", action: "add", vehicle: id },
+                })
+              }
+            />
+          )}
+          {access.data?.["expenses.create"] && (
+            <AppButton
+              label={r("addMaintenance")}
+              onPress={() =>
+                router.push({
+                  pathname: "/records/[kind]/[action]",
+                  params: {
+                    kind: "expenses",
+                    action: "add",
+                    vehicle: id,
+                    category: "SERVICE",
+                  },
+                })
+              }
+            />
+          )}
           {vehicle.role === "OWNER" && (
             <>
               <AppButton

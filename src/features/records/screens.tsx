@@ -1,4 +1,4 @@
-import { DateTimeInput } from '@/src/components/ui/fields';
+import { DateTimeInput } from "@/src/components/ui/fields";
 import { observations as loadObservations } from "@/src/features/meters/api";
 import { useEffect, useState } from "react";
 import { Linking, View, Switch } from "react-native";
@@ -26,6 +26,7 @@ import { money, solveFuel } from "@/src/utils/money";
 import { fuelIntervals, type FuelPoint } from "@/src/utils/fuelEconomy";
 import { expenseAccounting } from "@/src/utils/expenseAccounting";
 import {
+  recordAudit,
   saveRecord,
   expenseCategories as loadCategories,
   addExpenseCategory,
@@ -64,6 +65,7 @@ export function useRouteKind(fixed?: Kind) {
     title?: string;
     action?: string;
     source?: string;
+    category?: string;
   }>();
   const kind =
     fixed ??
@@ -130,10 +132,12 @@ export function RecordsList({
   fixedKind?: Kind;
   initialStatus?: string;
 }) {
-  const { kind,vehicle:contextVehicle } = useRouteKind(fixedKind);
+  const { kind, vehicle: contextVehicle } = useRouteKind(fixedKind);
   const active = useActiveVehicle();
-  const v = contextVehicle?active.data?.find(vehicle=>vehicle.id===contextVehicle):active.vehicle;
-  const query = useRecords(kind,v?.id);
+  const v = contextVehicle
+    ? active.data?.find((vehicle) => vehicle.id === contextVehicle)
+    : active.vehicle;
+  const query = useRecords(kind, v?.id);
   const permissions = usePermissions(v?.id);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState(initialStatus ?? "ALL");
@@ -163,15 +167,15 @@ export function RecordsList({
     <Screen
       title={r(kind)}
       loading={
-        active.isPending || !!v&&(permissions.isPending || query.isPending)
+        active.isPending || (!!v && (permissions.isPending || query.isPending))
       }
     >
-      <VehicleHeader vehicleId={v?.id} allowSwitch={!contextVehicle}/>
+      <VehicleHeader vehicleId={v?.id} allowSwitch={!contextVehicle} />
       {!v ? (
         <EmptyState title={r("noVehicle")} />
       ) : (
         <>
-          {canCreate&&!v.archived_at && (
+          {canCreate && !v.archived_at && (
             <AppButton label={r("add")} onPress={() => go(kind, "add")} />
           )}
           {kind === "progress" && (
@@ -309,15 +313,26 @@ export function RecordsList({
   );
 }
 export function RecordForm() {
-  const { kind, vehicle: routeVehicle, id, title, source } = useRouteKind();
+  const {
+    kind,
+    vehicle: routeVehicle,
+    id,
+    title,
+    source,
+    category,
+  } = useRouteKind();
   const { development } = useSession();
   const user = useAccountId();
   const active = useActiveVehicle();
   const vehicles = useVehicles();
-  const [boundVehicle,setBoundVehicle]=useState<string|null>(routeVehicle??null);
+  const [boundVehicle, setBoundVehicle] = useState<string | null>(
+    routeVehicle ?? null,
+  );
   const vehicle = id
     ? vehicles.data?.find((v) => v.id === routeVehicle)
-    : boundVehicle?vehicles.data?.find(v=>v.id===boundVehicle):active.vehicle;
+    : boundVehicle
+      ? vehicles.data?.find((v) => v.id === boundVehicle)
+      : active.vehicle;
   const v = vehicle;
   const query = useRecords(kind, v?.id);
   const existing = query.data?.find((e) => e.id === id);
@@ -349,7 +364,12 @@ export function RecordForm() {
     enabled: !!v && kind === "expenses",
     queryFn: () => loadCategories(v!.id, development),
   });
-  useEffect(()=>{if(kind==='progress'&&ready&&!values.form_version_id){const version=forms.data?.find(form=>form.published);if(version)form.setValue('form_version_id',version.id);}},[kind,ready,values.form_version_id,forms.data,form]);
+  useEffect(() => {
+    if (kind === "progress" && ready && !values.form_version_id) {
+      const version = forms.data?.find((form) => form.published);
+      if (version) form.setValue("form_version_id", version.id);
+    }
+  }, [kind, ready, values.form_version_id, forms.data, form]);
   useEffect(() => {
     if (ready || !user || !v || (id && query.isPending)) return;
     let alive = true;
@@ -365,6 +385,10 @@ export function RecordForm() {
           form.reset({
             ...defaultEntry(),
             title: title ?? "",
+            category:
+              kind === "expenses" && category === "SERVICE"
+                ? "SERVICE"
+                : "OTHER",
             metadata: source ? JSON.stringify({ expense_id: source }) : "{}",
             energy_type: v.energy_type,
             unit:
@@ -375,22 +399,39 @@ export function RecordForm() {
                   : "L",
             progress_date: dateInZone(new Date(), v.timezone),
           });
-        setBoundVehicle(v.id);setReady(true);
+        setBoundVehicle(v.id);
+        setReady(true);
       })
-      .catch((e) => {setError(String(e));setReady(true);});
+      .catch((e) => {
+        setError(String(e));
+        setReady(true);
+      });
     return () => {
       alive = false;
     };
-  }, [ready, user, v, id, query.isPending, existing, key, form, title, source]);
+  }, [
+    ready,
+    user,
+    v,
+    id,
+    query.isPending,
+    existing,
+    key,
+    form,
+    title,
+    source,
+    category,
+    kind,
+  ]);
   useEffect(() => {
     if (!ready || !user || leaving) return;
     const timer = setTimeout(() => {
-      void saveDraft(user, key, { values, operation,vehicle_id:v?.id }).catch((e) =>
-        setError(String(e)),
+      void saveDraft(user, key, { values, operation, vehicle_id: v?.id }).catch(
+        (e) => setError(String(e)),
       );
     }, 250);
     return () => clearTimeout(timer);
-  }, [ready, user, values, operation, key, leaving,v?.id]);
+  }, [ready, user, values, operation, key, leaving, v?.id]);
   const disablePrevention = usePreventRemove(
     form.formState.isDirty && !leaving,
     ({ repeat }) =>
@@ -404,14 +445,23 @@ export function RecordForm() {
       key={name}
       control={form.control}
       name={name}
-      render={({ field: { value, onChange } }) => ['event_at','observed_at','due_at'].includes(name)?<DateTimeInput label={label} value={String(value??'')} onChange={onChange} allowFuture={name==='due_at'}/>: (
-        <InputField
-          label={label}
-          value={String(value ?? "")}
-          onChangeText={onChange}
-          keyboardType={numeric ? "decimal-pad" : "default"}
-        />
-      )}
+      render={({ field: { value, onChange } }) =>
+        ["event_at", "observed_at", "due_at"].includes(name) ? (
+          <DateTimeInput
+            label={label}
+            value={String(value ?? "")}
+            onChange={onChange}
+            allowFuture={name === "due_at"}
+          />
+        ) : (
+          <InputField
+            label={label}
+            value={String(value ?? "")}
+            onChangeText={onChange}
+            keyboardType={numeric ? "decimal-pad" : "default"}
+          />
+        )
+      }
     />
   );
   const choose = (
@@ -454,7 +504,35 @@ export function RecordForm() {
       />
     );
   };
-  const selectVehicle=(nextId:string)=>{if(busy||!v||!user||nextId===v.id)return;const next=vehicles.data?.find(item=>item.id===nextId);if(!next)return;ConfirmDialog(r('switchVehicle'),r('vehicleChanged'),()=>{void saveDraft(user,key,{values,operation,vehicle_id:v.id}).then(()=>{form.reset({...values,km:next.meter_mode==='HOURS'?'':values.km,hours:next.meter_mode==='KM'?'':values.hours,energy_type:next.energy_type,unit:next.energy_type==='ELECTRIC'?'KWH':next.energy_type==='CNG'?'KG':'L',answers:kind==='progress'?{}:values.answers,form_version_id:''});setBoundVehicle(nextId);active.select(nextId);setOperation(Crypto.randomUUID());toast(r('vehicleChanged'),'info');}).catch(e=>setError(String(e)));});};
+  const selectVehicle = (nextId: string) => {
+    if (busy || !v || !user || nextId === v.id) return;
+    const next = vehicles.data?.find((item) => item.id === nextId);
+    if (!next) return;
+    ConfirmDialog(r("switchVehicle"), r("vehicleChanged"), () => {
+      void saveDraft(user, key, { values, operation, vehicle_id: v.id })
+        .then(() => {
+          form.reset({
+            ...values,
+            km: next.meter_mode === "HOURS" ? "" : values.km,
+            hours: next.meter_mode === "KM" ? "" : values.hours,
+            energy_type: next.energy_type,
+            unit:
+              next.energy_type === "ELECTRIC"
+                ? "KWH"
+                : next.energy_type === "CNG"
+                  ? "KG"
+                  : "L",
+            answers: kind === "progress" ? {} : values.answers,
+            form_version_id: "",
+          });
+          setBoundVehicle(nextId);
+          active.select(nextId);
+          setOperation(Crypto.randomUUID());
+          toast(r("vehicleChanged"), "info");
+        })
+        .catch((e) => setError(String(e)));
+    });
+  };
   const submit = async (another = false) => {
     if (busy || !user || !v) return;
     setBusy(true);
@@ -464,10 +542,26 @@ export function RecordForm() {
       if (v.meter_mode === "HOURS") payload.km = null;
       if (v.meter_mode === "KM") payload.hours = null;
       if (kind === "progress") {
-        const version=forms.data?.find(f=>f.id===(existing?existing.payload.form_version_id:values.form_version_id));
-        if(!existing&&version&&!version.published)throw new Error(r('formChanged'));
+        const version = forms.data?.find(
+          (f) =>
+            f.id ===
+            (existing
+              ? existing.payload.form_version_id
+              : values.form_version_id),
+        );
+        if (!existing && version && !version.published)
+          throw new Error(r("formChanged"));
         if (!version) throw new Error(r("formChanged"));
-        if(!(existing&&owner&&values.progress_date===existing.payload.progress_date))validateProgressDate(values.progress_date,v.timezone,version.definition.past_days);
+        if (!(
+          existing &&
+          owner &&
+          values.progress_date === existing.payload.progress_date
+        ))
+          validateProgressDate(
+            values.progress_date,
+            v.timezone,
+            version.definition.past_days,
+          );
         payload.form_version_id = version.id;
         payload.answers = validateAnswers(
           version.definition.fields,
@@ -501,7 +595,10 @@ export function RecordForm() {
       );
       await clearDraft(user, key);
       await qc.invalidateQueries();
-      toast(saved.pending ? r("pending") : r("saved"),saved.pending?"warning":"success");
+      toast(
+        saved.pending ? r("pending") : r("saved"),
+        saved.pending ? "warning" : "success",
+      );
       if (another) {
         form.reset({
           ...defaultEntry(),
@@ -531,8 +628,23 @@ export function RecordForm() {
     ? owner ||
       (existing?.created_by === user && access.data?.[`${kind}.edit_own`])
     : access.data?.[createPermission];
-  if(id&&query.error)return <Screen title={r('edit')}><ErrorState message={query.error.message} retry={()=>void query.refetch()}/><AppButton secondary label={r('back')} onPress={()=>router.back()}/></Screen>;
-  if(id&&!query.isPending&&!existing)return <Screen title={r('edit')}><AppText>{r('permission')}</AppText><AppButton secondary label={r('back')} onPress={()=>router.back()}/></Screen>;
+  if (id && query.error)
+    return (
+      <Screen title={r("edit")}>
+        <ErrorState
+          message={query.error.message}
+          retry={() => void query.refetch()}
+        />
+        <AppButton secondary label={r("back")} onPress={() => router.back()} />
+      </Screen>
+    );
+  if (id && !query.isPending && !existing)
+    return (
+      <Screen title={r("edit")}>
+        <AppText>{r("permission")}</AppText>
+        <AppButton secondary label={r("back")} onPress={() => router.back()} />
+      </Screen>
+    );
   if (!v)
     return (
       <Screen title={r(kind)}>
@@ -564,13 +676,23 @@ export function RecordForm() {
   } catch {}
   return (
     <Screen
-      title={r(id ? "edit" : "add")}
-      loading={!ready || busy || access.isPending || kind==='progress'&&forms.isPending}
+      title={`${r(id ? "edit" : "add")} · ${r(kind)}`}
+      loading={
+        !ready ||
+        busy ||
+        access.isPending ||
+        (kind === "progress" && forms.isPending)
+      }
       action={
         <View style={{ gap: 8 }}>
           <AppButton
             label={r(kind === "progress" ? "submit" : "save")}
-            disabled={busy || !ready ||kind==='progress'&&(forms.isPending||!values.form_version_id)}
+            disabled={
+              busy ||
+              !ready ||
+              (kind === "progress" &&
+                (forms.isPending || !values.form_version_id))
+            }
             onPress={() => void submit()}
           />
           {!id && kind === "fuel" && (
@@ -589,9 +711,47 @@ export function RecordForm() {
           <AppText>{v.nickname || v.model}</AppText>
         </Card>
       ) : (
-        <VehicleHeader vehicleId={v.id} disabled={busy} onSelect={selectVehicle}/>
+        <VehicleHeader
+          vehicleId={v.id}
+          disabled={busy}
+          onSelect={selectVehicle}
+        />
       )}
-      {kind==='progress'&&!id&&values.form_version_id&&forms.data?.find(f=>f.id===values.form_version_id)?.published===false&&<Card><AppText>{r('formChanged')}</AppText><AppButton secondary label={r('reviewCurrentForm')} onPress={()=>ConfirmDialog(r('reviewCurrentForm'),r('reviewNewVersion'),()=>{void saveDraft(user!,`${key}.previous.${values.form_version_id}`,{values,operation,vehicle_id:v.id}).then(()=>{form.setValue('answers',{});form.setValue('form_version_id',forms.data!.find(f=>f.published)!.id);setOperation(Crypto.randomUUID());}).catch(e=>setError(String(e)));})}/></Card>}
+      {kind === "progress" &&
+        !id &&
+        values.form_version_id &&
+        forms.data?.find((f) => f.id === values.form_version_id)?.published ===
+          false && (
+          <Card>
+            <AppText>{r("formChanged")}</AppText>
+            <AppButton
+              secondary
+              label={r("reviewCurrentForm")}
+              onPress={() =>
+                ConfirmDialog(
+                  r("reviewCurrentForm"),
+                  r("reviewNewVersion"),
+                  () => {
+                    void saveDraft(
+                      user!,
+                      `${key}.previous.${values.form_version_id}`,
+                      { values, operation, vehicle_id: v.id },
+                    )
+                      .then(() => {
+                        form.setValue("answers", {});
+                        form.setValue(
+                          "form_version_id",
+                          forms.data!.find((f) => f.published)!.id,
+                        );
+                        setOperation(Crypto.randomUUID());
+                      })
+                      .catch((e) => setError(String(e)));
+                  },
+                )
+              }
+            />
+          </Card>
+        )}
       {kind === "progress" ? (
         <>
           <AppText>{r("date")}</AppText>
@@ -881,9 +1041,24 @@ export function RecordForm() {
         field("notes", r("notes"))}
       <AppText muted>{r("photo")}</AppText>
       {kind === "documents" && <AppText>{r("legal")}</AppText>}
-      {kind==='progress'&&forms.error&&<ErrorState message={forms.error.message} retry={()=>void forms.refetch()}/>}
-      {access.error&&<ErrorState message={access.error.message} retry={()=>void access.refetch()}/>}
-      {error&&<ErrorState message={error} retry={()=>void submit()}/>}<AppButton secondary label={r('sync')} onPress={()=>router.push('/settings/sync')}/>
+      {kind === "progress" && forms.error && (
+        <ErrorState
+          message={forms.error.message}
+          retry={() => void forms.refetch()}
+        />
+      )}
+      {access.error && (
+        <ErrorState
+          message={access.error.message}
+          retry={() => void access.refetch()}
+        />
+      )}
+      {error && <ErrorState message={error} retry={() => void submit()} />}
+      <AppButton
+        secondary
+        label={r("sync")}
+        onPress={() => router.push("/settings/sync")}
+      />
       <AppButton
         secondary
         label={r("back")}
@@ -911,6 +1086,17 @@ export function RecordDetail() {
     queryFn: () => formVersions(vehicle!, development),
   });
   const owner = permissions.data?.owner;
+  const audit = useQuery({
+    queryKey: [user, vehicle, "record-audit", id],
+    enabled:
+      !!vehicle &&
+      !!id &&
+      owner === true &&
+      !development &&
+      !!row &&
+      !row.localStatus,
+    queryFn: () => recordAudit(vehicle!, id!),
+  });
   const mutate = async (status: string, payload = row?.payload) => {
     if (!row || !user || !payload) return;
     setBusy(true);
@@ -954,9 +1140,16 @@ export function RecordDetail() {
       setBusy(false);
     }
   };
-  const editAllowed = owner||(row?.created_by===user&&permissions.data?.[`${kind}.edit_own`]&&!(kind==='progress'&&row?.status==='APPROVED'));
+  const editAllowed =
+    owner ||
+    (row?.created_by === user &&
+      permissions.data?.[`${kind}.edit_own`] &&
+      !(kind === "progress" && row?.status === "APPROVED"));
   return (
-    <Screen title={r("detail")} loading={query.isPending || busy}>
+    <Screen
+      title={`${r(kind)} · ${r("detail")}`}
+      loading={query.isPending || busy}
+    >
       {query.error ? (
         <ErrorState
           message={query.error.message}
@@ -1067,23 +1260,25 @@ export function RecordDetail() {
               }
             />
           )}
-          {(owner||["fuel","expenses"].includes(kind)&&editAllowed) && kind !== "progress" && !row.localStatus && (
-            <AppButton
-              secondary
-              disabled={busy}
-              label={r(row.status === "ARCHIVED" ? "restore" : "archive")}
-              onPress={() =>
-                ConfirmDialog(
-                  r("archive"),
-                  r("archiveBody"),
-                  () =>
-                    void mutate(
-                      row.status === "ARCHIVED" ? "ACTIVE" : "ARCHIVED",
-                    ),
-                )
-              }
-            />
-          )}
+          {(owner || (["fuel", "expenses"].includes(kind) && editAllowed)) &&
+            kind !== "progress" &&
+            !row.localStatus && (
+              <AppButton
+                secondary
+                disabled={busy}
+                label={r(row.status === "ARCHIVED" ? "restore" : "archive")}
+                onPress={() =>
+                  ConfirmDialog(
+                    r("archive"),
+                    r("archiveBody"),
+                    () =>
+                      void mutate(
+                        row.status === "ARCHIVED" ? "ACTIVE" : "ARCHIVED",
+                      ),
+                  )
+                }
+              />
+            )}
           {kind === "expenses" &&
             ["SERVICE", "REPAIR", "INSURANCE", "EMI"].includes(
               String(row.payload.category),
@@ -1156,6 +1351,34 @@ export function RecordDetail() {
                 }}
               />
             </>
+          )}
+          {owner && !development && !row.localStatus && (
+            <Card>
+              <AppText large>{r("audit")}</AppText>
+              <AppText muted>{r("auditLatest")}</AppText>
+              {audit.error ? (
+                <ErrorState
+                  message={audit.error.message}
+                  retry={() => void audit.refetch()}
+                />
+              ) : audit.isPending ? (
+                <Skeleton />
+              ) : audit.data?.length ? (
+                audit.data.map((event) => (
+                  <View key={String(event.id)} style={{ gap: 4 }}>
+                    <AppText>
+                      {String(event.action).replaceAll("_", " ")}
+                    </AppText>
+                    <AppText muted>
+                      {event.created_at} · {event.actor_id ?? "—"}
+                    </AppText>
+                    <AppText>{JSON.stringify(event.context)}</AppText>
+                  </View>
+                ))
+              ) : (
+                <AppText>{r("auditEmpty")}</AppText>
+              )}
+            </Card>
           )}
           {kind === "documents" && (
             <>
@@ -1240,8 +1463,8 @@ export function RecordAnalytics() {
     );
   return (
     <Screen
-      title={r("analytics")}
-      loading={!!v&&(query.isPending || permissions.isPending)}
+      title={`${r(kind)} · ${r("analytics")}`}
+      loading={!!v && (query.isPending || permissions.isPending)}
     >
       <VehicleHeader />
       {permissions.data && !permissions.data["reports.read"] ? (

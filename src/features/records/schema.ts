@@ -1,7 +1,7 @@
 import { r } from "./copy";
 import { domainCopy as c } from "@/src/lib/domainCopy";
 import { z } from "zod";
-import { solveFuel, paise,nonnegativePaise } from "@/src/utils/money";
+import { solveFuel, paise, nonnegativePaise } from "@/src/utils/money";
 export const kinds = [
   "fuel",
   "expenses",
@@ -198,8 +198,14 @@ export function formFromRecord(record: RecordEntry): EntryForm {
     quantity: p.quantity ? String(p.quantity) : "",
     km: p.km === null ? "" : String(p.km ?? ""),
     hours: p.hours === null ? "" : String(p.hours ?? ""),
-    principal: p.principal_paise!==null&&p.principal_paise!==undefined ? String(Number(p.principal_paise) / 100) : "",
-    interest: p.interest_paise!==null&&p.interest_paise!==undefined ? String(Number(p.interest_paise) / 100) : "",
+    principal:
+      p.principal_paise !== null && p.principal_paise !== undefined
+        ? String(Number(p.principal_paise) / 100)
+        : "",
+    interest:
+      p.interest_paise !== null && p.interest_paise !== undefined
+        ? String(Number(p.interest_paise) / 100)
+        : "",
     metadata: JSON.stringify(p.metadata ?? {}),
     items: JSON.stringify(p.items ?? []),
   } as EntryForm;

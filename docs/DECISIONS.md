@@ -32,3 +32,9 @@ Any new implementation decision should be appended by Codex with date, context, 
 | ADR-025 | Financial writes use revision checks and payload-bound operation receipts | Retrying the same operation cannot silently replace a different payload or overwrite a newer revision. |
 | ADR-026 | Account deletion is a request plus operator retention/anonymization job | Protected administrators must archive their vehicles; ledger attribution UUIDs remain for required operational retention, access is revoked, and a protected Edge job anonymizes/blocks the account. Operator must configure retention/legal contact before release. |
 | ADR-027 | PNG artwork remains local; uploads and GPS permissions excluded | Launch uses bundled assets; Print/Sharing exports do not require broad external storage or location access. |
+
+## Page navigation and account exit — 2026-10-21
+
+Secondary pages use the shared PageHeader through Screen, with an accessible top Back action and localized section/title context. URLs, UUIDs and route-group names are not shown as page labels. Primary tabs remain navigation roots. Back follows actual stack history, preserving the originating tab; explicit parent fallbacks cover direct links without history. Vehicle wizard step Back changes the step before leaving the route. Successful vehicle/profile saves return to their caller when history exists.
+
+More exposes sign-out/exit-development at the top, plus Add vehicle, permission-gated Add meter reading and Add maintenance. Vehicle details exposes vehicle-scoped meter and maintenance entry links. Maintenance launches expense entry with SERVICE as its default category; existing drafts take precedence. Confirmation uses browser confirmation on web and native Alert on Android/iOS so sign-out and draft guards have a working confirmation path on both platforms.

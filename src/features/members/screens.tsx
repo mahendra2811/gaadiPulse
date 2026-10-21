@@ -94,7 +94,16 @@ export default function Members() {
       setBusy(false);
     }
   };
-  if(access.error)return <Screen title={r('members')}><ErrorState message={access.error.message} retry={()=>void access.refetch()}/><AppButton secondary label={r('back')} onPress={()=>router.back()}/></Screen>;
+  if (access.error)
+    return (
+      <Screen title={r("members")}>
+        <ErrorState
+          message={access.error.message}
+          retry={() => void access.refetch()}
+        />
+        <AppButton secondary label={r("back")} onPress={() => router.back()} />
+      </Screen>
+    );
   return (
     <Screen
       title={r("members")}

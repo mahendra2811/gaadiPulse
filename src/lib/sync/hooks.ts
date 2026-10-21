@@ -3,7 +3,7 @@ import { AppState } from "react-native";
 import { addEventListener } from "@react-native-community/netinfo";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSession, useAccountId } from "@/src/features/auth/session";
-import { synchronize,cancelSynchronization } from "@/src/features/records/api";
+import { synchronize, cancelSynchronization } from "@/src/features/records/api";
 import { writeLocal } from "@/src/lib/localStore";
 export function useOutboxSync() {
   const { development } = useSession();

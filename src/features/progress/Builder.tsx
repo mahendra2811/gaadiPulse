@@ -83,7 +83,10 @@ export default function Builder() {
         );
         setReady(true);
       })
-      .catch((e) => {setError(String(e));setReady(true);});
+      .catch((e) => {
+        setError(String(e));
+        setReady(true);
+      });
     return () => {
       alive = false;
     };
@@ -145,12 +148,27 @@ export default function Builder() {
         accessibilityLabel={label}
         value={definition[key]}
         onValueChange={(value) =>
-          setDefinition((d) => ({ ...d, [key]: value,...key==='notes_visible'&&!value?{notes_required:false}:{} }))
+          setDefinition((d) => ({
+            ...d,
+            [key]: value,
+            ...(key === "notes_visible" && !value
+              ? { notes_required: false }
+              : {}),
+          }))
         }
       />
     </View>
   );
-  if(permissions.error)return <Screen title={r('builder')}><ErrorState message={permissions.error.message} retry={()=>void permissions.refetch()}/><AppButton secondary label={r('back')} onPress={()=>router.back()}/></Screen>;
+  if (permissions.error)
+    return (
+      <Screen title={r("builder")}>
+        <ErrorState
+          message={permissions.error.message}
+          retry={() => void permissions.refetch()}
+        />
+        <AppButton secondary label={r("back")} onPress={() => router.back()} />
+      </Screen>
+    );
   return (
     <Screen
       title={r("builder")}

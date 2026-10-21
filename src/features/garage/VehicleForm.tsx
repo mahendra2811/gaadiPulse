@@ -1,4 +1,4 @@
-import { DateTimeInput } from '@/src/components/ui/fields';
+import { DateTimeInput } from "@/src/components/ui/fields";
 import { useEffect, useState } from "react";
 import { BackHandler, Image, Pressable } from "react-native";
 import { router, useLocalSearchParams, usePreventRemove } from "expo-router";
@@ -133,15 +133,23 @@ export default function VehicleForm() {
       key={name}
       control={form.control}
       name={name}
-      render={({ field: { value, onChange } }) =>name==='observed_at'?<DateTimeInput label={label} value={String(value??'')} onChange={onChange}/>: (
-        <InputField
-          label={label}
-          value={String(value ?? "")}
-          onChangeText={onChange}
-          keyboardType={numeric ? "decimal-pad" : "default"}
-          error={form.formState.errors[name]?.message}
-        />
-      )}
+      render={({ field: { value, onChange } }) =>
+        name === "observed_at" ? (
+          <DateTimeInput
+            label={label}
+            value={String(value ?? "")}
+            onChange={onChange}
+          />
+        ) : (
+          <InputField
+            label={label}
+            value={String(value ?? "")}
+            onChangeText={onChange}
+            keyboardType={numeric ? "decimal-pad" : "default"}
+            error={form.formState.errors[name]?.message}
+          />
+        )
+      }
     />
   );
   const submit = form.handleSubmit(
@@ -162,7 +170,8 @@ export default function VehicleForm() {
         await qc.invalidateQueries({ queryKey: [user!, "vehicles"] });
         toast(t("saved"), "success");
         disablePrevention();
-        router.replace("/garage");
+        if (router.canGoBack()) router.back();
+        else router.replace("/garage");
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e));
       } finally {
@@ -194,6 +203,7 @@ export default function VehicleForm() {
   return (
     <Screen
       title={titles[step]}
+      onBack={step > 0 ? () => setStep((value) => value - 1) : undefined}
       loading={!ready || busy}
       action={
         <AppButton

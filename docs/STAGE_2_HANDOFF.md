@@ -10,4 +10,4 @@ Offline operations are stored in SQLite (browser development uses local browser 
 
 Validation status for this implementation: typecheck/lint/unit/SQL/native builds/manual flows NOT RUN, deferred by explicit user instruction. Existing Stage 1 test files remain preserved. Live provider configuration is still absent. See QA_TEST_MATRIX.md and STAGE_3_HANDOFF.md for outstanding gates and current scope.
 
-Continue Stage 3 without resetting data: finish role controls, immutable forms and reviews, protected custom-answer reads, documents, reports and offline recovery; update final documentation. Any implementation issue discovered in later validation must be corrected before calling this release-ready.
+Stage 3 source implementation is now recorded in STAGE_3_HANDOFF.md. No data reset was performed. Any issue discovered when validation resumes must be corrected before release.

@@ -1,4 +1,5 @@
-import { readableError } from '@/src/lib/errors';
+import { PageHeader } from "@/src/components/navigation/PageHeader";
+import { readableError } from "@/src/lib/errors";
 import { successFeedback } from "@/src/lib/feedback";
 import React, {
   createContext,
@@ -21,12 +22,11 @@ import {
   Text,
   TextInput,
   View,
-  useWindowDimensions,
   type TextInputProps,
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import { SafeAreaView,useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { addEventListener } from "@react-native-community/netinfo";
 import { useTheme } from "@/src/lib/theme";
 import { t, type TranslationKey } from "@/src/lib/i18n";
@@ -234,14 +234,15 @@ export function Screen({
   children,
   loading = false,
   action,
+  onBack,
 }: {
   title: string;
   children: ReactNode;
   loading?: boolean;
   action?: ReactNode;
+  onBack?: () => void;
 }) {
   const c = useTheme();
-  const {fontScale}=useWindowDimensions();const safe=useSafeAreaInsets();
   const [offline, setOffline] = useState(false);
   React.useEffect(
     () => addEventListener((s) => setOffline(s.isConnected === false)),
@@ -252,9 +253,7 @@ export function Screen({
       edges={["top", "left", "right"]}
       style={{ flex: 1, backgroundColor: c.background }}
     >
-      <View style={{ paddingHorizontal: 20, paddingVertical: 14 }}>
-        <AppText large>{title}</AppText>
-      </View>
+      <PageHeader title={title} onBack={onBack} />
       <LoadingLine loading={loading} />
       {offline && (
         <View style={{ padding: 12 }}>
@@ -373,6 +372,10 @@ export function Sheet({
   );
 }
 export function ConfirmDialog(title: string, body: string, action: () => void) {
+  if (Platform.OS === "web") {
+    if (window.confirm(`${title}\n\n${body}`)) action();
+    return;
+  }
   Alert.alert(title, body, [
     { text: t("cancel"), style: "cancel" },
     { text: t("continue"), onPress: action },

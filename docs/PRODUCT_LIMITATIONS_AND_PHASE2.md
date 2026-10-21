@@ -1,5 +1,7 @@
 # Explicit scope limits and future roadmap
 
+The Phase 1 features below are implemented in source. Current validation is deferred by user instruction; this is not a release acceptance claim. See STAGE_3_HANDOFF.md and EXTERNAL_SETUP_AND_RELEASE.md for evidence and setup gates.
+
 ## Phase 1 included
 English first, language selector wired but Hindi disabled until actual translations; Owner/Pilot per-vehicle permissions; automatic email grants after verified sign-in; KM/HOURS/BOTH; Fuel and Other Expense; daily progress form builder; documents metadata, date/km/hour reminders, reports; safe offline drafts/sync; bundled original visual assets.
 

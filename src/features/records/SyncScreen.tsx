@@ -1,4 +1,4 @@
-import { listDrafts,clearDraft } from '@/src/lib/db';
+import { listDrafts, clearDraft } from "@/src/lib/db";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
@@ -38,7 +38,11 @@ export default function SyncScreen() {
     queryFn: () => operations(user!),
     refetchInterval: 5000,
   });
-  const drafts=useQuery({queryKey:[user,"form-drafts"],enabled:!!user,queryFn:()=>listDrafts(user!)});
+  const drafts = useQuery({
+    queryKey: [user, "form-drafts"],
+    enabled: !!user,
+    queryFn: () => listDrafts(user!),
+  });
   const last = useQuery({
     queryKey: [user, "last-sync"],
     enabled: !!user,
@@ -74,7 +78,37 @@ export default function SyncScreen() {
           })
         }
       />
-      <AppText large>{r('localDrafts')}</AppText>{drafts.data?.map(draft=><Card key={draft.key}><AppText>{draft.key}</AppText><AppText muted>{draft.updated_at}</AppText><AppButton secondary label={r('exportDraft')} onPress={()=>void run(()=>exportText(JSON.stringify(draft,null,2),`GaadiPulse-form-draft.json`,'application/json'))}/><AppButton secondary label={r('deleteDraft')} onPress={()=>ConfirmDialog(r('deleteDraft'),r('offline'),()=>void run(()=>clearDraft(user!,draft.key)))}/></Card>)}
+      <AppText large>{r("localDrafts")}</AppText>
+      {drafts.data?.map((draft) => (
+        <Card key={draft.key}>
+          <AppText>{draft.key}</AppText>
+          <AppText muted>{draft.updated_at}</AppText>
+          <AppButton
+            secondary
+            label={r("exportDraft")}
+            onPress={() =>
+              void run(() =>
+                exportText(
+                  JSON.stringify(draft, null, 2),
+                  `GaadiPulse-form-draft.json`,
+                  "application/json",
+                ),
+              )
+            }
+          />
+          <AppButton
+            secondary
+            label={r("deleteDraft")}
+            onPress={() =>
+              ConfirmDialog(
+                r("deleteDraft"),
+                r("offline"),
+                () => void run(() => clearDraft(user!, draft.key)),
+              )
+            }
+          />
+        </Card>
+      ))}
       {query.data?.map((op) => (
         <Card key={op.operation_id}>
           <AppText>
@@ -83,7 +117,22 @@ export default function SyncScreen() {
           <AppText>{String(op.payload.title ?? op.created_at)}</AppText>
           {op.error && <AppText>{op.error}</AppText>}
           {op.status === "CONFLICT" && <AppText>{r("conflict")}</AppText>}
-          {op.kind==='progress'&&op.status==='CONFLICT'&&<AppButton secondary label={r('reviewCurrentForm')} onPress={()=>router.push({pathname:'/records/[kind]/[action]',params:{kind:'progress',action:'add',vehicle:op.vehicle_id}})}/>}
+          {op.kind === "progress" && op.status === "CONFLICT" && (
+            <AppButton
+              secondary
+              label={r("reviewCurrentForm")}
+              onPress={() =>
+                router.push({
+                  pathname: "/records/[kind]/[action]",
+                  params: {
+                    kind: "progress",
+                    action: "add",
+                    vehicle: op.vehicle_id,
+                  },
+                })
+              }
+            />
+          )}
           {op.status === "REJECTED" && <AppText>{r("rejected")}</AppText>}
           <AppButton
             secondary

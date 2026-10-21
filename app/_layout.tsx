@@ -1,7 +1,7 @@
 import { useMembershipUpdates } from "@/src/hooks/useMembershipUpdates";
 import { useOutboxSync } from "@/src/lib/sync/hooks";
 import { authDestination } from "@/src/features/auth/routing";
-import { Image, View, Text,Appearance,Platform } from "react-native";
+import { Image, View, Text, Appearance, Platform } from "react-native";
 import { artwork } from "@/src/lib/assets";
 import { useConnectivity } from "@/src/lib/connectivity";
 import { ErrorBoundary } from "@/src/components/ui/ErrorBoundary";
@@ -32,7 +32,14 @@ function Routes() {
   const syncError = useOutboxSync();
   const auth = useSession();
   const profile = useProfile();
-  useEffect(()=>{if(Platform.OS!=='web')Appearance.setColorScheme(profile.data?.theme==='system'||!profile.data?.theme?null:profile.data.theme);},[profile.data?.theme]);
+  useEffect(() => {
+    if (Platform.OS !== "web")
+      Appearance.setColorScheme(
+        profile.data?.theme === "system" || !profile.data?.theme
+          ? "unspecified"
+          : profile.data.theme,
+      );
+  }, [profile.data?.theme]);
   const router = useRouter();
   const segments = useSegments();
   const pathname = usePathname();
@@ -78,8 +85,17 @@ function Routes() {
     return (
       <Screen title={t("sessionError")}>
         <ErrorState message={auth.error} retry={auth.retry} />
-        {__DEV__&&<AppButton label={t('developmentContinue')} onPress={()=>void auth.startDevelopment().catch(auth.retry)}/>}
-        <AppButton secondary label={t('logout')} onPress={()=>void auth.signOut().catch(auth.retry)}/>
+        {__DEV__ && (
+          <AppButton
+            label={t("developmentContinue")}
+            onPress={() => void auth.startDevelopment().catch(auth.retry)}
+          />
+        )}
+        <AppButton
+          secondary
+          label={t("logout")}
+          onPress={() => void auth.signOut().catch(auth.retry)}
+        />
       </Screen>
     );
   return (

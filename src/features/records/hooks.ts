@@ -7,12 +7,12 @@ import type { Kind } from "./schema";
 export function usePermissions(vehicleId?: string) {
   const user = useAccountId();
   const { development } = useSession();
-  const query=useQuery({
+  const query = useQuery({
     queryKey: [user, vehicleId, "permissions"],
     enabled: !!user && !!vehicleId,
     queryFn: () => access(vehicleId!, development),
   });
-  return {...query,data:query.error?undefined:query.data};
+  return { ...query, data: query.error ? undefined : query.data };
 }
 export function useRecords(kind: Kind, vehicleId?: string) {
   const active = useActiveVehicle();
@@ -20,7 +20,7 @@ export function useRecords(kind: Kind, vehicleId?: string) {
   const user = useAccountId();
   const { development } = useSession();
   return useQuery({
-    queryKey: [user, vehicle, "records",kind],
+    queryKey: [user, vehicle, "records", kind],
     enabled: !!user && !!vehicle,
     queryFn: async () => {
       if (development) return listRecords(user!, vehicle!, kind, true);

@@ -103,7 +103,7 @@ export default function MeterHistory() {
       <VehicleHeader />
       {permissions.data?.["meters.create"] && (
         <AppButton
-          label={r("add")}
+          label={r("addMeter")}
           onPress={() =>
             router.push({
               pathname: "/records/[kind]/[action]",

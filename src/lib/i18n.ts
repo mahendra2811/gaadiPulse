@@ -1,4 +1,35 @@
 export const en = {
+  passwordLogin: "Sign in with password",
+  createAccount: "Create account",
+  password: "Password",
+  newPassword: "New password",
+  confirmPassword: "Confirm password",
+  showPassword: "Show password",
+  hidePassword: "Hide password",
+  forgotPassword: "Forgot password?",
+  resetPassword: "Reset password",
+  sendReset: "Send reset code",
+  resetSent:
+    "If an account exists for this email, a reset code has been sent. Check your inbox and spam folder.",
+  signupSent:
+    "Check your inbox for a verification code. If you already have an account, sign in or reset your password.",
+  passwordRules:
+    "Use 12–128 characters. A long, unique passphrase is recommended.",
+  passwordMismatch: "Passwords do not match.",
+  passwordUpdated: "Your password was updated.",
+  invalidEmail: "Enter a valid email address.",
+  invalidCode: "Enter the 6–8 digit code from your email.",
+  codeSessionMissing:
+    "Verification did not complete. Request a new code and try again.",
+  useOtp: "Sign in with an email code",
+  signupVerify: "Verify your account",
+  recoveryVerify: "Verify reset code",
+  resendAvailable: "Request a new code",
+  accountNameHelp:
+    "You will choose your display name after verification. Sign in with your email address; a separate username is not required.",
+  forgotEmailHelp:
+    "Forgot your email address? Check your previous GaadiPulse emails or use the same Google account you used before. We cannot reveal an account email from a display name.",
+
   permissionDenied:
     "You do not have access to this action. Ask a vehicle Owner to review your permissions.",
   recordConflict:

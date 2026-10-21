@@ -101,6 +101,24 @@ export function Login() {
             disabled={busy}
             onPress={() => void run(googleSignIn)}
           />
+          <AppButton
+            secondary
+            label={t("passwordLogin")}
+            disabled={busy}
+            onPress={() => router.push("/auth/password")}
+          />
+          <AppButton
+            secondary
+            label={t("createAccount")}
+            disabled={busy}
+            onPress={() => router.push("/auth/signup")}
+          />
+          <AppButton
+            secondary
+            label={t("forgotPassword")}
+            disabled={busy}
+            onPress={() => router.push("/auth/reset-password")}
+          />
           <InputField
             label={t("email")}
             value={email}

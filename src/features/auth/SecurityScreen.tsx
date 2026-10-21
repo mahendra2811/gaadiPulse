@@ -1,3 +1,4 @@
+import { t } from "@/src/lib/i18n";
 import { useState } from "react";
 import { Linking } from "react-native";
 import { router } from "expo-router";
@@ -36,6 +37,12 @@ export default function SecurityScreen() {
   };
   return (
     <Screen title={r("security")} loading={busy}>
+      {!auth.development && (
+        <AppButton
+          label={t("resetPassword")}
+          onPress={() => router.push("/auth/reset-password")}
+        />
+      )}
       <AppText>{r("deleteAccountBody")}</AppText>
       <AppText>{r("deletionWorkflow")}</AppText>
       <AppButton

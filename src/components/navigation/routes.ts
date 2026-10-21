@@ -22,8 +22,19 @@ export function pageNavigation(path: string): {
     return { back: false, fallback: "/(tabs)" };
   if (root === "auth")
     return {
-      back: ["login", "verify", "legal"].includes(kind),
-      fallback: kind === "verify" ? "/auth/login" : "/auth/welcome",
+      back: [
+        "login",
+        "verify",
+        "legal",
+        "password",
+        "signup",
+        "reset-password",
+      ].includes(kind),
+      fallback: ["verify", "password", "signup", "reset-password"].includes(
+        kind,
+      )
+        ? "/auth/login"
+        : "/auth/welcome",
     };
   if (root === "garage")
     return {

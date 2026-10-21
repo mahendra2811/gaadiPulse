@@ -53,6 +53,7 @@ function Routes() {
       (auth.session || auth.development) &&
       path === "auth" &&
       pathname !== "/auth/legal" &&
+      pathname !== "/auth/reset-password" &&
       !profile.isPending
     )
       router.replace(
@@ -69,7 +70,7 @@ function Routes() {
     pathname,
     router,
   ]);
-  if (auth.loading)
+  if (auth.loading && !auth.session && !auth.development)
     return (
       <ThemeContext.Provider value="dark">
         <Screen title={t("app")} loading>

@@ -1,0 +1,80 @@
+[
+  {
+    "key": "confirmation",
+    "kind": "template",
+    "subject": "Welcome to GaadiPulse \u2014 verify your email",
+    "file": "supabase/templates/confirmation.html"
+  },
+  {
+    "key": "magic_link",
+    "kind": "template",
+    "subject": "Your GaadiPulse sign-in code",
+    "file": "supabase/templates/magic_link.html"
+  },
+  {
+    "key": "recovery",
+    "kind": "template",
+    "subject": "Reset your GaadiPulse password",
+    "file": "supabase/templates/recovery.html"
+  },
+  {
+    "key": "email_change",
+    "kind": "template",
+    "subject": "Confirm your GaadiPulse email change",
+    "file": "supabase/templates/email_change.html"
+  },
+  {
+    "key": "reauthentication",
+    "kind": "template",
+    "subject": "Verify your GaadiPulse account",
+    "file": "supabase/templates/reauthentication.html"
+  },
+  {
+    "key": "invite",
+    "kind": "template",
+    "subject": "Your GaadiPulse account invitation",
+    "file": "supabase/templates/invite.html"
+  },
+  {
+    "key": "password_changed",
+    "kind": "notification",
+    "subject": "Your GaadiPulse password was changed",
+    "file": "supabase/templates/password_changed.html"
+  },
+  {
+    "key": "email_changed",
+    "kind": "notification",
+    "subject": "Your GaadiPulse email address was changed",
+    "file": "supabase/templates/email_changed.html"
+  },
+  {
+    "key": "phone_changed",
+    "kind": "notification",
+    "subject": "Your GaadiPulse phone number was changed",
+    "file": "supabase/templates/phone_changed.html"
+  },
+  {
+    "key": "identity_linked",
+    "kind": "notification",
+    "subject": "A sign-in method was added to GaadiPulse",
+    "file": "supabase/templates/identity_linked.html"
+  },
+  {
+    "key": "identity_unlinked",
+    "kind": "notification",
+    "subject": "A sign-in method was removed from GaadiPulse",
+    "file": "supabase/templates/identity_unlinked.html"
+  },
+  {
+    "key": "mfa_factor_enrolled",
+    "kind": "notification",
+    "subject": "A verification method was added to GaadiPulse",
+    "file": "supabase/templates/mfa_factor_enrolled.html"
+  },
+  {
+    "key": "mfa_factor_unenrolled",
+    "kind": "notification",
+    "subject": "A verification method was removed from GaadiPulse",
+    "file": "supabase/templates/mfa_factor_unenrolled.html"
+  }
+]

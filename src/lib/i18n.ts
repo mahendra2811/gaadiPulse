@@ -1,4 +1,5 @@
 export const en = {
+ recordConflict:"This record or form changed. Review the latest version or open Sync status to recover your draft.",networkError:"Unable to connect. Your local drafts are retained. Reconnect and retry.",invalidData:"Some values are invalid. Review the form and try again.",deletionPending:"Your account deletion request is pending. Contact your operator for support.",serviceSetup:"The service setup is incomplete. Contact your operator or use development mode in a debug build.",
  invalidOAuth:"The sign-in callback is incomplete. Start sign-in again.",exitDevelopment:"Exit development mode",exitDevelopmentBody:"Your local test vehicles remain on this device and are never uploaded.",
  chooseDateTime:"Choose date and time",
   dismiss: "Dismiss",

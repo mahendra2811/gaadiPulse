@@ -1,3 +1,4 @@
+import { readableError } from '@/src/lib/errors';
 import { successFeedback } from "@/src/lib/feedback";
 import React, {
   createContext,
@@ -20,11 +21,12 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
   type TextInputProps,
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView,useSafeAreaInsets } from "react-native-safe-area-context";
 import { addEventListener } from "@react-native-community/netinfo";
 import { useTheme } from "@/src/lib/theme";
 import { t, type TranslationKey } from "@/src/lib/i18n";
@@ -239,6 +241,7 @@ export function Screen({
   action?: ReactNode;
 }) {
   const c = useTheme();
+  const {fontScale}=useWindowDimensions();const safe=useSafeAreaInsets();
   const [offline, setOffline] = useState(false);
   React.useEffect(
     () => addEventListener((s) => setOffline(s.isConnected === false)),
@@ -321,7 +324,7 @@ export function ErrorState({
   return (
     <Card>
       <AppText>{t("error")}</AppText>
-      <AppText muted>{message}</AppText>
+      <AppText muted>{readableError(message)}</AppText>
       <AppButton label={t("retry")} onPress={retry} />
     </Card>
   );

@@ -1,7 +1,7 @@
 import { r } from "./copy";
 import { domainCopy as c } from "@/src/lib/domainCopy";
 import { z } from "zod";
-import { solveFuel, paise } from "@/src/utils/money";
+import { solveFuel, paise,nonnegativePaise } from "@/src/utils/money";
 export const kinds = [
   "fuel",
   "expenses",
@@ -124,7 +124,7 @@ export function entryPayload(kind: Kind, input: EntryForm): Payload {
     items = z
       .array(
         z.object({
-          title: z.string().min(1),
+          title: z.string().trim().min(1).max(160),
           amount_paise: z.number().int().positive(),
         }),
       )
@@ -159,8 +159,8 @@ export function entryPayload(kind: Kind, input: EntryForm): Payload {
     if (!v.title.trim()) throw new Error(c.expenseTitle);
     Object.assign(payload, {
       amount_paise: paise(v.amount),
-      principal_paise: v.principal ? paise(v.principal) : null,
-      interest_paise: v.interest ? paise(v.interest) : null,
+      principal_paise: v.principal ? nonnegativePaise(v.principal) : null,
+      interest_paise: v.interest ? nonnegativePaise(v.interest) : null,
     });
     if (
       items.length &&
@@ -198,8 +198,8 @@ export function formFromRecord(record: RecordEntry): EntryForm {
     quantity: p.quantity ? String(p.quantity) : "",
     km: p.km === null ? "" : String(p.km ?? ""),
     hours: p.hours === null ? "" : String(p.hours ?? ""),
-    principal: p.principal_paise ? String(Number(p.principal_paise) / 100) : "",
-    interest: p.interest_paise ? String(Number(p.interest_paise) / 100) : "",
+    principal: p.principal_paise!==null&&p.principal_paise!==undefined ? String(Number(p.principal_paise) / 100) : "",
+    interest: p.interest_paise!==null&&p.interest_paise!==undefined ? String(Number(p.interest_paise) / 100) : "",
     metadata: JSON.stringify(p.metadata ?? {}),
     items: JSON.stringify(p.items ?? []),
   } as EntryForm;

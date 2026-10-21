@@ -150,6 +150,7 @@ export default function Builder() {
       />
     </View>
   );
+  if(permissions.error)return <Screen title={r('builder')}><ErrorState message={permissions.error.message} retry={()=>void permissions.refetch()}/><AppButton secondary label={r('back')} onPress={()=>router.back()}/></Screen>;
   return (
     <Screen
       title={r("builder")}

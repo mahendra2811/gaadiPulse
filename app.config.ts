@@ -28,6 +28,7 @@ const config: ExpoConfig = {
     "expo-router",
     "expo-font",
     "expo-sharing",
+    "@react-native-community/datetimepicker",
     [
       "expo-notifications",
       { icon: "./assets/notification-icon.png", color: "#147D69" },

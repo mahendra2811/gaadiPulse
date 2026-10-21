@@ -314,7 +314,7 @@ export function RecordForm() {
   const user = useAccountId();
   const active = useActiveVehicle();
   const vehicles = useVehicles();
-  const [boundVehicle,setBoundVehicle]=useState<string|null>(null);
+  const [boundVehicle,setBoundVehicle]=useState<string|null>(routeVehicle??null);
   const vehicle = id
     ? vehicles.data?.find((v) => v.id === routeVehicle)
     : boundVehicle?vehicles.data?.find(v=>v.id===boundVehicle):active.vehicle;
@@ -349,6 +349,7 @@ export function RecordForm() {
     enabled: !!v && kind === "expenses",
     queryFn: () => loadCategories(v!.id, development),
   });
+  useEffect(()=>{if(kind==='progress'&&ready&&!values.form_version_id){const version=forms.data?.find(form=>form.published);if(version)form.setValue('form_version_id',version.id);}},[kind,ready,values.form_version_id,forms.data,form]);
   useEffect(() => {
     if (ready || !user || !v || (id && query.isPending)) return;
     let alive = true;
@@ -463,15 +464,10 @@ export function RecordForm() {
       if (v.meter_mode === "HOURS") payload.km = null;
       if (v.meter_mode === "KM") payload.hours = null;
       if (kind === "progress") {
-        const version = existing
-          ? forms.data?.find((f) => f.id === existing.payload.form_version_id)
-          : forms.data?.find((f) => f.published);
+        const version=forms.data?.find(f=>f.id===(existing?existing.payload.form_version_id:values.form_version_id));
+        if(!existing&&version&&!version.published)throw new Error(r('formChanged'));
         if (!version) throw new Error(r("formChanged"));
-        validateProgressDate(
-          values.progress_date,
-          v.timezone,
-          version.definition.past_days,
-        );
+        if(!(existing&&owner&&values.progress_date===existing.payload.progress_date))validateProgressDate(values.progress_date,v.timezone,version.definition.past_days);
         payload.form_version_id = version.id;
         payload.answers = validateAnswers(
           version.definition.fields,
@@ -505,7 +501,7 @@ export function RecordForm() {
       );
       await clearDraft(user, key);
       await qc.invalidateQueries();
-      toast(saved.pending ? r("pending") : r("saved"));
+      toast(saved.pending ? r("pending") : r("saved"),saved.pending?"warning":"success");
       if (another) {
         form.reset({
           ...defaultEntry(),
@@ -569,12 +565,12 @@ export function RecordForm() {
   return (
     <Screen
       title={r(id ? "edit" : "add")}
-      loading={!ready || busy || access.isPending}
+      loading={!ready || busy || access.isPending || kind==='progress'&&forms.isPending}
       action={
         <View style={{ gap: 8 }}>
           <AppButton
             label={r(kind === "progress" ? "submit" : "save")}
-            disabled={busy || !ready}
+            disabled={busy || !ready ||kind==='progress'&&(forms.isPending||!values.form_version_id)}
             onPress={() => void submit()}
           />
           {!id && kind === "fuel" && (
@@ -595,6 +591,7 @@ export function RecordForm() {
       ) : (
         <VehicleHeader vehicleId={v.id} disabled={busy} onSelect={selectVehicle}/>
       )}
+      {kind==='progress'&&!id&&values.form_version_id&&forms.data?.find(f=>f.id===values.form_version_id)?.published===false&&<Card><AppText>{r('formChanged')}</AppText><AppButton secondary label={r('reviewCurrentForm')} onPress={()=>ConfirmDialog(r('reviewCurrentForm'),r('reviewNewVersion'),()=>{void saveDraft(user!,`${key}.previous.${values.form_version_id}`,{values,operation,vehicle_id:v.id}).then(()=>{form.setValue('answers',{});form.setValue('form_version_id',forms.data!.find(f=>f.published)!.id);setOperation(Crypto.randomUUID());}).catch(e=>setError(String(e)));})}/></Card>}
       {kind === "progress" ? (
         <>
           <AppText>{r("date")}</AppText>
@@ -884,7 +881,9 @@ export function RecordForm() {
         field("notes", r("notes"))}
       <AppText muted>{r("photo")}</AppText>
       {kind === "documents" && <AppText>{r("legal")}</AppText>}
-      {error && <ErrorState message={error} retry={() => setError("")} />}
+      {kind==='progress'&&forms.error&&<ErrorState message={forms.error.message} retry={()=>void forms.refetch()}/>}
+      {access.error&&<ErrorState message={access.error.message} retry={()=>void access.refetch()}/>}
+      {error&&<ErrorState message={error} retry={()=>void submit()}/>}<AppButton secondary label={r('sync')} onPress={()=>router.push('/settings/sync')}/>
       <AppButton
         secondary
         label={r("back")}

@@ -67,7 +67,7 @@ create function public.submit_progress(p_vehicle uuid,p_payload jsonb,p_operatio
  if not public.is_vehicle_owner(p_vehicle) and (old.created_by<>actor or not public.has_vehicle_permission(p_vehicle,'progress.edit_own') or old.status='APPROVED') then raise exception 'PERMISSION_DENIED';end if;
  if old.payload->>'form_version_id'<>p_payload->>'form_version_id' then raise exception 'FORM_VERSION_CONFLICT';end if;end if;
  select (now() at time zone timezone)::date into today from public.vehicles where id=p_vehicle;day:=(p_payload->>'progress_date')::date;
- if day is null or day>today or day<today-(form.definition->>'past_days')::integer then raise exception 'DATE_WINDOW_VIOLATION';end if;
+ if day is null or day>today or (day<today-(form.definition->>'past_days')::integer and not (p_id is not null and public.is_vehicle_owner(p_vehicle) and day=(old.payload->>'progress_date')::date)) then raise exception 'DATE_WINDOW_VIOLATION';end if;
  perform public.validate_progress_answers(form.definition,p_payload->'answers',public.is_vehicle_owner(p_vehicle));
  if coalesce((form.definition->>'notes_required')::boolean,false) and length(trim(coalesce(p_payload->>'notes','')))=0 then raise exception 'NOTES_REQUIRED';end if;
  if coalesce((form.definition->>'km_required')::boolean,false) and p_payload->>'km' is null or coalesce((form.definition->>'hours_required')::boolean,false) and p_payload->>'hours' is null then raise exception 'READING_REQUIRED';end if;

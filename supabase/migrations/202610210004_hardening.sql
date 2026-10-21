@@ -94,10 +94,16 @@ create or replace function public.add_observations(p_vehicle uuid,p_payload json
  end if;end if;end loop;end; $$;
 update public.meter_readings set notes='' where source in ('FUEL','EXPENSE','PROGRESS');
 create function public.validate_ledger_shape() returns trigger language plpgsql set search_path='' as $$
- declare field text;
+ declare field text;normalized_items jsonb;
  begin
  if TG_TABLE_NAME='fuel_logs' then
+ new.payload:=new.payload||jsonb_build_object('amount_paise',(new.payload->>'amount_paise')::bigint,'quantity',(new.payload->>'quantity')::numeric,'unit_price_paise',(new.payload->>'unit_price_paise')::bigint);
  if jsonb_typeof(new.payload->'is_full_tank') is distinct from 'boolean' or coalesce(new.payload->>'energy_type','') not in ('PETROL','DIESEL','ELECTRIC','CNG','HYBRID','OTHER') then raise exception 'INVALID_FUEL_SHAPE';end if;
+ end if;
+ if TG_TABLE_NAME='expenses' then
+ new.payload:=new.payload||jsonb_build_object('amount_paise',(new.payload->>'amount_paise')::bigint,'principal_paise',(new.payload->>'principal_paise')::bigint,'interest_paise',(new.payload->>'interest_paise')::bigint);
+ if exists(select 1 from jsonb_array_elements(new.payload->'items') item where nullif(trim(item->>'title'),'') is null) then raise exception 'INVALID_LINE_ITEM';end if;
+ select coalesce(jsonb_agg(jsonb_build_object('title',trim(item->>'title'),'amount_paise',(item->>'amount_paise')::bigint)),'[]') into normalized_items from jsonb_array_elements(new.payload->'items') item;new.payload:=jsonb_set(new.payload,'{items}',normalized_items);
  end if;
  foreach field in array array['km','hours'] loop
  if new.payload->>field is not null and (jsonb_typeof(new.payload->field)<>'number' or (new.payload->>field)::numeric<0) then raise exception 'INVALID_READING';end if;end loop;

@@ -1,4 +1,5 @@
 export const recordCopy = {
+ reviewCurrentForm:"Review current form",reviewNewVersion:"Your previous answers remain in a local draft. Review the new fields before saving; answers are not silently migrated.",
  notificationsEnabled:"Local reminder notifications enabled.",
  switchVehicle:"Switch vehicle",localDrafts:"Saved form drafts",
   PETROL: "Petrol",

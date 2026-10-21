@@ -272,6 +272,7 @@ export function Reports() {
       setBusy(false);
     }
   };
+  if(access.error)return <Screen title={r('reports')}><ErrorState message={access.error.message} retry={()=>void access.refetch()}/><AppButton secondary label={r('back')} onPress={()=>router.back()}/></Screen>;
   return (
     <Screen
       title={r("reports")}

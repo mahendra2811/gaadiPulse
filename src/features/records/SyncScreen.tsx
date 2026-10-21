@@ -83,6 +83,7 @@ export default function SyncScreen() {
           <AppText>{String(op.payload.title ?? op.created_at)}</AppText>
           {op.error && <AppText>{op.error}</AppText>}
           {op.status === "CONFLICT" && <AppText>{r("conflict")}</AppText>}
+          {op.kind==='progress'&&op.status==='CONFLICT'&&<AppButton secondary label={r('reviewCurrentForm')} onPress={()=>router.push({pathname:'/records/[kind]/[action]',params:{kind:'progress',action:'add',vehicle:op.vehicle_id}})}/>}
           {op.status === "REJECTED" && <AppText>{r("rejected")}</AppText>}
           <AppButton
             secondary

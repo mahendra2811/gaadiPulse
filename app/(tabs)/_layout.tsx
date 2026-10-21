@@ -70,7 +70,7 @@ export default function TabLayout() {
                 />
                 <Text
                   style={{
-                    fontSize: 11,
+                    fontSize: 12,
                     color: selected ? c.primary : c.muted,
                     fontWeight: selected ? "700" : "400",
                   }}

@@ -70,6 +70,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           useUI.getState().setActive(active);
         }
       } catch (e) {
+        if(alive&&generation===authGeneration.current&&/EMAIL_NOT_VERIFIED|ACCOUNT_DELETION_PENDING/.test(e instanceof Error?e.message:String(e)))setSession(null);
         if (alive && generation === authGeneration.current)
           setError(e instanceof Error ? e.message : String(e));
       } finally {

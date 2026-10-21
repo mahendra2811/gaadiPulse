@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "isIllustrative": true,
+  "categories": [
+    {
+      "id": "two_wheeler",
+      "label": "Two Wheeler",
+      "defaultMeterMode": "KM",
+      "subtypes": [
+        "motorcycle",
+        "scooter",
+        "electric_scooter",
+        "moped"
+      ],
+      "makes": [
+        {
+          "name": "Hero",
+          "models": [
+            "Splendor Plus",
+            "HF Deluxe",
+            "Xtreme 125R"
+          ]
+        },
+        {
+          "name": "Honda",
+          "models": [
+            "Activa",
+            "Shine",
+            "SP125"
+          ]
+        },
+        {
+          "name": "Bajaj",
+          "models": [
+            "Pulsar",
+            "Platina"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "four_wheeler",
+      "label": "Four Wheeler",
+      "defaultMeterMode": "KM",
+      "subtypes": [
+        "hatchback",
+        "sedan",
+        "compact_suv",
+        "suv",
+        "muv",
+        "jeep"
+      ],
+      "makes": [
+        {
+          "name": "Maruti Suzuki",
+          "models": [
+            "Swift",
+            "Baleno",
+            "Brezza"
+          ]
+        },
+        {
+          "name": "Hyundai",
+          "models": [
+            "i20",
+            "Creta",
+            "Venue"
+          ]
+        },
+        {
+          "name": "Tata",
+          "models": [
+            "Tiago",
+            "Nexon",
+            "Punch"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "commercial",
+      "label": "Commercial",
+      "defaultMeterMode": "KM",
+      "subtypes": [
+        "auto",
+        "taxi",
+        "van",
+        "pickup",
+        "truck",
+        "tipper",
+        "bus"
+      ],
+      "makes": []
+    },
+    {
+      "id": "agriculture_heavy",
+      "label": "Agricultural & Heavy",
+      "defaultMeterMode": "BOTH",
+      "subtypes": [
+        "tractor",
+        "excavator",
+        "loader",
+        "crane",
+        "generator",
+        "other"
+      ],
+      "makes": []
+    }
+  ]
+}

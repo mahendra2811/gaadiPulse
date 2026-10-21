@@ -1,0 +1,64 @@
+{
+  "app": {
+    "name": "GaadiPulse",
+    "tagline": "Every Vehicle. Every Detail."
+  },
+  "tabs": {
+    "home": "Home",
+    "fuel": "Fuel",
+    "expenses": "Expenses",
+    "more": "More"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "retry": "Retry",
+    "confirm": "Confirm",
+    "delete": "Delete",
+    "edit": "Edit",
+    "next": "Continue",
+    "back": "Back",
+    "loading": "Loading",
+    "noData": "No records yet",
+    "offline": "You're offline",
+    "pendingSync": "Pending sync",
+    "permissionDenied": "You don't have access to this information"
+  },
+  "garage": {
+    "title": "My Garage",
+    "addVehicle": "Add Vehicle",
+    "switchVehicle": "Switch Vehicle",
+    "oneVehicle": "Your vehicle",
+    "owner": "Owner",
+    "pilot": "Pilot"
+  },
+  "fuel": {
+    "title": "Fuel",
+    "add": "Add Fuel",
+    "full": "Full tank",
+    "partial": "Partial tank",
+    "meterLater": "I'll add meter reading later",
+    "pendingReading": "Meter reading pending"
+  },
+  "expenses": {
+    "title": "Other Expenses",
+    "add": "Add Expense",
+    "amount": "Amount",
+    "category": "Category",
+    "description": "Description"
+  },
+  "progress": {
+    "title": "Daily Progress",
+    "add": "Add Daily Progress",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "review": "Pending approval"
+  },
+  "settings": {
+    "language": "Language",
+    "english": "English",
+    "hindiComingLater": "Hindi — coming later",
+    "appearance": "Appearance",
+    "notifications": "Notifications"
+  }
+}

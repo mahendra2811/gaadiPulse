@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "forms": {
+    "tipper": {
+      "title": "Daily Tipper Progress",
+      "meterMode": "BOTH",
+      "fields": [
+        {
+          "key": "trips",
+          "label": "Number of Trips",
+          "type": "integer",
+          "required": true,
+          "min": 0,
+          "reportable": "SUM"
+        },
+        {
+          "key": "from",
+          "label": "Start Location",
+          "type": "start_location",
+          "required": true
+        },
+        {
+          "key": "to",
+          "label": "Destination",
+          "type": "destination",
+          "required": true
+        },
+        {
+          "key": "material",
+          "label": "Material Type",
+          "type": "select",
+          "options": [
+            "Sand",
+            "Gravel",
+            "Stone",
+            "Other"
+          ]
+        }
+      ]
+    },
+    "excavator": {
+      "title": "Daily Machine Progress",
+      "meterMode": "HOURS",
+      "fields": [
+        {
+          "key": "site",
+          "label": "Work Site",
+          "type": "text",
+          "required": true
+        },
+        {
+          "key": "work",
+          "label": "Work Type",
+          "type": "select",
+          "options": [
+            "Digging",
+            "Loading",
+            "Levelling",
+            "Other"
+          ]
+        },
+        {
+          "key": "idle",
+          "label": "Idle Hours",
+          "type": "decimal",
+          "min": 0,
+          "reportable": "SUM"
+        }
+      ]
+    },
+    "tractor": {
+      "title": "Daily Tractor Progress",
+      "meterMode": "BOTH",
+      "fields": [
+        {
+          "key": "farm",
+          "label": "Farm / Site",
+          "type": "text"
+        },
+        {
+          "key": "acres",
+          "label": "Area Worked (acres)",
+          "type": "decimal",
+          "min": 0,
+          "reportable": "SUM"
+        },
+        {
+          "key": "attachment",
+          "label": "Attachment",
+          "type": "text"
+        }
+      ]
+    },
+    "taxi": {
+      "title": "Daily Taxi Progress",
+      "meterMode": "KM",
+      "fields": [
+        {
+          "key": "trips",
+          "label": "Number of Trips",
+          "type": "integer",
+          "min": 0,
+          "reportable": "SUM"
+        },
+        {
+          "key": "start",
+          "label": "From",
+          "type": "start_location"
+        },
+        {
+          "key": "end",
+          "label": "To",
+          "type": "destination"
+        }
+      ]
+    }
+  }
+}

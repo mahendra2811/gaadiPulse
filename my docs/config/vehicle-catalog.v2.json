@@ -1,0 +1,292 @@
+{
+  "version": 2,
+  "note": "Default meter modes are suggestions. The owner can select KM, HOURS or BOTH during vehicle creation.",
+  "categories": [
+    {
+      "id": "two_wheeler",
+      "label": "Two Wheelers",
+      "defaultMeterMode": "KM",
+      "subtypes": [
+        {
+          "id": "motorcycle",
+          "label": "Motorcycle",
+          "recommended": true,
+          "defaultMeterMode": "KM"
+        },
+        {
+          "id": "scooter",
+          "label": "Scooter",
+          "recommended": true,
+          "defaultMeterMode": "KM"
+        },
+        {
+          "id": "electric_scooter",
+          "label": "Electric Scooter",
+          "recommended": true,
+          "defaultMeterMode": "KM"
+        },
+        {
+          "id": "electric_motorcycle",
+          "label": "Electric Motorcycle",
+          "recommended": false,
+          "defaultMeterMode": "KM"
+        },
+        {
+          "id": "moped",
+          "label": "Moped",
+          "recommended": true,
+          "defaultMeterMode": "KM"
+        },
+        {
+          "id": "sports_motorcycle",
+          "label": "Sports Motorcycle",
+          "recommended": false,
+          "defaultMeterMode": "KM"
+        },
+        {
+          "id": "cruiser_motorcycle",
+          "label": "Cruiser Motorcycle",
+          "recommended": false,
+          "defaultMeterMode": "KM"
+        },
+        {
+          "id": "touring_motorcycle",
+          "label": "Touring Motorcycle",
+          "recommended": false,
+          "defaultMeterMode": "KM"
+        }
+      ]
+    },
+    {
+      "id": "four_wheeler",
+      "label": "Four Wheelers",
+      "defaultMeterMode": "KM",
+      "subtypes": [
+        {
+          "id": "hatchback",
+          "label": "Hatchback",
+          "recommended": true,
+          "defaultMeterMode": "KM"
+        },
+        {
+          "id": "sedan",
+          "label": "Sedan",
+          "recommended": true,
+          "defaultMeterMode": "KM"
+        },
+        {
+          "id": "compact_suv",
+          "label": "Compact SUV",
+          "recommended": true,
+          "defaultMeterMode": "KM"
+        },
+        {
+          "id": "suv",
+          "label": "SUV",
+          "recommended": true,
+          "defaultMeterMode": "KM"
+        },
+        {
+          "id": "muv",
+          "label": "MUV / MPV",
+          "recommended": true,
+          "defaultMeterMode": "KM"
+        },
+        {
+          "id": "jeep",
+          "label": "Jeep / Off-road",
+          "recommended": true,
+          "defaultMeterMode": "KM"
+        },
+        {
+          "id": "electric_car",
+          "label": "Electric Car",
+          "recommended": false,
+          "defaultMeterMode": "KM"
+        },
+        {
+          "id": "hybrid_car",
+          "label": "Hybrid Car",
+          "recommended": false,
+          "defaultMeterMode": "KM"
+        }
+      ]
+    },
+    {
+      "id": "commercial",
+      "label": "Commercial",
+      "defaultMeterMode": "KM",
+      "subtypes": [
+        {
+          "id": "auto",
+          "label": "Auto / E-rickshaw",
+          "recommended": true,
+          "defaultMeterMode": "KM"
+        },
+        {
+          "id": "taxi",
+          "label": "Taxi",
+          "recommended": true,
+          "defaultMeterMode": "KM"
+        },
+        {
+          "id": "van",
+          "label": "Van",
+          "recommended": true,
+          "defaultMeterMode": "KM"
+        },
+        {
+          "id": "pickup",
+          "label": "Pickup",
+          "recommended": true,
+          "defaultMeterMode": "KM"
+        },
+        {
+          "id": "mini_truck",
+          "label": "Mini Truck",
+          "recommended": false,
+          "defaultMeterMode": "KM"
+        },
+        {
+          "id": "light_truck",
+          "label": "Light Truck",
+          "recommended": false,
+          "defaultMeterMode": "KM"
+        },
+        {
+          "id": "medium_truck",
+          "label": "Medium Truck",
+          "recommended": false,
+          "defaultMeterMode": "KM"
+        },
+        {
+          "id": "truck",
+          "label": "Truck",
+          "recommended": true,
+          "defaultMeterMode": "KM"
+        },
+        {
+          "id": "heavy_truck",
+          "label": "Heavy Truck",
+          "recommended": false,
+          "defaultMeterMode": "KM"
+        },
+        {
+          "id": "tipper",
+          "label": "Tipper / Dumper",
+          "recommended": true,
+          "defaultMeterMode": "BOTH"
+        },
+        {
+          "id": "bus",
+          "label": "Bus",
+          "recommended": true,
+          "defaultMeterMode": "KM"
+        },
+        {
+          "id": "tanker",
+          "label": "Tanker",
+          "recommended": false,
+          "defaultMeterMode": "BOTH"
+        },
+        {
+          "id": "container_truck",
+          "label": "Container Truck",
+          "recommended": false,
+          "defaultMeterMode": "KM"
+        },
+        {
+          "id": "trailer",
+          "label": "Trailer",
+          "recommended": false,
+          "defaultMeterMode": "KM"
+        }
+      ]
+    },
+    {
+      "id": "agriculture_heavy",
+      "label": "Agricultural & Heavy",
+      "defaultMeterMode": "BOTH",
+      "subtypes": [
+        {
+          "id": "tractor",
+          "label": "Tractor",
+          "recommended": true,
+          "defaultMeterMode": "BOTH"
+        },
+        {
+          "id": "harvester",
+          "label": "Harvester",
+          "recommended": false,
+          "defaultMeterMode": "HOURS"
+        },
+        {
+          "id": "excavator",
+          "label": "Excavator",
+          "recommended": true,
+          "defaultMeterMode": "HOURS"
+        },
+        {
+          "id": "backhoe_loader",
+          "label": "Backhoe / JCB",
+          "recommended": true,
+          "defaultMeterMode": "BOTH"
+        },
+        {
+          "id": "loader",
+          "label": "Wheel Loader",
+          "recommended": true,
+          "defaultMeterMode": "BOTH"
+        },
+        {
+          "id": "crane",
+          "label": "Crane",
+          "recommended": true,
+          "defaultMeterMode": "BOTH"
+        },
+        {
+          "id": "generator",
+          "label": "Generator",
+          "recommended": true,
+          "defaultMeterMode": "HOURS"
+        },
+        {
+          "id": "compressor",
+          "label": "Compressor",
+          "recommended": false,
+          "defaultMeterMode": "HOURS"
+        },
+        {
+          "id": "forklift",
+          "label": "Forklift",
+          "recommended": false,
+          "defaultMeterMode": "HOURS"
+        },
+        {
+          "id": "road_roller",
+          "label": "Road Roller",
+          "recommended": false,
+          "defaultMeterMode": "BOTH"
+        },
+        {
+          "id": "bulldozer",
+          "label": "Bulldozer",
+          "recommended": false,
+          "defaultMeterMode": "HOURS"
+        },
+        {
+          "id": "grader",
+          "label": "Grader",
+          "recommended": false,
+          "defaultMeterMode": "BOTH"
+        },
+        {
+          "id": "other",
+          "label": "Other Vehicle / Machine",
+          "recommended": true,
+          "defaultMeterMode": "HOURS"
+        }
+      ]
+    }
+  ]
+}

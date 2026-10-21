@@ -1,0 +1,44 @@
+{
+  "brand": {
+    "name": "GaadiPulse",
+    "tagline": "Every Vehicle. Every Detail."
+  },
+  "colors": {
+    "forest": "#122C2A",
+    "emerald": "#147D69",
+    "mint": "#24C48E",
+    "canvas": "#F5F7F6",
+    "surface": "#FFFFFF",
+    "text": "#192725",
+    "muted": "#697672",
+    "error": "#C84141"
+  },
+  "spacingDp": [
+    4,
+    8,
+    12,
+    16,
+    20,
+    24,
+    32,
+    40
+  ],
+  "radiusDp": {
+    "input": 14,
+    "card": 18,
+    "tab": 26,
+    "sheet": 28
+  },
+  "dimensionDp": {
+    "tabHeight": 68,
+    "tabGutter": 18,
+    "tabBottomAboveInset": 14,
+    "ctaHeight": 56,
+    "tapMin": 48
+  },
+  "animationMs": {
+    "short": 180,
+    "normal": 220,
+    "long": 280
+  }
+}

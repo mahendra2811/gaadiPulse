@@ -4,24 +4,15 @@
     "strict": true,
     "noUncheckedIndexedAccess": false,
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     },
-    "types": [
-      "node",
-      "react"
-    ]
+    "types": ["node", "react"]
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    ".expo/types/**/*.ts",
-    "expo-env.d.ts"
-  ],
+  "include": ["**/*.ts", "**/*.tsx"],
   "exclude": [
     "node_modules",
     "my docs",
-    "config/app.config.example.ts"
+    "config/app.config.example.ts",
+    "supabase/functions"
   ]
 }

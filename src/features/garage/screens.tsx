@@ -1,3 +1,8 @@
+import { usePermissions } from '@/src/features/records/hooks';
+import { r } from '@/src/features/records/copy';
+import { Dashboard } from "@/src/features/dashboard/Dashboard";
+import { developmentReadings } from "@/src/features/development/repository";
+import { meterObservationSchema } from "@/src/lib/observations";
 import { useVehicleAccess } from "@/src/hooks/useVehicleAccess";
 import { useState } from "react";
 import { Image } from "react-native";
@@ -17,10 +22,10 @@ import {
   useToast,
 } from "@/src/components/ui";
 import { VehicleHeader } from "@/src/components/navigation/VehicleHeader";
-import { artwork } from "@/src/lib/assets";
+import { artwork, vehicleArt } from "@/src/lib/assets";
 import { t } from "@/src/lib/i18n";
 import { client } from "@/src/lib/supabase";
-import { useSession } from "@/src/features/auth/session";
+import { useSession, useAccountId } from "@/src/features/auth/session";
 export function Garage() {
   const query = useVehicles();
   const [search, setSearch] = useState("");
@@ -72,9 +77,11 @@ export function Garage() {
   );
 }
 export function VehicleDetails() {
+  const { development } = useSession();
   const { id } = useLocalSearchParams<{ id: string }>();
   const query = useVehicles();
   const vehicle = query.data?.find((v) => v.id === id);
+  const access=usePermissions(id);
   const qc = useQueryClient();
   const toast = useToast();
   const [error, setError] = useState("");
@@ -82,9 +89,9 @@ export function VehicleDetails() {
   const archive = async () => {
     setBusy(true);
     try {
-      await archiveVehicle(id, !vehicle?.archived_at);
+      await archiveVehicle(id, !vehicle?.archived_at, development);
       await qc.invalidateQueries();
-      toast(t("saved"));
+      toast(t("saved"), "success");
     } catch (e) {
       setError(String(e));
     } finally {
@@ -96,7 +103,7 @@ export function VehicleDetails() {
       {vehicle ? (
         <>
           <Image
-            source={artwork[vehicle.category]}
+            source={vehicleArt(vehicle.category, vehicle.subtype)}
             style={{ width: "100%", height: 180, resizeMode: "contain" }}
           />
           <AppText large>{vehicle.nickname || vehicle.model}</AppText>
@@ -110,6 +117,7 @@ export function VehicleDetails() {
           <AppText>{t(vehicle.role === "OWNER" ? "owner" : "pilot")}</AppText>
           <AppText muted>{t("roleInfo")}</AppText>
           <AppText muted>{t("noPhoto")}</AppText>
+          {(['fuel','expenses','progress','documents','reminders'] as const).filter(kind=>access.data?.[kind==='progress'?'progress.view':`${kind}.read`]).map(kind=><AppButton key={kind} secondary label={r(kind)} onPress={()=>router.push({pathname:'/records/[kind]',params:{kind,vehicle:id}})}/>)}
           {vehicle.role === "OWNER" && (
             <>
               <AppButton
@@ -143,18 +151,20 @@ export function VehicleDetails() {
 }
 export function Home() {
   const query = useActiveVehicle();
-  const { session } = useSession();
+  const { development } = useSession();
+  const user = useAccountId();
   const v = query.vehicle;
   const access = useVehicleAccess(v?.id);
   const readings = useQuery({
-    queryKey: [session?.user.id, v?.id, "meters"],
+    queryKey: [user, v?.id, "latest-observations"],
     enabled: !!v && access.data?.metersRead === true,
     queryFn: async () => {
+      if (development) return developmentReadings(v!.id);
       const { data, error } = await client().rpc("latest_meter_readings", {
         p_vehicle: v!.id,
       });
       if (error) throw error;
-      return data;
+      return meterObservationSchema.array().parse(data);
     },
   });
   return (
@@ -209,10 +219,7 @@ export function Home() {
             label={t("garage")}
             onPress={() => router.push("/garage")}
           />
-          <Card>
-            <AppText>{t("progress")}</AppText>
-            <AppText muted>{t("stage3")}</AppText>
-          </Card>
+          <Dashboard />
         </>
       ) : (
         !query.isPending && (

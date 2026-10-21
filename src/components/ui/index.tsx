@@ -1,3 +1,4 @@
+import { successFeedback } from "@/src/lib/feedback";
 import React, {
   createContext,
   useContext,
@@ -24,7 +25,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import NetInfo from "@react-native-community/netinfo";
+import { addEventListener } from "@react-native-community/netinfo";
 import { useTheme } from "@/src/lib/theme";
 import { t, type TranslationKey } from "@/src/lib/i18n";
 import { artwork } from "@/src/lib/assets";
@@ -240,7 +241,7 @@ export function Screen({
   const c = useTheme();
   const [offline, setOffline] = useState(false);
   React.useEffect(
-    () => NetInfo.addEventListener((s) => setOffline(s.isConnected === false)),
+    () => addEventListener((s) => setOffline(s.isConnected === false)),
     [],
   );
   return (
@@ -258,10 +259,11 @@ export function Screen({
         </View>
       )}
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={{ flex: 1, minHeight: 0 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView
+          style={{ flex: 1, minHeight: 0 }}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ padding: 20, gap: 18, paddingBottom: 140 }}
         >
@@ -272,6 +274,7 @@ export function Screen({
             edges={["bottom"]}
             style={{
               backgroundColor: c.background,
+              flexShrink: 0,
               padding: 16,
               borderTopWidth: 1,
               borderColor: c.line,
@@ -372,12 +375,18 @@ export function ConfirmDialog(title: string, body: string, action: () => void) {
     { text: t("continue"), onPress: action },
   ]);
 }
-const ToastContext = createContext<(message: string) => void>(() => {});
+export type ToastType = "success" | "error" | "warning" | "info";
+const ToastContext = createContext<(message: string, type?: ToastType) => void>(
+  () => {},
+);
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [message, setMessage] = useState("");
+  const [type, setType] = useState<ToastType>("info");
   return (
     <ToastContext.Provider
-      value={(m) => {
+      value={(m, type = "info") => {
+        setType(type);
+        if (type === "success") void successFeedback();
         setMessage(m);
         AccessibilityInfo.announceForAccessibility(m);
       }}
@@ -390,7 +399,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             top: 60,
             left: 16,
             right: 16,
-            backgroundColor: "#122C2A",
+            backgroundColor:
+              type === "error"
+                ? "#6E2431"
+                : type === "warning"
+                  ? "#6A4A10"
+                  : "#122C2A",
             padding: 16,
             borderRadius: 16,
           }}
@@ -403,7 +417,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             onPress={() => setMessage("")}
             style={{ minHeight: 44, justifyContent: "center" }}
           >
-            <Text style={{ color: "#8CE2BF" }}>{t("continue")}</Text>
+            <Text style={{ color: "#8CE2BF" }}>{t("dismiss")}</Text>
           </Pressable>
         </View>
       )}

@@ -1,39 +1,37 @@
-# Security architecture and adversarial testing
+# Security architecture and current verification boundary
 
-**Backend authority:** Supabase PostgreSQL Row Level Security plus server-side RPC/Edge Functions for privileged operations. App UI permissions are cosmetic only.
+## Backend authority
 
-## Identity and membership
-- Account ID is `auth.uid()`; account role is **not global**. Membership `(vehicle_id,user_id)` has role `OWNER` or `PILOT`, member-specific permission overrides and active/revoked state.
-- Multiple Owners/Pilots allowed. One protected administrative Owner; never auto-remove last Owner.
-- Owner adds email to a vehicle. If verified account matches, membership is created immediately. If not, a pending access grant is held, then automatically resolved after that person verifies a matching email during trusted login. No acceptance required. Client MUST NOT specify `user_id` or claim verified email.
-- The grant RPC validates owner membership, role changes, input email and target profile; it stores/audits updates. Access resolution reads `auth.users` server-side with a verified identity, not a value asserted in a REST request.
+Supabase Auth is the identity authority; PostgreSQL RLS and fixed-search-path SECURITY DEFINER RPCs enforce business rules. Roles belong to `(vehicle_id,user_id)`, not profiles. Helpers read real `auth.users` verification state. No grant resolution trusts a submitted user ID, client email or editable metadata.
 
-## Financial privacy
-A Pilot permitted to add a fuel entry might not have permission to read all fuel expenses. SQL policies enforce EACH operation, but PostgreSQL RLS is row-level, not column-level. Sensitive amounts/owner notes require selective views/RPCs or separate protected tables. Avoid `SELECT *` with only a client-side hide toggle.
+Every application public table enables RLS. Vehicle/member/grant mutations and financial/progress workflows are RPC-only. Authenticated direct INSERT/UPDATE/DELETE grants are absent for protected entities. Catalog/category mutations are Owner RPCs. Audits and operation receipts are server-controlled.
 
-## Audit and revocation
-- All membership grants/revocations, form publishes, reviews, and financial edits logged with actor and timestamp.
-- Revocation prevents new server reads and writes. Previously downloaded local/offline data cannot be cryptographically revoked; limit cache lifetime, wipe scoped cache on authorization change and disclose limitations.
-- Pending offline writes by revoked users rejected on reconnect; remain privately accessible as rejected drafts if appropriate, without leaking live remote data.
+Owners can assign existing verified users immediately or leave an unresolved normalized-email grant for later verified sign-in. No invitation acceptance is involved. Membership updates serialize on the vehicle, protect primary/final Owner, validate permission keys, and audit changes. Revocation blocks future writes and cache refresh. Reassignment updates/removes the previous assignment under the same protections.
 
-## Test matrix
-| Scenario | Expected result |
-|---|---|
-| A Owner V1 and Pilot V2 | Correct per-vehicle capabilities |
-| B co-Owner V1 | Authorized Owner operations within protected admin rules |
-| C Pilot no expense.read | Expense totals unavailable through REST/RPC/export |
-| D outsider guesses V1 UUID | Denied on all tables, storage and RPCs |
-| E unverified address appears in grant | No membership until verified login |
-| Owner grants C verified email | C automatically sees V1 after session refresh |
-| Owner revokes C offline | Subsequent sync rejects unauthorized writes |
-| C tries to set role OWNER via REST | Denied |
-| Attempt to remove last Owner | Denied atomically |
-| Pilot modifies `vehicle_id` in request | Denied |
-| User attempts to access documents for V2 | Denied unless explicit permission |
-| Auth logout with cached receipts | Sensitive authorized cache removed |
+## Financial and custom-field privacy
 
-## Critical Supabase practices
-- Expose only project URL + anon/publishable key on Android. Service role key and email service credentials stay in trusted functions only.
-- Check RLS on INSERT/UPDATE/DELETE, not only SELECT. Test policies with real authenticated users and direct DB REST calls.
-- Enforce client idempotency tokens for fuel, expense and progress writes. Sign exports for correct user and vehicle.
-- Use rate limiting on grant resolution/OTP endpoints; avoid account enumeration via email lookup UI.
+Fuel and expense SELECT policies require their own read permissions; create permission does not imply read. Expense line items and maintenance share their parent financial scope. Reports use only permitted records and reauthorize real exports. Money is integer paise; no service record or report-only progress currency is automatically counted as a second transaction.
+
+Row security cannot redact selected JSON fields. Therefore direct authenticated SELECT on `daily_progress` and `progress_form_versions` is revoked. `read_progress_records` limits Pilots to their own submissions and removes Owner-only answers. `read_form_versions` removes private field definitions for Pilots. Private financial transaction notes are not copied into generally readable meter observations. PDF HTML is escaped and CSV cells protect formula-like values.
+
+## Integrity
+
+Writes validate units, quantities, dates, readings, line-item sums, EMI breakdowns, field types and date policies. Immutable form versions preserve historical interpretation. Revision/updated_at comparisons reject stale edits; payload hashes bind UUID operations to their original content. No destructive reset is used.
+
+Approved progress adds independent observations; same vehicle/type/time conflicts require Owner review. Corrections retain old observations as CORRECTED and create replacements, or retract an invalid observation. A retracted timestamp is never silently backdated to a guessed time. Meter reset segments invalidate affected consumption intervals.
+
+## Device and account lifecycle
+
+SecureStore holds refresh tokens. SQLite caches have account/vehicle scopes and expiring authorization leases. Explicit logout clears user data; session expiry retains personal drafts while clearing live sensitive caches. Offline copies cannot be remotely recalled; see SYNC_PROTOCOL.md. Debug bypass is guarded by __DEV__ and writes only to a separate local namespace.
+
+Deletion requests require a verified account and archiving protected administered vehicles first. Access is revoked immediately; new writes/memberships are blocked. The separately authorized operator Edge job bans/anonymizes the account and clears Auth identities/sessions after the configured retention period. Operational attribution UUIDs and shared ledger history remain under the operator's retention policy.
+
+No upload buckets or public files are configured. Deferred attachment metadata cannot contain a file path and is not client-writable. No GPS/location, camera, microphone or broad storage permission is requested for these features. Export uses app cache and the system share sheet.
+
+## Secrets
+
+The client receives only project URL and publishable key. Service-role and deletion-job secret exist only as server environment variables. No private key, provider secret or signing credential belongs in .env public fields, a bundle, logs or an export.
+
+## Verification
+
+The Stage 1 baseline PostgreSQL fixture tests passed earlier. The later ledger, private JSON redaction, sync, correction and deletion migrations have NOT been executed or tested, per the user instruction. No current release-ready or live-provider claim is made. Run the full adversarial matrix in QA_TEST_MATRIX.md against all migrations and real Supabase REST/JWT sessions before release.

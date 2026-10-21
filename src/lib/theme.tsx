@@ -32,3 +32,6 @@ export function useTheme() {
   ];
 }
 export const tokens = { space: 4, radius: 20, controlHeight: 52, motion: 200 };
+export function useThemeMode() {
+  return useContext(ThemeContext);
+}

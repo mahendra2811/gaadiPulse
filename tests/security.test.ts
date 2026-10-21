@@ -1,5 +1,3 @@
-// PGlite is a generated bundle that exceeds eslint import/namespace parser depth.
-// eslint-disable-next-line import/namespace
 import { PGlite } from "@electric-sql/pglite";
 import { readFileSync } from "node:fs";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -182,5 +180,55 @@ describe("SQL foundation on embedded PostgreSQL (Supabase integration still requ
         [vehicle],
       ),
     ).rejects.toThrow();
+  });
+  it("retries create operations without duplicate vehicles or readings", async () => {
+    await actor(owner);
+    const result = await rpc(
+      "select public.save_vehicle('{}','10000000-0000-4000-8000-000000000001') as id",
+    );
+    expect(result.rows[0]).toMatchObject({ id: vehicle });
+    expect((await rpc("select * from public.vehicles")).rows).toHaveLength(1);
+    expect(
+      (await rpc("select * from public.meter_readings")).rows,
+    ).toHaveLength(2);
+  });
+  it("rejects stale vehicle edits and outsider edits", async () => {
+    await actor(owner);
+    await expect(
+      rpc(
+        "select public.save_vehicle($1::jsonb,'20000000-0000-4000-8000-000000000001',$2,'2020-01-01')",
+        [JSON.stringify({ timezone: "Asia/Kolkata" }), vehicle],
+      ),
+    ).rejects.toThrow("CONFLICT");
+    await actor(outsider);
+    await expect(
+      rpc(
+        "select public.save_vehicle($1::jsonb,'20000000-0000-4000-8000-000000000002',$2,null)",
+        [JSON.stringify({ timezone: "Asia/Kolkata" }), vehicle],
+      ),
+    ).rejects.toThrow("PERMISSION_DENIED");
+  });
+  it("rolls back invalid baseline writes atomically", async () => {
+    await actor(owner);
+    const input = {
+      nickname: "Invalid",
+      registration_number: "",
+      category: "two_wheeler",
+      subtype: "motorcycle",
+      brand: "",
+      model: "",
+      energy_type: "PETROL",
+      meter_mode: "KM",
+      timezone: "Asia/Kolkata",
+      km: "-1",
+      observed_at: "2026-01-01T10:00:00Z",
+    };
+    await expect(
+      rpc(
+        "select public.save_vehicle($1::jsonb,'30000000-0000-4000-8000-000000000001')",
+        [JSON.stringify(input)],
+      ),
+    ).rejects.toThrow();
+    expect((await rpc("select * from public.vehicles")).rows).toHaveLength(1);
   });
 });

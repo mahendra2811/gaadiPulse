@@ -1,4 +1,7 @@
-import { Image } from "react-native";
+import { useMembershipUpdates } from "@/src/hooks/useMembershipUpdates";
+import { useOutboxSync } from "@/src/lib/sync/hooks";
+import { authDestination } from "@/src/features/auth/routing";
+import { Image, View, Text } from "react-native";
 import { artwork } from "@/src/lib/assets";
 import { useConnectivity } from "@/src/lib/connectivity";
 import { ErrorBoundary } from "@/src/components/ui/ErrorBoundary";
@@ -16,6 +19,8 @@ import {
   Screen,
   ErrorState,
   Skeleton,
+  AppText,
+  AppButton,
 } from "@/src/components/ui";
 import { t } from "@/src/lib/i18n";
 const query = new QueryClient({
@@ -23,27 +28,32 @@ const query = new QueryClient({
 });
 function Routes() {
   useConnectivity();
+  useMembershipUpdates();
+  const syncError = useOutboxSync();
   const auth = useSession();
   const profile = useProfile();
   const router = useRouter();
   const segments = useSegments();
   const pathname = usePathname();
   useEffect(() => {
-    if (auth.loading || auth.error) return;
+    if (auth.loading || (auth.error && !auth.session && !auth.development))
+      return;
     const path = segments[0];
-    if (!auth.session && path !== "auth") router.replace("/auth/welcome");
+    if (!auth.session && !auth.development && path !== "auth")
+      router.replace("/auth/welcome");
     if (
-      auth.session &&
+      (auth.session || auth.development) &&
       path === "auth" &&
       pathname !== "/auth/legal" &&
       !profile.isPending
     )
       router.replace(
-        profile.data?.display_name ? "/(tabs)" : "/settings/profile",
+        authDestination(true, true, !!profile.data?.display_name)!,
       );
   }, [
     auth.loading,
     auth.session,
+    auth.development,
     auth.error,
     profile.isPending,
     profile.data?.display_name,
@@ -63,7 +73,7 @@ function Routes() {
         </Screen>
       </ThemeContext.Provider>
     );
-  if (auth.error)
+  if (auth.error && !auth.session && !auth.development)
     return (
       <Screen title={t("sessionError")}>
         <ErrorState message={auth.error} retry={auth.retry} />
@@ -73,6 +83,28 @@ function Routes() {
     <ThemeContext.Provider value={profile.data?.theme ?? "system"}>
       <StatusBar style="auto" />
       <ToastProvider>
+        {auth.development && (
+          <View style={{ backgroundColor: "#122C2A", padding: 8 }}>
+            <Text style={{ color: "#BDF5DC", textAlign: "center" }}>
+              {t("developmentBanner")}
+            </Text>
+          </View>
+        )}
+        {auth.error && (
+          <View style={{ padding: 8 }}>
+            <AppText>{auth.error}</AppText>
+            <AppButton label={t("retry")} onPress={auth.retry} />
+          </View>
+        )}
+        {syncError && (
+          <View style={{ padding: 8 }}>
+            <AppText>{syncError}</AppText>
+            <AppButton
+              label={t("sync")}
+              onPress={() => router.push("/settings/sync")}
+            />
+          </View>
+        )}
         <Stack screenOptions={{ headerShown: false }} />
       </ToastProvider>
     </ThemeContext.Provider>

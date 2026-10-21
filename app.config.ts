@@ -8,6 +8,16 @@ const config: ExpoConfig = {
   userInterfaceStyle: "automatic",
   icon: "./assets/android-store-icon.png",
   android: {
+    softwareKeyboardLayoutMode: "resize",
+    blockedPermissions: [
+      "android.permission.READ_EXTERNAL_STORAGE",
+      "android.permission.WRITE_EXTERNAL_STORAGE",
+      "android.permission.ACCESS_FINE_LOCATION",
+      "android.permission.ACCESS_COARSE_LOCATION",
+      "android.permission.ACCESS_BACKGROUND_LOCATION",
+      "android.permission.RECORD_AUDIO",
+      "android.permission.CAMERA",
+    ],
     package: process.env.ANDROID_PACKAGE ?? "com.pooniya.gaadipulse",
     adaptiveIcon: {
       foregroundImage: "./assets/adaptive-icon-foreground.png",
@@ -17,6 +27,11 @@ const config: ExpoConfig = {
   plugins: [
     "expo-router",
     "expo-font",
+    "expo-sharing",
+    [
+      "expo-notifications",
+      { icon: "./assets/notification-icon.png", color: "#147D69" },
+    ],
     "expo-secure-store",
     "expo-sqlite",
     [

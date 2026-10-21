@@ -1,3 +1,11 @@
+import { cancelSynchronization } from '@/src/features/records/api';
+import { clearDeviceNotifications } from "@/src/features/reminders/notifications";
+import { clearOperations } from "@/src/lib/sync/outbox";
+import { removeUserLocal, removeUserCaches } from "@/src/lib/localStore";
+import {
+  DEVELOPMENT_USER,
+  requireDevelopment,
+} from "@/src/features/development/repository";
 import {
   createContext,
   useContext,
@@ -14,27 +22,25 @@ import { clearUserData } from "@/src/lib/db";
 import { useUI } from "@/src/state/ui";
 type AuthState = {
   session: Session | null;
+  development: boolean;
+  startDevelopment: () => Promise<void>;
   loading: boolean;
   error: string | null;
   retry: () => void;
   signOut: () => Promise<void>;
 };
-const Context = createContext<AuthState>({
-  session: null,
-  loading: true,
-  error: null,
-  retry: () => {},
-  signOut: async () => {},
-});
+const Context=createContext<AuthState|null>(null);
 export function SessionProvider({ children }: { children: ReactNode }) {
   const query = useQueryClient();
   const previousUser = useRef<string | null>(null);
   const authGeneration = useRef(0);
+  const [development, setDevelopment] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(!!supabase);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
+    if (development) return;
     if (!supabase) return;
     let alive = true;
     const apply = async (next: Session | null) => {
@@ -44,13 +50,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       try {
         if (previousUser.current && previousUser.current !== next?.user.id) {
           await query.cancelQueries();
-          await clearUserData(previousUser.current);
+          await removeUserCaches(previousUser.current);
+          await clearDeviceNotifications();
           query.clear();
           useUI.getState().setActive(null);
         }
+        if (next && alive && generation === authGeneration.current)
+          setSession(next);
         if (next) {
           const result = await client().rpc("resolve_my_access_grants");
-          if (result.error) throw result.error;
+          if (result.error) throw new Error(result.error.message);
         }
         if (alive && generation === authGeneration.current) {
           previousUser.current = next?.user.id ?? null;
@@ -91,7 +100,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       data.subscription.unsubscribe();
       subscription.remove();
     };
-  }, [attempt, query]);
+  }, [attempt, query, development]);
   useEffect(
     () =>
       useUI.subscribe((state) => {
@@ -103,14 +112,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [session],
   );
   const signOut = async () => {
-    const user = session?.user.id;
+    cancelSynchronization();
+    const user =
+      session?.user.id ?? (development ? DEVELOPMENT_USER : undefined);
     await query.cancelQueries();
+    await clearDeviceNotifications();
     if (user) {
       await clearUserData(user);
+      await clearOperations(user);
+      await removeUserLocal(user);
       await secureStorage.removeItem(`active.${user}`);
     }
-    const { error: err } = await client().auth.signOut();
-    if (err) throw err;
+    if (!development) {
+      const { error: err } = await client().auth.signOut();
+      if (err) throw err;
+    }
+    setDevelopment(false);
     query.clear();
     useUI.getState().setActive(null);
     setSession(null);
@@ -119,6 +136,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     <Context.Provider
       value={{
         session,
+        development,
+        startDevelopment: async () => {
+          requireDevelopment();
+          cancelSynchronization();
+          await query.cancelQueries();
+          query.clear();
+          setError(null);
+          setLoading(false);
+          setSession(null);
+          useUI.getState().setActive(null);
+          setDevelopment(true);
+        },
         loading,
         error,
         retry: () => setAttempt((v) => v + 1),
@@ -129,4 +158,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     </Context.Provider>
   );
 }
-export const useSession = () => useContext(Context);
+export function useSession(){const state=useContext(Context);if(!state)throw new Error("SessionProvider is unavailable");return state;}
+
+export function useAccountId() {
+  const { session, development } = useSession();
+  return session?.user.id ?? (development ? DEVELOPMENT_USER : null);
+}

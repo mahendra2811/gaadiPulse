@@ -50,11 +50,11 @@ create table public.operation_receipts (
  operation_id uuid primary key, user_id uuid not null references auth.users(id), vehicle_id uuid not null references public.vehicles(id), created_at timestamptz not null default now()
 );
 create function public.is_vehicle_member(p_vehicle uuid) returns boolean language sql stable security definer set search_path='' as $$
- select exists(select 1 from public.vehicle_members where vehicle_id=p_vehicle and user_id=auth.uid() and status='ACTIVE'); $$;
+ select exists(select 1 from public.vehicle_members m join auth.users u on u.id=m.user_id where m.vehicle_id=p_vehicle and m.user_id=auth.uid() and m.status='ACTIVE' and u.email_confirmed_at is not null); $$;
 create function public.is_vehicle_owner(p_vehicle uuid) returns boolean language sql stable security definer set search_path='' as $$
- select exists(select 1 from public.vehicle_members where vehicle_id=p_vehicle and user_id=auth.uid() and status='ACTIVE' and role='OWNER'); $$;
+ select exists(select 1 from public.vehicle_members m join auth.users u on u.id=m.user_id where m.vehicle_id=p_vehicle and m.user_id=auth.uid() and m.status='ACTIVE' and m.role='OWNER' and u.email_confirmed_at is not null); $$;
 create function public.has_vehicle_permission(p_vehicle uuid,p_key text) returns boolean language sql stable security definer set search_path='' as $$
- select coalesce((select m.role='OWNER' or coalesce((m.permission_overrides->>p_key)::boolean,(s.pilot_permissions->>p_key)::boolean,false)
+ select public.is_vehicle_member(p_vehicle) and coalesce((select m.role='OWNER' or coalesce((m.permission_overrides->>p_key)::boolean,(s.pilot_permissions->>p_key)::boolean,false)
  from public.vehicle_members m join public.vehicle_settings s using(vehicle_id) where m.vehicle_id=p_vehicle and m.user_id=auth.uid() and m.status='ACTIVE'),false); $$;
 create function public.require_verified() returns uuid language plpgsql stable security definer set search_path='' as $$
  begin
@@ -106,6 +106,7 @@ create function public.set_vehicle_membership(p_vehicle uuid,p_user uuid,p_role 
  begin perform public.require_verified(); perform 1 from public.vehicles where id=p_vehicle for update;
  if not public.is_vehicle_owner(p_vehicle) then raise exception 'PERMISSION_DENIED' using errcode='42501'; end if;
  select * into target from public.vehicle_members where vehicle_id=p_vehicle and user_id=p_user;
+ if p_status='ACTIVE' and not exists(select 1 from auth.users where id=p_user and email_confirmed_at is not null) then raise exception 'EMAIL_NOT_VERIFIED'; end if;
  if target.is_primary_admin and (p_role<>'OWNER' or p_status<>'ACTIVE') then raise exception 'PRIMARY_ADMIN_PROTECTED'; end if;
  if target.role='OWNER' and target.status='ACTIVE' and (p_role<>'OWNER' or p_status<>'ACTIVE') and (select count(*) from public.vehicle_members where vehicle_id=p_vehicle and role='OWNER' and status='ACTIVE')<=1 then raise exception 'LAST_OWNER_PROTECTED'; end if;
  insert into public.vehicle_members(vehicle_id,user_id,role,status,permission_overrides,created_by) values(p_vehicle,p_user,p_role,p_status,p_permissions,auth.uid()) on conflict(vehicle_id,user_id) do update set role=excluded.role,status=excluded.status,permission_overrides=excluded.permission_overrides;
@@ -164,7 +165,7 @@ create policy settings_member on public.vehicle_settings for select to authentic
 create policy meters_permission on public.meter_readings for select to authenticated using(public.has_vehicle_permission(vehicle_id,'meters.read'));
 create policy audit_owner on public.audit_events for select to authenticated using(public.is_vehicle_owner(vehicle_id));
 -- Functions are executable only by authenticated users; trigger/internal helpers are private.
-revoke execute on all functions in schema public from public,anon,authenticated;
+revoke execute on function public.is_vehicle_member(uuid),public.is_vehicle_owner(uuid),public.has_vehicle_permission(uuid,text),public.require_verified(),public.create_profile(),public.profile_guard(),public.save_vehicle(jsonb,uuid,uuid,timestamptz),public.archive_vehicle(uuid,boolean),public.set_vehicle_membership(uuid,uuid,text,text,jsonb),public.resolve_my_access_grants(),public.grant_vehicle_access(uuid,text,text,jsonb),public.revoke_vehicle_access(uuid,uuid),public.list_my_vehicles() from public,anon,authenticated;
 grant execute on function public.is_vehicle_member(uuid),public.is_vehicle_owner(uuid),public.has_vehicle_permission(uuid,text),public.list_my_vehicles(),public.save_vehicle(jsonb,uuid,uuid,timestamptz),public.archive_vehicle(uuid,boolean),public.resolve_my_access_grants(),public.grant_vehicle_access(uuid,text,text,jsonb),public.set_vehicle_membership(uuid,uuid,text,text,jsonb),public.revoke_vehicle_access(uuid,uuid) to authenticated;
 create function public.latest_meter_readings(p_vehicle uuid) returns setof public.meter_readings language sql stable security invoker set search_path='' as $$
  select distinct on (reading_type) * from public.meter_readings where vehicle_id=p_vehicle order by reading_type,observed_at desc,entered_at desc; $$;

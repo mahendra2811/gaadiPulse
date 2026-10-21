@@ -1,3 +1,4 @@
+import { useSession } from "./session";
 import { useEffect, useState } from "react";
 import { Image } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
@@ -15,6 +16,8 @@ import { t } from "@/src/lib/i18n";
 import { env } from "@/src/lib/env";
 import { googleSignIn, sendOtp, verifyOtp } from "./api";
 export function Welcome() {
+  const auth = useSession();
+  const [devError, setDevError] = useState("");
   const [page, setPage] = useState(0);
   const titles = [t("intro1"), t("intro2"), t("intro3")];
   const bodies = [t("introBody1"), t("introBody2"), t("introBody3")];
@@ -37,6 +40,16 @@ export function Welcome() {
       <AppText large>{titles[page]}</AppText>
       <AppText muted>{bodies[page]}</AppText>
       <AppText>{`${page + 1} / 3`}</AppText>
+      {__DEV__ && (
+        <AppButton
+          secondary
+          label={t("developmentContinue")}
+          onPress={() =>
+            void auth.startDevelopment().catch((e) => setDevError(String(e)))
+          }
+        />
+      )}
+      {!!devError && <AppText>{devError}</AppText>}
       <AppButton
         secondary
         label={t("login")}
@@ -51,6 +64,7 @@ export function Welcome() {
   );
 }
 export function Login() {
+  const auth = useSession();
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -67,6 +81,14 @@ export function Login() {
   };
   return (
     <Screen title={t("login")} loading={busy}>
+      {__DEV__ && (
+        <AppButton
+          secondary
+          label={t("developmentContinue")}
+          disabled={busy}
+          onPress={() => void run(auth.startDevelopment)}
+        />
+      )}
       {!env ? (
         <Card>
           <AppText large>{t("configTitle")}</AppText>

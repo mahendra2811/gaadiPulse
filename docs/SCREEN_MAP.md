@@ -1,58 +1,34 @@
-# Screen inventory, content and permissions
+# Implemented route and permission map
 
-All screens are planned; Codex should implement with reusable screens/sheets where sensible. **R** = accessible to authenticated assigned Owner/Pilot if feature permission allows, **O** = Owner/admin, **A** = all.
+Composed screens are reused for related modules; no empty files are counted as destinations. Four primary tabs persist. Other forms/details open outside the tabs.
 
-| # | Route / view | Access | Required content and actions |
-|---|---|---|---|
-| 1 | Splash | A | Logo, session restoration, actual init loading, fallback |
-| 2 | Welcome / onboarding | A | 3 illustrations, benefit narrative, skip/get started |
-| 3 | Sign-in | A | Google sign in, email OTP, failure/retry |
-| 4 | OTP verification | A | Code, resend cooldown, wrong/expired code |
-| 5 | Profile | A | Name, language, settings |
-| 6 | First garage setup | A | Assigned vehicles auto-resolved by verified email / Add vehicle |
-| 7 | My Garage | R | Owned/assigned vehicle list, role badge, add/new |
-| 8 | Vehicle category | O | Two-wheeler, four-wheeler, commercial, agricultural/heavy |
-| 9 | Vehicle subtype | O | Bike, scooter, car subtype, pickup, tipper, tractor, JCB |
-| 10 | Brand/model | O | Search, optional catalog, Other/manual |
-| 11 | Vehicle details | O | Nickname, registration optional, make/model, fuel type, timezone |
-| 12 | Meter mode | O | KM, HOURS, BOTH; optional initial readings |
-| 13 | Vehicle profile/edit | R/O | Read record, edit if Owner, archive w/ protection |
-| 14 | Home | R | User's role, selected vehicle, metrics/permissions and actions |
-| 15 | Vehicle switcher sheet | R | Assigned vehicles, selection and role |
-| 16 | Add daily progress | R (submit) | Dynamic vehicle form, allowed date, meter optional, Save |
-| 17 | Progress history | R (view) | Date range, approval badges, submitter info when authorized |
-| 18 | Progress detail | R (view) | Versioned answers, meter observations, audit/status |
-| 19 | Edit progress | R (own edit or O) | Policy window, schema version, correction details |
-| 20 | Progress review | O | Approve/reject/request correction |
-| 21 | Add meter reading | R (configured) | Observed timestamp, KM/HOURS/BOTH, optional values |
-| 22 | Fuel tab overview | R (fuel.read) | Statistics, filter, recent history |
-| 23 | Add fuel | R (fuel.create) | Vehicle below header, amount, quantity, price, full/partial, optional meters |
-| 24 | Fuel history | R | Paginated logs, pending meter badge |
-| 25 | Fuel detail/edit | R own or O | Read, edit, confirm delete, audit, remarks |
-| 26 | Fuel analytics | R (reports.read) | Qualifying intervals and truthful unknown states |
-| 27 | Expenses tab overview | R (expenses.read) | Non-fuel summaries, category tabs, search |
-| 28 | Add expense | R (expenses.create) | Amount, category, date, adaptive details, optional meter |
-| 29 | Expense history | R | Paginated/filterable records |
-| 30 | Expense detail/edit | R own or O | Line items, corrections, link service/reminder |
-| 31 | Expense analytics | R (reports.read) | Cash vs operating, EMI principal handling |
-| 32 | Members | O | Owners/Pilots, access, primary admin protection |
-| 33 | Grant access | O | Verified-email assignment, no acceptance required |
-| 34 | Member permissions | O | Vehicle defaults + individual overrides, revoke |
-| 35 | Progress settings | O | Submission window, approval mode, field controls |
-| 36 | Progress form builder | O | Reorder, add, edit, duplicate, remove fields, publish |
-| 37 | Custom field editor | O | Type, label, required, min/max, allowed choices |
-| 38 | Pilot form preview | O | Rendering of schema with current meter mode |
-| 39 | Form versions | O | Immutable versions, published/draft, archives |
-| 40 | More | R | Role-aware secondary pages, no hamburger |
-| 41 | Documents | R configured | Metadata/expiry, official external refs, no pretend file uploads |
-| 42 | Reminders | R configured | Date/meter/recurring, snooze/complete |
-| 43 | Reports/export | R (reports.read) | Validated CSV/JSON, accurate metrics |
-| 44 | App settings | A (signed in) | Language/theme/notifications/account/help |
-| 45 | Sync & backup | R | Current state, retry queue, local export, errors |
+| Route | Views and access |
+|---|---|
+| `/auth/welcome` | Three bundled onboarding illustrations, sign-in, legal content and debug-only local bypass |
+| `/auth/login`, `/auth/verify`, `/auth/callback` | Google PKCE, email OTP, resend/change-email and callback recovery |
+| `/auth/legal` | Real local pre-release Terms/Privacy text; operator review required |
+| `/(tabs)` | Per-vehicle Owner/Pilot home, vehicle context, monthly permitted spending, latest observations, progress, reminders and Owner actions |
+| `/(tabs)/fuel`, `/(tabs)/expenses` | Period/search/status history, local/pending badges, summary and authorized add/analysis |
+| `/(tabs)/more` | Role-aware garage, meters, progress, documents, reminders, maintenance, reports, members, form builder and settings |
+| `/garage` | Search owned/shared/archived vehicles and open profile |
+| `/garage/add`, `/garage/edit?id=…` | Six-step category/subtype/make/model/details/meter/review wizard, persistent drafts, authenticated save or separate local development repository |
+| `/garage/[id]` | Vehicle profile, Owner edit/archive/recover, per-vehicle role |
+| `/records/[kind]` | `fuel`, `expenses`, `meters`, `progress`, `documents`, `reminders` history, filters and paging |
+| `/records/[kind]/add` | Kind-specific transaction/metadata/progress form with vehicle card immediately below header; create/submit permission |
+| `/records/[kind]/[recordId]?vehicle=…` | Authorized detail, provenance, notes, edits, archive/recover, progress review or reminder completion/snooze |
+| `/records/[kind]/edit?id=…&vehicle=…` | Owner or authorized own-entry edit with revision conflict protection; existing vehicle fixed |
+| `/records/[kind]/analytics?vehicle=…` | Report-authorized period totals, expense breakdowns, full-to-full fuel intervals; unknown metrics remain unknown |
+| `/meters/history` | Canonical independent observations, baselines, resets, measured intervals, Owner correction/retraction and retained history |
+| `/progress/approvals` | Progress history prefiltered to pending review; Owner review enforced by RPC |
+| `/owner/members` | Owner grant by email, unresolved/resolved grants, member role/permission editing, protected admin and defaults |
+| `/owner/form-builder` | Owner templates, typed fields, defaults/constraints/options, duplicate/reorder/remove, Pilot preview, date policy, immutable publish and version history |
+| `/maintenance` | Authorized service/repair/tyre/battery history linked to original expense, without duplicate accounting |
+| `/reports` | Scoped reports, measured intervals, custom reportable fields, CSV/JSON/PDF export; live export authorization in real mode |
+| `/settings`, `/settings/profile` | English + disabled Hindi, theme/system, name/timezone, notifications, local legal text, sign-out/exit development |
+| `/settings/sync` | Actual queue states, last successful operation sync, retries, local/server conflict comparison, draft export/remove |
+| `/settings/security` | Account deletion request/dependency explanation and Android settings |
+| `/settings/help`, `/settings/about` | Operational help, sync recovery and product identity |
 
-### Global screen rules
-- Four floating tabs: Home, Fuel, Expenses, More. All other forms pushed above tabs, fixed CTA above keyboard and safe area.
-- Below the Add Fuel/Add Expense/Add Progress header show active vehicle with switch action where multiple assigned vehicles.
-- Single vehicle never forces switching; multiple use searchable bottom sheet.
-- Disable/hide forbidden screens AND reject unauthorized server request via RLS/RPC.
-- Every loading/empty/error/offline/permission-denied state must be actionable.
+Vehicle roles are resolved per membership. Financial read/create/edit permissions are independent. `progress.view` gives Pilots only their own submissions, with Owner-only fields removed by SQL. Permission checks in UI do not replace backend RLS/RPC authorization. Owner-only deep links are rejected by the server. Native date/time dialogs are Android-specific; ISO inputs remain the fallback. Photo capture, uploads, GPS and untranslated Hindi are deliberately unavailable.
+
+Runtime navigation, keyboard, TalkBack, width and end-to-end validation are NOT RUN for Stage 2/3 under the user's instruction to defer testing.

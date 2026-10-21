@@ -53,3 +53,13 @@ Route required data includes session check, authorized vehicle context and route
 
 ## App state contracts
 Do not cache a prior vehicle's financial totals under a new selected vehicle. Query keys include user, vehicle and filter. Logout clears local copies according to privacy policy; offline drafts are never silently uploaded after permission revocation.
+
+## Implemented Stage 1 organization
+
+Routes under `app/` are entrypoints/layouts. Auth and settings screens live in `src/features/auth/`; garage screens, schema, API and hooks in `src/features/garage/`. Shared UI lives in `src/components/ui/`; vehicle switcher in `src/components/navigation/`. Supabase, secure chunked session adapter, SQLite drafts, i18n, theme, connectivity and page-load coordinator are in `src/lib/`. Zustand stores only active selection; query keys contain account and vehicle where appropriate. Account switching clears queries and SQLite drafts. No financial data is persisted yet.
+
+Every public relation in the migration enables RLS. Vehicles and membership mutations are RPC-only. The creator becomes protected primary Owner atomically in `save_vehicle`. Grants resolve from verified `auth.users.email`; no body email/user ID is accepted by self-resolution. There are no Edge Functions because database RPCs handle the required privileged transactions without exposing secrets.
+
+Vehicle writes use operation UUID receipts and compare `updated_at` for edits. The receipt does not permit a revoked caller to retrieve the previous vehicle. Membership changes serialize on the vehicle row. No client SELECT/INSERT/UPDATE on financial relations exists in Stage 1.
+
+Later-stage planned directories are not created as empty modules. Fuel/Expenses tabs explicitly describe Stage 2, and Home identifies Stage 3 Daily Progress. The source kit's full screen map remains the target across all three stages.

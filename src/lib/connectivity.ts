@@ -1,10 +1,10 @@
 import { useEffect } from "react";
 import { AppState } from "react-native";
-import NetInfo from "@react-native-community/netinfo";
+import { addEventListener } from "@react-native-community/netinfo";
 import { focusManager, onlineManager } from "@tanstack/react-query";
 export function useConnectivity() {
   useEffect(() => {
-    const network = NetInfo.addEventListener((s) =>
+    const network = addEventListener((s) =>
       onlineManager.setOnline(
         s.isConnected !== false && s.isInternetReachable !== false,
       ),

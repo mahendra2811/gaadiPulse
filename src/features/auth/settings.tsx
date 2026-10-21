@@ -1,8 +1,12 @@
-import { useEffect, useState } from "react";
+import { notificationPermission } from '@/src/features/reminders/notifications';
+import { r } from "@/src/features/records/copy";
+import { useActiveVehicle } from "@/src/features/garage/hooks";
+import { usePermissions } from "@/src/features/records/hooks";
+import { useEffect, useState, useRef } from "react";
 import { router } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useProfile, updateProfile } from "./profile";
-import { useSession } from "./session";
+import { useSession, useAccountId } from "./session";
 import {
   Screen,
   AppButton,
@@ -17,8 +21,67 @@ import { t } from "@/src/lib/i18n";
 import { draftCount } from "@/src/lib/db";
 import type { ThemeMode } from "@/src/lib/theme";
 export function More() {
+  const active = useActiveVehicle();
+  const access = usePermissions(active.vehicle?.id);
   return (
     <Screen title={t("more")}>
+      {(["meters", "progress", "documents", "reminders"] as const)
+        .filter(
+          (kind) =>
+            access.data?.[
+              kind === "progress" ? "progress.view" : `${kind}.read`
+            ],
+        )
+        .map((kind) => (
+          <AppButton
+            key={kind}
+            secondary
+            label={r(kind)}
+            onPress={() =>
+              kind === "meters"
+                ? router.push("/meters/history")
+                : router.push({ pathname: "/records/[kind]", params: { kind } })
+            }
+          />
+        ))}
+      {access.data?.["expenses.read"] && (
+        <AppButton
+          secondary
+          label={r("maintenance")}
+          onPress={() => router.push("/maintenance")}
+        />
+      )}
+      {access.data?.["reports.read"] && (
+        <AppButton
+          secondary
+          label={r("reports")}
+          onPress={() => router.push("/reports")}
+        />
+      )}
+      {access.data?.owner && (
+        <>
+          <AppButton
+            secondary
+            label={r("members")}
+            onPress={() => router.push("/owner/members")}
+          />
+          <AppButton
+            secondary
+            label={r("builder")}
+            onPress={() => router.push("/owner/form-builder")}
+          />
+        </>
+      )}
+      <AppButton
+        secondary
+        label={r("security")}
+        onPress={() => router.push("/settings/security")}
+      />
+      <AppButton
+        secondary
+        label={r("help")}
+        onPress={() => router.push("/settings/help")}
+      />
       {(
         [
           { key: "garage", href: "/garage" },
@@ -40,6 +103,7 @@ export function More() {
 }
 export function Settings() {
   const auth = useSession();
+  const toast=useToast();
   const [error, setError] = useState("");
   return (
     <Screen title={t("settings")}>
@@ -47,6 +111,8 @@ export function Settings() {
         label={t("profile")}
         onPress={() => router.push("/settings/profile")}
       />
+      {__DEV__&&!auth.development&&<AppButton secondary label={t('developmentContinue')} onPress={()=>void auth.startDevelopment().catch(e=>setError(String(e)))}/>}
+      <AppButton secondary label={r('notificationPermission')} onPress={()=>{void notificationPermission().then(allowed=>toast(r(allowed?'notificationsEnabled':'notificationDenied'),allowed?'info':'warning')).catch(e=>setError(String(e)));}}/>
       <AppText>{t("language")}</AppText>
       <AppText>{t("english")}</AppText>
       <AppButton label={t("hindi")} disabled onPress={() => undefined} />
@@ -62,9 +128,9 @@ export function Settings() {
       />
       <AppButton
         secondary
-        label={t("logout")}
+        label={t(auth.development?"exitDevelopment":"logout")}
         onPress={() =>
-          ConfirmDialog(t("logout"), t("signoutBody"), () => {
+          ConfirmDialog(t(auth.development?"exitDevelopment":"logout"), t(auth.development?"exitDevelopmentBody":"signoutBody"), () => {
             void auth.signOut().catch((e) => setError(String(e)));
           })
         }
@@ -75,16 +141,19 @@ export function Settings() {
 }
 export function Profile() {
   const auth = useSession();
+  const user = useAccountId();
   const query = useProfile();
   const qc = useQueryClient();
   const toast = useToast();
   const [name, setName] = useState("");
+  const hydrated = useRef(false);
   const [timezone, setTimezone] = useState("Asia/Kolkata");
   const [theme, setTheme] = useState<ThemeMode>("system");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   useEffect(() => {
-    if (query.data) {
+    if (query.data && !hydrated.current) {
+      hydrated.current = true;
       /* Server profile initializes an editable local draft after fetch. */
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setName(query.data.display_name);
@@ -95,16 +164,20 @@ export function Profile() {
   const save = async () => {
     setBusy(true);
     try {
-      if (!auth.session) return;
+      if (!user) return;
       if (!name.trim() || name.trim().length > 120) throw new Error(t("name"));
       new Intl.DateTimeFormat("en", { timeZone: timezone });
-      await updateProfile(auth.session.user.id, {
-        display_name: name.trim(),
-        theme,
-        timezone,
-      });
+      await updateProfile(
+        user,
+        {
+          display_name: name.trim(),
+          theme,
+          timezone,
+        },
+        auth.development,
+      );
       await qc.invalidateQueries({
-        queryKey: [auth.session.user.id, "profile"],
+        queryKey: [user, "profile"],
       });
       toast(t("saved"));
       router.replace("/(tabs)");
@@ -149,11 +222,11 @@ export function Profile() {
   );
 }
 export function Sync() {
-  const { session } = useSession();
+  const user = useAccountId();
   const query = useQuery({
-    queryKey: [session?.user.id, "draft-count"],
-    queryFn: () => draftCount(session!.user.id),
-    enabled: !!session,
+    queryKey: [user, "draft-count"],
+    queryFn: () => draftCount(user!),
+    enabled: !!user,
   });
   return (
     <Screen title={t("sync")} loading={query.isPending}>

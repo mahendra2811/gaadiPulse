@@ -1,5 +1,6 @@
+import { DateTimeInput } from '@/src/components/ui/fields';
 import { useEffect, useState } from "react";
-import { BackHandler, Image } from "react-native";
+import { BackHandler, Image, Pressable } from "react-native";
 import { router, useLocalSearchParams, usePreventRemove } from "expo-router";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,7 +15,7 @@ import {
 } from "./schema";
 import { useVehicles } from "./hooks";
 import { saveVehicle } from "./api";
-import { useSession } from "@/src/features/auth/session";
+import { useSession, useAccountId } from "@/src/features/auth/session";
 import { loadDraft, saveDraft, clearDraft } from "@/src/lib/db";
 import { artwork } from "@/src/lib/assets";
 import {
@@ -55,7 +56,8 @@ export default function VehicleForm() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const query = useVehicles();
   const vehicle = query.data?.find((v) => v.id === id);
-  const { session } = useSession();
+  const { development } = useSession();
+  const user = useAccountId();
   const qc = useQueryClient();
   const toast = useToast();
   const [step, setStep] = useState(0);
@@ -72,9 +74,9 @@ export default function VehicleForm() {
   const values = useWatch({ control: form.control }) as VehicleInput;
   const key = id ? `vehicle.${id}` : "vehicle.new";
   useEffect(() => {
-    if (ready || !session || (id && query.isPending)) return;
+    if (ready || !user || (id && query.isPending)) return;
     let active = true;
-    void loadDraft(session.user.id, key)
+    void loadDraft(user!, key)
       .then((d) => {
         if (!active) return;
         if (d && typeof d === "object" && "values" in d) {
@@ -97,16 +99,16 @@ export default function VehicleForm() {
     return () => {
       active = false;
     };
-  }, [session, id, query.isPending, ready, form, key, vehicle]);
+  }, [user, id, query.isPending, ready, form, key, vehicle]);
   useEffect(() => {
-    if (!ready || !session || allowExit) return;
+    if (!ready || !user || allowExit) return;
     const timer = setTimeout(() => {
-      void saveDraft(session.user.id, key, { values, operation })
+      void saveDraft(user!, key, { values, operation })
         .then(() => setDraftError(false))
         .catch(() => setDraftError(true));
     }, 300);
     return () => clearTimeout(timer);
-  }, [values, ready, session, key, operation, allowExit]);
+  }, [values, ready, user, key, operation, allowExit]);
   const disablePrevention = usePreventRemove(
     form.formState.isDirty && !allowExit,
     ({ repeat }) => {
@@ -131,7 +133,7 @@ export default function VehicleForm() {
       key={name}
       control={form.control}
       name={name}
-      render={({ field: { value, onChange } }) => (
+      render={({ field: { value, onChange } }) =>name==='observed_at'?<DateTimeInput label={label} value={String(value??'')} onChange={onChange}/>: (
         <InputField
           label={label}
           value={String(value ?? "")}
@@ -144,15 +146,21 @@ export default function VehicleForm() {
   );
   const submit = form.handleSubmit(
     async (input) => {
-      if (busy || !session) return;
+      if (busy || !user) return;
       setBusy(true);
       setError("");
       try {
-        await saveVehicle(input, operation, id, vehicle?.updated_at);
+        await saveVehicle(
+          input,
+          operation,
+          id,
+          vehicle?.updated_at,
+          development,
+        );
         setAllowExit(true);
-        await clearDraft(session.user.id, key);
-        await qc.invalidateQueries({ queryKey: [session.user.id, "vehicles"] });
-        toast(t("saved"));
+        await clearDraft(user!, key);
+        await qc.invalidateQueries({ queryKey: [user!, "vehicles"] });
+        toast(t("saved"), "success");
         disablePrevention();
         router.replace("/garage");
       } catch (e) {
@@ -198,22 +206,27 @@ export default function VehicleForm() {
       <AppText muted>{`${step + 1} / 6`}</AppText>
       {step === 0 &&
         categories.map((category) => (
-          <Card key={category}>
-            <Image
-              source={artwork[category]}
-              style={{ width: "100%", height: 120, resizeMode: "contain" }}
-            />
-            <AppButton
-              secondary={values.category !== category}
-              label={t(category)}
-              onPress={() => {
-                form.setValue("category", category, { shouldDirty: true });
-                const subtype = subtypeOptions[category][0];
-                form.setValue("subtype", subtype);
-                form.setValue("meter_mode", defaultMeter(category, subtype));
-              }}
-            />
-          </Card>
+          <Pressable
+            key={category}
+            accessibilityRole="radio"
+            accessibilityLabel={t(category)}
+            accessibilityState={{ checked: values.category === category }}
+            disabled={!ready || busy}
+            onPress={() => {
+              form.setValue("category", category, { shouldDirty: true });
+              const subtype = subtypeOptions[category][0];
+              form.setValue("subtype", subtype);
+              form.setValue("meter_mode", defaultMeter(category, subtype));
+            }}
+          >
+            <Card>
+              <Image
+                source={artwork[category]}
+                style={{ width: "100%", height: 120, resizeMode: "contain" }}
+              />
+              <AppText>{`${values.category === category ? "✓  " : ""}${t(category)}`}</AppText>
+            </Card>
+          </Pressable>
         ))}
       {step === 1 && (
         <Choice

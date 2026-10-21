@@ -2,8 +2,9 @@ import { useState } from "react";
 import { useActiveVehicle } from "@/src/features/garage/hooks";
 import { AppButton, AppText, Card, Sheet } from "@/src/components/ui";
 import { t } from "@/src/lib/i18n";
-export function VehicleHeader() {
-  const { vehicle, data, select } = useActiveVehicle();
+export function VehicleHeader({vehicleId,onSelect,disabled=false,allowSwitch=true}:{vehicleId?:string;onSelect?:(id:string)=>void;disabled?:boolean;allowSwitch?:boolean}={}) {
+  const { vehicle:activeVehicle, data, select } = useActiveVehicle();
+  const vehicle=vehicleId?data?.find(v=>v.id===vehicleId):activeVehicle;
   const [open, setOpen] = useState(false);
   const vehicles = data?.filter((v) => !v.archived_at) ?? [];
   if (!vehicle) return null;
@@ -17,9 +18,10 @@ export function VehicleHeader() {
           {t(vehicle.role === "OWNER" ? "owner" : "pilot")} ·{" "}
           {t(vehicle.meter_mode)}
         </AppText>
-        {vehicles.length > 1 && (
+        {allowSwitch&&vehicles.length > 1 && (
           <AppButton
             secondary
+            disabled={disabled}
             label={t("switch")}
             onPress={() => setOpen(true)}
           />
@@ -32,7 +34,7 @@ export function VehicleHeader() {
             secondary={v.id !== vehicle.id}
             label={`${v.nickname || v.model} · ${t(v.role === "OWNER" ? "owner" : "pilot")}`}
             onPress={() => {
-              select(v.id);
+              if(onSelect)onSelect(v.id);else select(v.id);
               setOpen(false);
             }}
           />

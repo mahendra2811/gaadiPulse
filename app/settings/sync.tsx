@@ -1,1 +1,1 @@
-export { Sync as default } from "@/src/features/auth/settings";
+export { default } from "@/src/features/records/SyncScreen";

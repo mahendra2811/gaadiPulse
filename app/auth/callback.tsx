@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useURL } from "expo-linking";
 import { completeOAuth } from "@/src/features/auth/api";
-import { Screen, ErrorState, Skeleton } from "@/src/components/ui";
+import { router } from "expo-router";
+import { Screen, ErrorState, Skeleton,AppButton } from "@/src/components/ui";
 import { t } from "@/src/lib/i18n";
 export default function Callback() {
   const url = useURL();
@@ -13,6 +14,7 @@ export default function Callback() {
   return (
     <Screen title={t("login")} loading={!error}>
       {error ? <ErrorState message={error} retry={run} /> : <Skeleton />}
+      <AppButton secondary label={t("login")} onPress={()=>router.replace("/auth/login")}/>
     </Screen>
   );
 }

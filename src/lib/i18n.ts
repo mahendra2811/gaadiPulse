@@ -1,4 +1,11 @@
 export const en = {
+ invalidOAuth:"The sign-in callback is incomplete. Start sign-in again.",exitDevelopment:"Exit development mode",exitDevelopmentBody:"Your local test vehicles remain on this device and are never uploaded.",
+ chooseDateTime:"Choose date and time",
+  dismiss: "Dismiss",
+  developmentContinue: "Continue in development mode",
+  developmentBanner: "DEVELOPMENT · Local test data · Authentication bypassed",
+  developmentInfo:
+    "This debug build uses device-local test vehicles. Supabase authentication and permissions are bypassed only for local testing. These records are never uploaded.",
   invalidTimezone: "Enter a valid IANA timezone, such as Asia/Kolkata.",
   identifyVehicle: "Enter a nickname, registration or model.",
   motorcycle: "Motorcycle",

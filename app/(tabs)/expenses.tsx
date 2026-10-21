@@ -1,4 +1,4 @@
-import { Upcoming } from "@/src/features/garage/screens";
-export default function Page() {
-  return <Upcoming kind="expenses" />;
+import { RecordsList } from "@/src/features/records/screens";
+export default function Expenses() {
+  return <RecordsList fixedKind="expenses" />;
 }

@@ -1,5 +1,6 @@
-import { View } from "react-native";
-import { AppText, Card, InputField } from "./index";
+import { useState } from "react";
+import { View,Platform } from "react-native";
+import { AppText, Card, InputField,AppButton } from "./index";
 import { t } from "@/src/lib/i18n";
 import type { ReactNode } from "react";
 export function NumberField({
@@ -32,36 +33,33 @@ export function MoneyField({
   paise: number | null;
   onChange: (value: number | null) => void;
 }) {
+  const [draft, setDraft] = useState({
+    paise,
+    text: paise === null ? "" : (paise / 100).toFixed(2),
+  });
+  const text =
+    draft.paise === paise
+      ? draft.text
+      : paise === null
+        ? ""
+        : (paise / 100).toFixed(2);
   return (
     <NumberField
       label={label}
-      value={paise === null ? "" : (paise / 100).toFixed(2)}
+      value={text}
       onChange={(value) => {
-        if (value === "") onChange(null);
-        else if (/^\d+(\.\d{0,2})?$/.test(value))
-          onChange(Math.round(Number(value) * 100));
+        if (!/^\d*(\.\d{0,2})?$/.test(value)) return;
+        const next = value === "" ? null : Math.round(Number(value) * 100);
+        setDraft({ paise: next, text: value });
+        onChange(next);
       }}
     />
   );
 }
-export function DateTimeInput({
-  value,
-  onChange,
-  error,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  error?: string;
-}) {
-  return (
-    <InputField
-      label={t("observed")}
-      value={value}
-      onChangeText={onChange}
-      error={error}
-      autoCapitalize="none"
-    />
-  );
+export function DateTimeInput({value,onChange,error,label=t('observed'),allowFuture=false}:{value:string;onChange:(value:string)=>void;error?:string;label?:string;allowFuture?:boolean}){
+ const [pickerError,setPickerError]=useState('');
+ const choose=async()=>{try{if(Platform.OS!=='android')return;const {DateTimePickerAndroid}=await import('@react-native-community/datetimepicker');const current=value&&Number.isFinite(Date.parse(value))?new Date(value):new Date();DateTimePickerAndroid.open({value:current,mode:'date',maximumDate:allowFuture?undefined:new Date(),onChange:(event,date)=>{if(event.type!=='set'||!date)return;DateTimePickerAndroid.open({value:date,mode:'time',onChange:(timeEvent,time)=>{if(timeEvent.type==='set'&&time)onChange(time.toISOString());}});}});}catch(e){setPickerError(String(e));}};
+ return <View style={{gap:8}}><InputField label={label} value={value} onChangeText={onChange} error={error||pickerError} autoCapitalize="none"/>{Platform.OS==='android'&&<AppButton secondary label={t('chooseDateTime')} onPress={()=>void choose()}/>}</View>;
 }
 export function MeterFields({
   mode,

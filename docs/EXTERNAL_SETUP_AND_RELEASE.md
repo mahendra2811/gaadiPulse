@@ -1,43 +1,42 @@
-# External setup, credentials and release steps
+# External setup and release
 
-These tasks require real accounts and secrets. Codex can implement integration code but cannot fabricate verified provider configuration.
+This guide describes operator-owned configuration. No credentials, external deployment or Play release was performed. The user deferred Stage 2/3 testing; follow QA_TEST_MATRIX.md before shipping.
 
-## 1. Developer machine
-- Install Node.js LTS, Android Studio, platform-tools, emulator/system image or physical Android test phone, a compatible JDK, and EAS CLI.
-- Keep project in a git repository; use `.gitignore` for `.env`, keystores, credentials and generated files.
-- Run: `npm install`, `npx expo-doctor`, `npx expo start --dev-client` (or stage-specific scripts). `npx expo run:android` if building a local native project.
+## Supabase
 
-## 2. Supabase project
-1. Create a Supabase project in region reasonably close to primary users.
-2. Obtain **Project URL and publishable/anon key**, store in `.env` (names in `config/.env.example`). Never put a `service_role` key in EXPO_PUBLIC variables.
-3. Link local CLI using supported version, review SQL migrations, apply them to a **development** project first. Have Codex validate with Supabase local stack and tests before prod.
-4. Configure mail OTP/template, redirect allowlist and Google identity provider. Rate-limit abuse and check account recovery.
-5. Deploy required Edge Functions with secret env configured on the server; secrets never included in mobile binaries.
-6. Configure database backups and permission audits. RLS required for every exposed table/view.
+1. Create a separate development Supabase project. Keep production isolated and back up any existing data.
+2. Copy .env.example to .env and set only EXPO_PUBLIC_SUPABASE_URL / EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY. Default OAuth redirect is gaadipulse://auth/callback. Restart Metro when public environment changes. Never paste secrets into chat.
+3. Install Supabase CLI and Docker if using local development. `supabase/config.toml` is included. Start locally, then apply all chronological migrations. `supabase db reset` is only for a disposable local database. For linked projects, review `supabase db push`; never reset production.
+4. Migrations: 001 foundation; 002 ledger/meter/reminder data; 003 collaboration/forms/redacted reads/deletion requests; 004 payload-bound retries, corrections, permission maps, provenance and anonymization hardening. The supplied `my docs/supabase/reference` is planning material, not an applied migration.
+5. Regenerate database types with `supabase gen types typescript --local` or your linked project. Current src/types/database.ts is manually maintained; reconcile generated types before binding the whole client.
+6. Execute the RLS matrix with real Auth/JWT/PostgREST clients. Embedded PostgreSQL fixture results do not prove hosted configuration or gateway behavior.
 
-## 3. Google Sign-In / Android
-1. Create provider OAuth credentials with correct Android application ID, signing certificate SHA-1/SHA-256 for development and release (Google service configuration varies by selected Expo/Supabase flow).
-2. Set authorized redirect URIs exactly as required by the implemented AuthSession/Supabase design; use Expo scheme and production deep link.
-3. Verify on **real Android build** (not Expo Go assumptions); test both Google and email OTP accounts, refresh, expired sessions, sign out and switching accounts.
-4. Do not commit client secret. Test identity email verification before automatic vehicle email grant resolution.
+## Email OTP and Google
 
-## 4. App assets
-- Use `assets/android-store-icon.png`, `assets/adaptive-icon-foreground.png`, `assets/splash-screen.png` and UI SVG/PNG resources.
-- The provided `assets/brand/selected-logo-reference.png` is a user-approved visual reference; exact vectorization is optional future replacement.
-- Run `python scripts/generate_assets.py` if asset regeneration is needed. Inspect image sizes and crop safety.
+Enable email sign-up/confirmation and OTP. Configure SMTP and the token email template (`{{ .Token }}`), delivery and provider rate limits. Use real test inboxes for valid/invalid/expired/resend scenarios; do not disable confirmation to make tests pass.
 
-## 5. Google Play / Android release
-1. Choose permanent application ID (e.g. `com.pooniya.gaadipulse`) before first upload; verify collisions independently.
-2. Update `app.config.ts` and `eas.json` for development/preview/production. Create EAS project and configure signing credentials.
-3. Set final Play title, feature graphic, screenshots, content rating, support email and valid public privacy policy URL.
-4. Complete Google Play Data Safety truthfully based on actual code/SDKs and whether personal data, auth, receipts or analytics are collected.
-5. Request minimal permissions. GPS/background location, photo access and all-files access **not** required for current Phase 1.
-6. Test closed track/required Play testing, screen sizes, accessibility, cold boot, offline/reconnect, staged rollout and crash logs.
-7. Review latest applicable Google Play requirements at publish time; API levels and policies change.
+Enable Google in Supabase Auth. Store provider client secret only in the Supabase dashboard/server environment. Add Supabase's displayed callback to Google configuration and allow gaadipulse://auth/callback in Supabase. Verify package `com.pooniya.gaadipulse`, redirect handling, signing SHA-1/SHA-256 and provider settings for the exact Android build. Browser OAuth uses PKCE. Do not claim Google works before testing actual credentials and a device.
 
-## 6. Legal/product support
-- Provide real Privacy Policy and Terms URLs (not invented public links) describing email identity, vehicle data, collaborative permissions, local cache, deletion, analytics and retention.
-- Define export/deletion rules when co-owners have shared records; avoid claiming government-backed ownership verification.
+The debug local bypass is intentionally absent from release builds and cannot assign real backend privileges. Development records are never migrated/uploaded automatically.
 
-## Production release gate
-No production-ready claim before external credentials, RLS tests, EAS Android build/install, physical device walkthrough and policy disclosures are actually verified.
+## Account deletion job
+
+The app records a deletion request, requires protected vehicles to be archived first, revokes membership and blocks new writes. Operational attribution and shared ledgers remain under the reviewed retention policy.
+
+Deploy `supabase/functions/process-account-deletion` after reviewing its Auth schema operations. Configure server secrets SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, DELETION_JOB_SECRET and DELETION_RETENTION_DAYS (1–365; default 30). These never belong in EXPO_PUBLIC variables. The endpoint uses its own constant-time job-secret check; gateway JWT verification is disabled only for this operator endpoint.
+
+Schedule a trusted operator job to POST with `Authorization: Bearer <DELETION_JOB_SECRET>`. It processes eligible recorded requests, masks/bans Auth users, then calls service-role-only complete_account_anonymization to remove identities/sessions/metadata, redact profile/grant identity and mark completion. Do not expose this secret to a device. Validate the actual Supabase Auth schema and retry behavior before enabling the job. No job was deployed or scheduled here.
+
+## Android development and release
+
+Use Node 24 and the committed lockfile. Expo SDK 58 selects the matching React/RN versions. Install Java/Android SDK, start an emulator or connect a real device. Rebuild the native client for DateTimePicker/Print/Sharing. Keep scheme and package stable after release; ANDROID_PACKAGE is configurable before the first release.
+
+Configure your EAS project/account and signing credentials locally. Review app.config.ts, eas.json, adaptive masks, notification icon, application title and version/versionCode. Run development and production exports/builds. A development APK is not a signed store release. Inspect the final merged Android manifest: location/camera/microphone/broad storage permissions are blocked; local reminder notifications are optional.
+
+## Data safety and policies
+
+Replace the pre-release local legal text with operator-reviewed retention, deletion contact and privacy/terms content and publish required policy links through the operator's approved channel. Review Google Play Data Safety declarations against actual Auth/shared records/cache/exports/notifications. No ads, paid plans, GPS or uploads are implemented. Do not claim legal document verification; metadata is not an official RC/DL.
+
+## Final gates
+
+Run current format/type/lint/domain/SQL checks, real provider flows, direct REST attacks, process-death/offline/conflict flows, 320dp/large text/TalkBack/reduced motion, actual notification/share/PDF behavior, signed build and physical-device smoke tests. Review dependency audit findings without force-downgrading Expo. Produce real store screenshots/feature graphic from an approved build; never fabricate release evidence. Only the operator can complete Play Console submission and review.

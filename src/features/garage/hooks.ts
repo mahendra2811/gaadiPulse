@@ -1,8 +1,7 @@
 import { useToast } from "@/src/components/ui";
 import { useEffect, useRef } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { clearVehicleCache } from "@/src/lib/localStore";
-import { useQuery } from "@tanstack/react-query";
 import { useSession, useAccountId } from "@/src/features/auth/session";
 import { useUI } from "@/src/state/ui";
 import { listVehicles } from "./api";

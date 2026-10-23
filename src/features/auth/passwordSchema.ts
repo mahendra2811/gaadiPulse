@@ -1,7 +1,10 @@
 import { z } from "zod";
 import { t } from "../../lib/i18n";
 
-export const accountEmail = z.email(t("invalidEmail")).trim();
+export const accountEmail = z
+  .string()
+  .trim()
+  .pipe(z.email(t("invalidEmail")));
 export const newPassword = z
   .string()
   .min(12, t("passwordRules"))

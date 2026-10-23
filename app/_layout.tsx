@@ -1,6 +1,9 @@
 import { useMembershipUpdates } from "@/src/hooks/useMembershipUpdates";
 import { useOutboxSync } from "@/src/lib/sync/hooks";
-import { authDestination } from "@/src/features/auth/routing";
+import {
+  authDestination,
+  keepsAuthenticatedAuthScreen,
+} from "@/src/features/auth/routing";
 import { Image, View, Text, Appearance, Platform } from "react-native";
 import { artwork } from "@/src/lib/assets";
 import { useConnectivity } from "@/src/lib/connectivity";
@@ -52,8 +55,7 @@ function Routes() {
     if (
       (auth.session || auth.development) &&
       path === "auth" &&
-      pathname !== "/auth/legal" &&
-      pathname !== "/auth/reset-password" &&
+      !keepsAuthenticatedAuthScreen(pathname) &&
       !profile.isPending
     )
       router.replace(

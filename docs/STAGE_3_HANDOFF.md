@@ -81,3 +81,11 @@ Validation:
 - NOT RUN: browser/device interaction, physical Android back/keyboard/TalkBack checks, Android build. No database/migration changes in this follow-up.
 
 Manual QA remaining: More → Garage/Reports → top Back returns to More; More → Add vehicle → wizard step Back → Save returns to More; a vehicle detail → Add meter/maintenance preserves that vehicle; direct-linked analytics → top Back reaches its record list; dirty-form Back cancel preserves values; More → Sign out → cancel/confirm and failed-network retry on web and Android. Hosted sign-out and deletion of scoped caches need real-session verification.
+
+## Implementation continuation — 2026-10-21
+
+Scoped the progress builder editor by account/vehicle key so changing vehicle remounts its draft, preview and option state. Removed the effect-driven ready reset; failed draft loads remain blocked from publishing until retried. Load/save/publish failures now retry the relevant operation rather than merely dismissing the message. Async load errors from an unmounted editor are ignored.
+
+Added `src/hooks/useCurrentTime.ts` for minute and foreground refresh of dashboard date/overdue labels. Reminder reconciliation refreshes after foreground return, guards scheduling behind reminder read access, suppresses stale meter thresholds after an authorization/read failure, and exposes read/scheduling retry actions with errors scoped to the current account/vehicle. Consolidated duplicate garage query imports, removed unused meter-history imports, and used the exported AndroidImportance enum directly.
+
+Executed source formatting only (`npm run format` and targeted Prettier write). No tests, lint, typecheck, database changes or native builds were run in this continuation, honoring the user's testing deferral. Earlier follow-up checks above do not validate these new changes. Real device reminder behavior and rapid vehicle-switch/draft recovery remain unverified.

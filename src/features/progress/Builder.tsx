@@ -46,6 +46,15 @@ function newField(
   };
 }
 export default function Builder() {
+  const { vehicle } = useActiveVehicle();
+  const user = useAccountId();
+  return (
+    <BuilderEditor
+      key={`${user ?? "signed-out"}:${vehicle?.id ?? "no-vehicle"}`}
+    />
+  );
+}
+function BuilderEditor() {
   const active = useActiveVehicle();
   const vehicle = active.vehicle;
   const user = useAccountId();
@@ -59,17 +68,18 @@ export default function Builder() {
   const [definition, setDefinition] =
     useState<ProgressDefinition>(defaultDefinition);
   const [ready, setReady] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [preview, setPreview] = useState(false);
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [optionDrafts, setOptionDrafts] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
+  const [retryAction, setRetryAction] = useState<"load" | "draft" | "publish">(
+    "load",
+  );
   const [busy, setBusy] = useState(false);
   const qc = useQueryClient();
   const toast = useToast();
   const key = `builder.${vehicle?.id}`;
-  useEffect(() => {
-    setReady(false);
-  }, [vehicle?.id]);
   useEffect(() => {
     if (ready || !vehicle || !user || !query.data) return;
     let alive = true;
@@ -84,17 +94,21 @@ export default function Builder() {
         setReady(true);
       })
       .catch((e) => {
+        if (!alive) return;
+        setRetryAction("load");
         setError(String(e));
-        setReady(true);
       });
     return () => {
       alive = false;
     };
-  }, [ready, vehicle, user, key, query.data]);
+  }, [ready, vehicle, user, key, query.data, loadAttempt]);
   useEffect(() => {
     if (!ready || !user) return;
     const timer = setTimeout(() => {
-      void saveDraft(user, key, definition).catch((e) => setError(String(e)));
+      void saveDraft(user, key, definition).catch((e) => {
+        setRetryAction("draft");
+        setError(String(e));
+      });
     }, 300);
     return () => clearTimeout(timer);
   }, [definition, ready, user, key]);
@@ -121,6 +135,7 @@ export default function Builder() {
       await qc.invalidateQueries({ queryKey: [user, vehicle.id, "forms"] });
       toast(r("saved"), "success");
     } catch (e) {
+      setRetryAction("publish");
       setError(String(e));
     } finally {
       setBusy(false);
@@ -478,7 +493,20 @@ export default function Builder() {
           </Card>
         </>
       )}
-      {error && <ErrorState message={error} retry={() => setError("")} />}
+      {error && (
+        <ErrorState
+          message={error}
+          retry={() => {
+            setError("");
+            if (retryAction === "load") setLoadAttempt((value) => value + 1);
+            else if (retryAction === "publish") void publish();
+            else
+              void saveDraft(user!, key, definition).catch((e) =>
+                setError(String(e)),
+              );
+          }}
+        />
+      )}
       {query.error && (
         <ErrorState
           message={query.error.message}

@@ -1,5 +1,5 @@
 import { useReminderReconciliation } from "@/src/features/reminders/useReminders";
-import { useState } from "react";
+import { useCurrentTime } from "@/src/hooks/useCurrentTime";
 import { router } from "expo-router";
 import { Card, AppText, AppButton, ErrorState } from "@/src/components/ui";
 import { useActiveVehicle } from "@/src/features/garage/hooks";
@@ -8,16 +8,16 @@ import { r } from "@/src/features/records/copy";
 import { money } from "@/src/utils/money";
 import { dateInZone } from "@/src/features/progress/schema";
 export function Dashboard() {
-  const reminderError = useReminderReconciliation();
+  const reminderStatus = useReminderReconciliation();
   const active = useActiveVehicle();
   const vehicle = active.vehicle;
   const permissions = usePermissions(vehicle?.id);
   const fuel = useRecords("fuel");
   const expenses = useRecords("expenses");
   const reminders = useRecords("reminders");
-  const [error, setError] = useState("");
+  const now = useCurrentTime();
   const month = dateInZone(
-    new Date(),
+    new Date(now),
     vehicle?.timezone ?? "Asia/Kolkata",
   ).slice(0, 7);
   const total = (entries: typeof fuel.data) =>
@@ -41,7 +41,12 @@ export function Dashboard() {
     );
   return (
     <>
-      {reminderError && <AppText>{reminderError}</AppText>}
+      {reminderStatus.error && (
+        <ErrorState
+          message={reminderStatus.error}
+          retry={reminderStatus.retry}
+        />
+      )}
       {permissions.data?.["fuel.read"] && (
         <Card>
           <AppText>
@@ -125,7 +130,7 @@ export function Dashboard() {
               <AppButton
                 key={row.id}
                 secondary
-                label={`${String(row.payload.title)} · ${row.payload.due_at && Date.parse(String(row.payload.due_at)) < Date.now() ? r("overdue") : String(row.payload.due_at || r("dueReading"))}`}
+                label={`${String(row.payload.title)} · ${row.payload.due_at && Date.parse(String(row.payload.due_at)) < now ? r("overdue") : String(row.payload.due_at || r("dueReading"))}`}
                 onPress={() =>
                   router.push({
                     pathname: "/records/[kind]/[action]",
@@ -145,7 +150,6 @@ export function Dashboard() {
           />
         </Card>
       )}
-      {error && <ErrorState message={error} retry={() => setError("")} />}
     </>
   );
 }

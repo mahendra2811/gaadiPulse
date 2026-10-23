@@ -1,5 +1,5 @@
-import { t } from "@/src/lib/i18n";
-import { client } from "@/src/lib/supabase";
+import { t } from "../../lib/i18n";
+import { client } from "../../lib/supabase";
 import { accountEmail, emailCode, newPassword } from "./passwordSchema";
 
 export async function passwordLogin(email: string, password: string) {

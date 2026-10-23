@@ -21,12 +21,10 @@ import { VehicleHeader } from "@/src/components/navigation/VehicleHeader";
 import { client } from "@/src/lib/supabase";
 import { usePermissions } from "@/src/features/records/hooks";
 import {
-  developmentReadings,
   readDevelopment,
   writeDevelopment,
 } from "@/src/features/development/repository";
 import { r } from "@/src/features/records/copy";
-import { measuredIntervals } from "@/src/utils/meter";
 const readingSchema = z.object({
   id: z.string(),
   reading_type: z.enum(["KM", "HOURS"]),

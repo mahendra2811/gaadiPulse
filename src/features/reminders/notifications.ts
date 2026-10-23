@@ -1,6 +1,7 @@
 import { r } from "@/src/features/records/copy";
 import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
+import { AndroidImportance } from "expo-notifications";
 import { readLocal, writeLocal } from "@/src/lib/localStore";
 import type { RecordEntry } from "@/src/features/records/schema";
 export async function notificationPermission() {
@@ -8,7 +9,7 @@ export async function notificationPermission() {
   if (Platform.OS === "android")
     await Notifications.setNotificationChannelAsync("reminders", {
       name: r("reminders"),
-      importance: Notifications.AndroidImportance.DEFAULT,
+      importance: AndroidImportance.DEFAULT,
     });
   return (await Notifications.requestPermissionsAsync()).granted;
 }

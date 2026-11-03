@@ -20,10 +20,9 @@ export const recordCopy = {
 
   reviewCurrentForm: "Review current form",
   reviewNewVersion:
-    "Your previous answers remain in a local draft. Review the new fields before saving; answers are not silently migrated.",
+    "Switching versions discards the current unsaved answers. Review the new fields before saving.",
   notificationsEnabled: "Local reminder notifications enabled.",
   switchVehicle: "Switch vehicle",
-  localDrafts: "Saved form drafts",
   PETROL: "Petrol",
   DIESEL: "Diesel",
   ELECTRIC: "Electric charge",
@@ -98,7 +97,6 @@ export const recordCopy = {
   save: "Save",
   saveAnother: "Save and add another",
   saved: "Saved",
-  pending: "Pending sync — excluded from confirmed totals",
   noData: "No records yet",
   noVehicle: "Choose or add a vehicle first.",
   permission: "You do not have permission for this action.",
@@ -235,18 +233,9 @@ export const recordCopy = {
   resolved: "Resolved grant",
   permissionHelp:
     "Read and create permissions are independent. Disabling read also hides amounts from database queries and exports.",
-  sync: "Sync status",
-  retrySync: "Retry eligible operations",
-  deleteDraft: "Delete local operation",
-  exportDraft: "Export local operation",
+  sync: "Connection",
   conflict:
-    "Conflict — inspect the server record and preserve/export your local changes before retrying.",
-  rejected:
-    "Rejected — access or validation changed. Your personal draft is retained.",
-  pendingOps: "Pending operations",
-  lastSync: "Last successful sync",
-  offline:
-    "Offline drafts are provisional. Server permissions and validation apply when you reconnect.",
+    "Conflicting observations — review the latest server record before changing them.",
   deleteAccount: "Account deletion",
   deleteAccountBody:
     "Delete your own account data only after transferring protected administration or archiving all vehicles you administer. This action is irreversible.",
@@ -254,7 +243,7 @@ export const recordCopy = {
   security: "Security and data",
   help: "Help",
   helpBody:
-    "Save truthful observed timestamps, keep independent records when legally required, and use Sync status to recover rejected or conflicting drafts. Local test data never uploads. Configure the operator contact before public release.",
+    "Save truthful observed timestamps and keep independent records when legally required. If saving fails, keep the form open and retry. Frontend preview data never uploads. Configure the operator contact before public release.",
   notesRequired: "Require notes",
   yes: "Yes",
   no: "No",
@@ -320,7 +309,8 @@ export const recordCopy = {
   audit: "Audit history",
   noAttachment: "No file attached",
   readOnly: "Read-only",
-  development: "Development records are stored only on this device.",
+  development:
+    "Frontend preview: temporary test data, cleared on reload or exit. Never uploaded.",
 } as const;
 export function r(key: keyof typeof recordCopy) {
   return recordCopy[key];

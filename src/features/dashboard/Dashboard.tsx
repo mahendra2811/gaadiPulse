@@ -1,3 +1,4 @@
+import { releaseFeatures } from "@/src/features/release/scope";
 import { useState } from "react";
 import { View, Text } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -24,6 +25,22 @@ import { dateInZone } from "@/src/features/progress/schema";
 import { useTheme } from "@/src/lib/theme";
 import { t } from "@/src/lib/i18n";
 export function Dashboard() {
+  return releaseFeatures.advancedTools ? (
+    <AdvancedDashboard />
+  ) : (
+    <BasicDashboard />
+  );
+}
+function BasicDashboard() {
+  const active = useActiveVehicle();
+  return (
+    <DashboardContent
+      key={active.vehicle?.id ?? "none"}
+      reminderStatus={null}
+    />
+  );
+}
+function AdvancedDashboard() {
   const reminderStatus = useReminderReconciliation();
   const active = useActiveVehicle();
   // A fresh instance resets expanded sections when the selected vehicle changes.
@@ -37,7 +54,10 @@ export function Dashboard() {
 function DashboardContent({
   reminderStatus,
 }: {
-  reminderStatus: ReturnType<typeof useReminderReconciliation>;
+  reminderStatus: Pick<
+    ReturnType<typeof useReminderReconciliation>,
+    "error" | "retry"
+  > | null;
 }) {
   const { vehicle } = useActiveVehicle();
   const permissions = usePermissions(vehicle?.id);
@@ -56,7 +76,6 @@ function DashboardContent({
     entries
       ?.filter(
         (row) =>
-          !row.localStatus &&
           row.status !== "ARCHIVED" &&
           dateInZone(
             new Date(String(row.payload.event_at)),
@@ -84,7 +103,9 @@ function DashboardContent({
   const primary = (
     [
       {
-        label: t("uiAddFuel"),
+        label: t(
+          vehicle?.energy_type === "ELECTRIC" ? "addCharging" : "uiAddFuel",
+        ),
         icon: "water",
         tone: "blue",
         show: !!permissions.data?.["fuel.create"],
@@ -108,7 +129,9 @@ function DashboardContent({
         label: t("uiAddProgress"),
         icon: "checkbox",
         tone: "violet",
-        show: !!permissions.data?.["progress.submit"],
+        show:
+          releaseFeatures.advancedTools &&
+          !!permissions.data?.["progress.submit"],
         run: () => navigate("progress", "add"),
       },
     ] satisfies Action[]
@@ -159,6 +182,7 @@ function DashboardContent({
       },
     ] satisfies Action[]
   ).filter((action) => action.show);
+  const enabledSecondary = releaseFeatures.advancedTools ? secondary : [];
   const activity = [
     ...(permissions.data?.["fuel.read"] ? (fuel.data ?? []) : []).map(
       (row) => ({ ...row, kind: "fuel" }),
@@ -167,7 +191,7 @@ function DashboardContent({
       (row) => ({ ...row, kind: "expenses" }),
     ),
   ]
-    .filter((row) => !row.localStatus && row.status !== "ARCHIVED")
+    .filter((row) => row.status !== "ARCHIVED")
     .sort(
       (a, b) =>
         Date.parse(String(b.payload.event_at)) -
@@ -175,7 +199,7 @@ function DashboardContent({
     );
   const upcoming =
     reminders.data
-      ?.filter((row) => row.status === "ACTIVE" && !row.localStatus)
+      ?.filter((row) => row.status === "ACTIVE")
       .sort(
         (a, b) =>
           (a.payload.due_at ? Date.parse(String(a.payload.due_at)) : Infinity) -
@@ -207,7 +231,9 @@ function DashboardContent({
               >
                 <Ionicons name="water" size={22} color="#D5EEFF" />
                 <Text style={{ color: "#E0EDFF", fontSize: 14 }}>
-                  {r("fuel")}
+                  {vehicle?.energy_type === "ELECTRIC"
+                    ? t("charging")
+                    : r("fuel")}
                 </Text>
                 <Text
                   style={{ color: "#FFFFFF", fontSize: 24, fontWeight: "800" }}
@@ -281,7 +307,7 @@ function DashboardContent({
       ) : (
         permissions.data && <AppText muted>{t("uiNoQuickActions")}</AppText>
       )}
-      {!!secondary.length && (
+      {!!enabledSecondary.length && (
         <>
           <MotionPress
             label={t(moreActions ? "uiFewerActions" : "uiMoreActions")}
@@ -311,7 +337,7 @@ function DashboardContent({
           </MotionPress>
           <Expandable expanded={moreActions}>
             <Card style={{ paddingVertical: 6 }}>
-              {secondary.map((action) => (
+              {enabledSecondary.map((action) => (
                 <MenuRow
                   key={action.label}
                   label={action.label}
@@ -350,43 +376,44 @@ function DashboardContent({
           )}
         </>
       )}
-      {permissions.data?.["reminders.read"] && (
-        <>
-          <SectionHeading
-            title={r("reminders")}
-            action={t("uiViewAll")}
-            onAction={() => navigate("reminders")}
-          />
-          {reminderStatus.error && (
-            <ErrorState
-              message={reminderStatus.error}
-              retry={reminderStatus.retry}
+      {releaseFeatures.advancedTools &&
+        permissions.data?.["reminders.read"] && (
+          <>
+            <SectionHeading
+              title={r("reminders")}
+              action={t("uiViewAll")}
+              onAction={() => navigate("reminders")}
             />
-          )}
-          {!reminders.isPending && !reminders.error && !upcoming.length && (
-            <AppText muted>{t("uiNoReminders")}</AppText>
-          )}
-          {upcoming.slice(0, 3).map((row) => (
-            <MenuRow
-              key={row.id}
-              label={String(row.payload.title)}
-              subtitle={
-                row.payload.due_at
-                  ? Date.parse(String(row.payload.due_at)) < now
-                    ? r("overdue")
-                    : new Date(String(row.payload.due_at)).toLocaleDateString(
-                        undefined,
-                        { timeZone: vehicle?.timezone ?? "Asia/Kolkata" },
-                      )
-                  : r("dueReading")
-              }
-              icon="notifications"
-              tone="coral"
-              onPress={() => navigate("reminders", row.id)}
-            />
-          ))}
-        </>
-      )}
+            {reminderStatus?.error && (
+              <ErrorState
+                message={reminderStatus.error}
+                retry={reminderStatus.retry}
+              />
+            )}
+            {!reminders.isPending && !reminders.error && !upcoming.length && (
+              <AppText muted>{t("uiNoReminders")}</AppText>
+            )}
+            {upcoming.slice(0, 3).map((row) => (
+              <MenuRow
+                key={row.id}
+                label={String(row.payload.title)}
+                subtitle={
+                  row.payload.due_at
+                    ? Date.parse(String(row.payload.due_at)) < now
+                      ? r("overdue")
+                      : new Date(String(row.payload.due_at)).toLocaleDateString(
+                          undefined,
+                          { timeZone: vehicle?.timezone ?? "Asia/Kolkata" },
+                        )
+                    : r("dueReading")
+                }
+                icon="notifications"
+                tone="coral"
+                onPress={() => navigate("reminders", row.id)}
+              />
+            ))}
+          </>
+        )}
     </>
   );
 }

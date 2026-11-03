@@ -1,4 +1,3 @@
-import { readLocal, writeLocal } from "@/src/lib/localStore";
 import {
   listDevelopmentVehicles,
   saveDevelopmentVehicle,
@@ -16,27 +15,9 @@ export async function listVehicles(development = false): Promise<Vehicle[]> {
   const session = await client().auth.getSession();
   const user = session.data.session?.user.id;
   if (!user) throw new Error("NOT_AUTHENTICATED");
-  const key = `user.${user}.garage`;
-  try {
-    const { data, error } = await client().rpc("list_my_vehicles");
-    if (error) throw new Error(error.message);
-    const records = vehicleRecordSchema.array().parse(data ?? []);
-    await writeLocal(key, { records, expires: Date.now() + 3600000 });
-    return records;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    const cached = (await readLocal(key)) as {
-      records: Vehicle[];
-      expires: number;
-    } | null;
-    if (
-      /network|fetch|offline|connection|timeout/i.test(message) &&
-      cached &&
-      cached.expires > Date.now()
-    )
-      return vehicleRecordSchema.array().parse(cached.records);
-    throw error;
-  }
+  const { data, error } = await client().rpc("list_my_vehicles");
+  if (error) throw new Error(error.message);
+  return vehicleRecordSchema.array().parse(data ?? []);
 }
 export async function saveVehicle(
   input: VehicleInput,
@@ -55,7 +36,8 @@ export async function saveVehicle(
     p_expected: expected ?? null,
   });
   if (error) throw new Error(error.message);
-  return data as string;
+  if (typeof data !== "string" || !data) throw new Error("SAVE_NOT_CONFIRMED");
+  return data;
 }
 export async function archiveVehicle(
   id: string,

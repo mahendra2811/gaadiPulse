@@ -1,9 +1,7 @@
-import { cancelSynchronization } from "@/src/features/records/api";
 import { clearDeviceNotifications } from "@/src/features/reminders/notifications";
-import { clearOperations } from "@/src/lib/sync/outbox";
-import { removeUserLocal, removeUserCaches } from "@/src/lib/localStore";
 import {
   DEVELOPMENT_USER,
+  clearDevelopment,
   requireDevelopment,
 } from "@/src/features/development/repository";
 import {
@@ -18,7 +16,6 @@ import { AppState } from "react-native";
 import { type Session } from "@supabase/supabase-js";
 import { useQueryClient } from "@tanstack/react-query";
 import { client, supabase, secureStorage } from "@/src/lib/supabase";
-import { clearUserData } from "@/src/lib/db";
 import { useUI } from "@/src/state/ui";
 type AuthState = {
   session: Session | null;
@@ -50,7 +47,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       try {
         if (previousUser.current && previousUser.current !== next?.user.id) {
           await query.cancelQueries();
-          await removeUserCaches(previousUser.current);
           await clearDeviceNotifications();
           query.clear();
           useUI.getState().setActive(null);
@@ -120,21 +116,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [session],
   );
   const signOut = async () => {
-    cancelSynchronization();
     const user =
       session?.user.id ?? (development ? DEVELOPMENT_USER : undefined);
     await query.cancelQueries();
     await clearDeviceNotifications();
     if (user) {
-      await clearUserData(user);
-      await clearOperations(user);
-      await removeUserLocal(user);
       await secureStorage.removeItem(`active.${user}`);
     }
     if (!development) {
       const { error: err } = await client().auth.signOut();
       if (err) throw err;
     }
+    clearDevelopment();
     setDevelopment(false);
     query.clear();
     useUI.getState().setActive(null);
@@ -147,7 +140,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         development,
         startDevelopment: async () => {
           requireDevelopment();
-          cancelSynchronization();
+          clearDevelopment();
           await query.cancelQueries();
           query.clear();
           setError(null);

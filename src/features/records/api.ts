@@ -1,16 +1,10 @@
 import * as Crypto from "expo-crypto";
 import { linkedReminder } from "./linkedReminder";
-import { listDevelopmentVehicles } from "@/src/features/development/repository";
 import { permittedFuel, fuelUnit } from "@/src/features/garage/energy";
 import { validatePayload } from "./payloadSchemas";
 import { client } from "@/src/lib/supabase";
 import {
-  readLocal,
-  writeLocal,
-  removeLocal,
-  clearVehicleCache,
-} from "@/src/lib/localStore";
-import {
+  listDevelopmentVehicles,
   readDevelopment,
   writeDevelopment,
   DEVELOPMENT_USER,
@@ -22,14 +16,6 @@ import {
   type Kind,
   type Payload,
 } from "./schema";
-import {
-  operations,
-  putOperation,
-  removeOperation,
-  classifySyncError,
-  retryDelay,
-  type Operation,
-} from "@/src/lib/sync/outbox";
 export const tables: Record<Kind, string> = {
   fuel: "fuel_logs",
   expenses: "expenses",
@@ -51,34 +37,11 @@ export async function access(
   const session = await client().auth.getSession();
   const user = session.data.session?.user.id;
   if (!user) throw new Error("NOT_AUTHENTICATED");
-  const key = `user.${user}.access.${vehicle}`;
-  try {
-    const { data, error } = await client().rpc("vehicle_access", {
-      p_vehicle: vehicle,
-    });
-    if (error) throw new Error(error.message);
-    const result = data as Record<string, boolean>;
-    await writeLocal(key, { result, expires: Date.now() + 3600000 });
-    return result;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    if (/PERMISSION|JWT|TOKEN|AUTHENTICATED/i.test(message)) {
-      await removeLocal(key);
-      await clearVehicleCache(user, vehicle);
-      throw error;
-    }
-    const cached = (await readLocal(key)) as {
-      result: Record<string, boolean>;
-      expires: number;
-    } | null;
-    if (
-      /network|fetch|offline|connection|timeout/i.test(message) &&
-      cached &&
-      cached.expires > Date.now()
-    )
-      return cached.result;
-    throw error;
-  }
+  const { data, error } = await client().rpc("vehicle_access", {
+    p_vehicle: vehicle,
+  });
+  if (error) throw new Error(error.message);
+  return data as Record<string, boolean>;
 }
 export async function listRecords(
   user: string,
@@ -110,68 +73,41 @@ export async function listRecords(
       return { ...record, payload };
     });
   }
-  const key = `user.${user}.cache.${vehicle}.${kind}`;
-  let scope: string | null = null;
-  try {
-    const permissions = await access(vehicle, false);
-    scope = JSON.stringify(permissions);
-    if (!permissions[readPermission(kind)]) {
-      await removeLocal(key);
-      throw new Error("PERMISSION_DENIED");
-    }
-    let rows: RecordEntry[] = [];
-    for (let offset = 0; ; offset += 250) {
-      const request =
-        kind === "progress"
-          ? client().rpc("read_progress_records", {
-              p_vehicle: vehicle,
-              p_offset: offset,
-              p_limit: 250,
-            })
-          : client()
-              .from(tables[kind])
-              .select(
-                "id,vehicle_id,created_by,revision,status,payload,created_at,updated_at",
-              )
-              .eq("vehicle_id", vehicle)
-              .order("created_at", { ascending: false })
-              .order("id", { ascending: false })
-              .range(offset, offset + 249);
-      const { data, error } = await request;
-      if (error) throw new Error(error.message);
-      const page = recordSchema
-        .array()
-        .parse(data)
-        .map((record) => ({
-          ...record,
-          payload: validatePayload(kind, record.payload),
-        }));
-      rows = rows.concat(page);
-      if (page.length < 250) break;
-    }
-    await writeLocal(key, { rows, scope, expires: Date.now() + 3600000 });
-    return rows;
-  } catch (e) {
-    const message = e instanceof Error ? e.message : String(e);
-    if (/PERMISSION|JWT|TOKEN|AUTHENTICATED/i.test(message)) {
-      await removeLocal(key);
-      throw e;
-    }
-    const cache = (await readLocal(key)) as {
-      rows: RecordEntry[];
-      scope: string;
-      expires: number;
-    } | null;
-    if (
-      /network|fetch|offline|connection|timeout/i.test(message) &&
-      cache &&
-      cache.expires > Date.now() &&
-      cache.scope === scope
-    )
-      return recordSchema.array().parse(cache.rows);
-    throw e;
+  const permissions = await access(vehicle, false);
+  if (!permissions[readPermission(kind)]) throw new Error("PERMISSION_DENIED");
+  let rows: RecordEntry[] = [];
+  for (let offset = 0; ; offset += 250) {
+    const request =
+      kind === "progress"
+        ? client().rpc("read_progress_records", {
+            p_vehicle: vehicle,
+            p_offset: offset,
+            p_limit: 250,
+          })
+        : client()
+            .from(tables[kind])
+            .select(
+              "id,vehicle_id,created_by,revision,status,payload,created_at,updated_at",
+            )
+            .eq("vehicle_id", vehicle)
+            .order("created_at", { ascending: false })
+            .order("id", { ascending: false })
+            .range(offset, offset + 249);
+    const { data, error } = await request;
+    if (error) throw new Error(error.message);
+    const page = recordSchema
+      .array()
+      .parse(data)
+      .map((record) => ({
+        ...record,
+        payload: validatePayload(kind, record.payload),
+      }));
+    rows = rows.concat(page);
+    if (page.length < 250) break;
   }
+  return rows;
 }
+
 let localWrites: Promise<unknown> = Promise.resolve();
 async function saveLocal(
   kind: Kind,
@@ -295,7 +231,16 @@ async function saveLocal(
   localWrites = result.catch(() => {});
   return result;
 }
-export async function sendOperation(op: Operation, signal?: AbortSignal) {
+type OnlineOperation = {
+  operation_id: string;
+  vehicle_id: string;
+  kind: Kind;
+  entity_id: string | null;
+  expected: number | null;
+  payload: Payload;
+  record_status: string;
+};
+export async function sendOperation(op: OnlineOperation, signal?: AbortSignal) {
   const rpc = op.kind === "progress" ? "submit_progress" : "save_record";
   const args =
     op.kind === "progress"
@@ -320,7 +265,8 @@ export async function sendOperation(op: Operation, signal?: AbortSignal) {
     ? request.abortSignal(signal)
     : request);
   if (error) throw new Error(error.message);
-  return String(data);
+  if (typeof data !== "string" || !data) throw new Error("SAVE_NOT_CONFIRMED");
+  return data;
 }
 export async function saveRecord(
   user: string,
@@ -344,99 +290,17 @@ export async function saveRecord(
         expected,
         status,
       ),
-      pending: false,
     };
-  const op: Operation = {
+  const idResult = await sendOperation({
     operation_id: operation,
-    user_id: user,
     vehicle_id: vehicle,
     kind,
     entity_id: id ?? null,
     expected: expected ?? null,
     payload,
     record_status: status,
-    created_at: new Date().toISOString(),
-    attempts: 0,
-    next_retry_at: new Date().toISOString(),
-    status: "PENDING",
-    error: null,
-  };
-  await putOperation(op);
-  try {
-    const result = await sendOperation(op);
-    await removeOperation(user, operation);
-    await writeLocal(`user.${user}.lastSync`, new Date().toISOString());
-    return { id: result, pending: false };
-  } catch (e) {
-    const message = e instanceof Error ? e.message : String(e);
-    op.status = classifySyncError(message);
-    op.error = message;
-    op.attempts = 1;
-    op.next_retry_at = new Date(Date.now() + retryDelay(1)).toISOString();
-    await putOperation(op);
-    if (op.status !== "PENDING") throw new Error(message);
-    return { id: id ?? operation, pending: true };
-  }
-}
-let syncing = false;
-let syncGeneration = 0;
-let syncController: AbortController | null = null;
-export function cancelSynchronization() {
-  syncGeneration++;
-  syncController?.abort();
-  syncController = null;
-}
-export async function synchronize(user: string, force = false) {
-  if (syncing) return { completed: 0 };
-  let completed = 0;
-  const generation = syncGeneration;
-  syncing = true;
-  try {
-    for (const op of await operations(user)) {
-      if (generation !== syncGeneration) return { completed };
-      if (
-        op.status === "REJECTED" ||
-        op.status === "CONFLICT" ||
-        (!force && Date.parse(op.next_retry_at) > Date.now())
-      )
-        continue;
-      const current = await client().auth.getSession();
-      if (
-        generation !== syncGeneration ||
-        current.data.session?.user.id !== user
-      )
-        return { completed };
-      await putOperation({ ...op, status: "SYNCING" });
-      try {
-        const controller = new AbortController();
-        syncController = controller;
-        await sendOperation(op, controller.signal);
-        if (generation !== syncGeneration) return { completed };
-        await removeOperation(user, op.operation_id);
-        completed++;
-      } catch (e) {
-        if (generation !== syncGeneration) return { completed };
-        const message = e instanceof Error ? e.message : String(e);
-        const status = classifySyncError(message);
-        await putOperation({
-          ...op,
-          status,
-          error: message,
-          attempts: op.attempts + 1,
-          next_retry_at: new Date(
-            Date.now() + retryDelay(op.attempts + 1),
-          ).toISOString(),
-        });
-        if (status === "PENDING") break;
-      }
-    }
-  } finally {
-    syncing = false;
-    syncController = null;
-    if (completed > 0 && generation === syncGeneration)
-      await writeLocal(`user.${user}.lastSync`, new Date().toISOString());
-  }
-  return { completed };
+  });
+  return { id: idResult };
 }
 export async function expenseCategories(
   vehicle: string,

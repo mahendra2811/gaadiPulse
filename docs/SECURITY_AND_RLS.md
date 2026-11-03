@@ -1,5 +1,7 @@
 # Security architecture and current verification boundary
 
+> Current override (3 November 2026): latest user instruction makes the app online-only. Offline draft/cache/outbox descriptions below are historical and superseded by [ONLINE_ONLY_PLAN.md](ONLINE_ONLY_PLAN.md). The former Sync status route now displays Connection; live-backend acceptance TODOs remain open.
+
 ## Backend authority
 
 Supabase Auth is the identity authority; PostgreSQL RLS and fixed-search-path SECURITY DEFINER RPCs enforce business rules. Roles belong to `(vehicle_id,user_id)`, not profiles. Helpers read real `auth.users` verification state. No grant resolution trusts a submitted user ID, client email or editable metadata.

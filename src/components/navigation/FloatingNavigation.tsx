@@ -1,3 +1,4 @@
+import { useActiveVehicle } from "@/src/features/garage/hooks";
 import { useEffect, useState } from "react";
 import { Keyboard, Pressable, Text, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -68,6 +69,11 @@ export function FloatingNavigation({
   selected?: NavigationTab;
   onSelect?: (tab: NavigationTab) => void;
 }) {
+  const { vehicle } = useActiveVehicle();
+  const tabLabel = (item: (typeof items)[number]) =>
+    item.id === "fuel" && vehicle?.energy_type === "ELECTRIC"
+      ? t("charging")
+      : t(item.label);
   const c = useTheme();
   const inset = useSafeAreaInsets();
   const path = usePathname();
@@ -149,7 +155,7 @@ export function FloatingNavigation({
                 fontWeight: active ? "700" : "500",
               }}
             >
-              {t(item.label)}
+              {tabLabel(item)}
             </Text>
           </View>
         );
@@ -157,7 +163,7 @@ export function FloatingNavigation({
           <Pressable
             key={item.id}
             accessibilityRole="tab"
-            accessibilityLabel={t(item.label)}
+            accessibilityLabel={tabLabel(item)}
             accessibilityState={{ selected: active }}
             onPress={() => {
               if (onSelect) {

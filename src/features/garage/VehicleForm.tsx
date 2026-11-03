@@ -1,8 +1,11 @@
+import { supportsVehicle, releaseFeatures } from "@/src/features/release/scope";
+import { VehicleComingSoon } from "@/src/features/release/DeferredFeature";
+import { SquareArtwork } from "@/src/components/ui/SquareArtwork";
 import { AdditionalOptions } from "@/src/components/ui/AdditionalOptions";
 import { vehicleEnergyTypes } from "./energy";
 import { DateTimeInput } from "@/src/components/ui/fields";
 import { useEffect, useState } from "react";
-import { BackHandler, Image, View, Text } from "react-native";
+import { BackHandler, View, Text } from "react-native";
 import { router, useLocalSearchParams, usePreventRemove } from "expo-router";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,7 +21,6 @@ import {
 import { useVehicles } from "./hooks";
 import { saveVehicle } from "./api";
 import { useSession, useAccountId } from "@/src/features/auth/session";
-import { loadDraft, saveDraft, clearDraft } from "@/src/lib/db";
 import { VehicleSubtypeSelector } from "./VehicleSubtypeSelector";
 import { subtypeOptions, subtypeLabel } from "./subtypes";
 import { VehicleChoiceGrid } from "./VehicleChoiceGrid";
@@ -67,56 +69,32 @@ export default function VehicleForm() {
   const qc = useQueryClient();
   const toast = useToast();
   const colors = useTheme();
+  const [comingSoon, setComingSoon] = useState(false);
   const [step, setStep] = useState(0);
   const [additionalStep, setAdditionalStep] = useState<number | null>(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [draftError, setDraftError] = useState(false);
   const [allowExit, setAllowExit] = useState(false);
-  const [operation, setOperation] = useState(() => Crypto.randomUUID());
+  const [operation] = useState(() => Crypto.randomUUID());
   const form = useForm<VehicleInput>({
     resolver: zodResolver(vehicleSchema),
     defaultValues: initial,
   });
   const values = useWatch({ control: form.control }) as VehicleInput;
-  const key = id ? `vehicle.${id}` : "vehicle.new";
   useEffect(() => {
-    if (ready || !user || (id && query.isPending)) return;
-    let active = true;
-    void loadDraft(user!, key)
-      .then((d) => {
-        if (!active) return;
-        if (d && typeof d === "object" && "values" in d) {
-          const draft = d as { values: VehicleInput; operation: string };
-          form.reset(draft.values);
-          setOperation(draft.operation);
-        } else if (vehicle)
-          form.reset({
-            ...initial,
-            ...vehicle,
-            registration_number: vehicle.registration_number ?? "",
-            observed_at: new Date().toISOString(),
-          });
-        setReady(true);
-      })
-      .catch((e) => {
-        setError(String(e));
-        setReady(true);
+    if (ready || !user || (id && (query.isPending || query.error))) return;
+    if (vehicle)
+      form.reset({
+        ...initial,
+        ...vehicle,
+        registration_number: vehicle.registration_number ?? "",
+        observed_at: new Date().toISOString(),
       });
-    return () => {
-      active = false;
-    };
-  }, [user, id, query.isPending, ready, form, key, vehicle]);
-  useEffect(() => {
-    if (!ready || !user || allowExit) return;
-    const timer = setTimeout(() => {
-      void saveDraft(user!, key, { values, operation })
-        .then(() => setDraftError(false))
-        .catch(() => setDraftError(true));
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [values, ready, user, key, operation, allowExit]);
+    // Initialize this editable form once from the confirmed server response.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setReady(true);
+  }, [user, id, query.isPending, query.error, ready, form, vehicle]);
   const disablePrevention = usePreventRemove(
     form.formState.isDirty && !allowExit,
     ({ repeat }) => {
@@ -124,18 +102,8 @@ export default function VehicleForm() {
         t("unsaved"),
         t("unsavedBody"),
         () => {
-          if (!user) return;
-          setBusy(true);
-          void saveDraft(user, key, { values: form.getValues(), operation })
-            .then(() => {
-              setAllowExit(true);
-              repeat();
-            })
-            .catch((e) => {
-              setDraftError(true);
-              setError(String(e));
-            })
-            .finally(() => setBusy(false));
+          setAllowExit(true);
+          repeat();
         },
         { cancelLabel: t("keepEditing"), confirmLabel: t("leaveForm") },
       );
@@ -192,6 +160,10 @@ export default function VehicleForm() {
   const submit = form.handleSubmit(
     async (input) => {
       if (busy || !user) return;
+      if (!supportsVehicle(input.category)) {
+        setComingSoon(true);
+        return;
+      }
       setBusy(true);
       setError("");
       try {
@@ -203,7 +175,6 @@ export default function VehicleForm() {
           development,
         );
         setAllowExit(true);
-        await clearDraft(user!, key);
         await qc.invalidateQueries({ queryKey: [user!, "vehicles"] });
         toast(t("saved"), "success");
         disablePrevention();
@@ -224,6 +195,10 @@ export default function VehicleForm() {
   );
   const next = async () => {
     if (busy || !ready) return;
+    if (!supportsVehicle(values.category)) {
+      setComingSoon(true);
+      return;
+    }
     if (step === 5) {
       await submit();
       return;
@@ -255,6 +230,15 @@ export default function VehicleForm() {
     t("meterStep"),
     t("reviewStep"),
   ];
+  if (id && query.error)
+    return (
+      <Screen title={t("edit")}>
+        <ErrorState
+          message={query.error.message}
+          retry={() => void query.refetch()}
+        />
+      </Screen>
+    );
   if (id && !query.isPending && (!vehicle || vehicle.role !== "OWNER"))
     return (
       <Screen title={t("edit")}>
@@ -302,6 +286,10 @@ export default function VehicleForm() {
         </View>
       }
     >
+      <VehicleComingSoon
+        visible={comingSoon}
+        onClose={() => setComingSoon(false)}
+      />
       <View
         style={{ width: "100%", maxWidth: 640, alignSelf: "center", gap: 12 }}
       >
@@ -328,6 +316,10 @@ export default function VehicleForm() {
             onChange={(selected) => {
               const category = categories.find((item) => item === selected);
               if (!category) return;
+              if (!supportsVehicle(category)) {
+                setComingSoon(true);
+                return;
+              }
               form.setValue("category", category, { shouldDirty: true });
               if (
                 category !== values.category &&
@@ -436,7 +428,7 @@ export default function VehicleForm() {
             <AppText muted>{t("uiMeterHint")}</AppText>
             <Choice
               compact
-              values={meterModes}
+              values={releaseFeatures.advancedTools ? meterModes : ["KM"]}
               value={values.meter_mode}
               onChange={(v) =>
                 form.setValue("meter_mode", v, { shouldDirty: true })
@@ -464,21 +456,12 @@ export default function VehicleForm() {
           <>
             <AppText muted>{t("uiReviewHint")}</AppText>
             <Card style={{ padding: 16, gap: 14 }}>
-              <View
-                style={{ flexDirection: "row", alignItems: "center", gap: 14 }}
-              >
-                <Image
+              <View style={{ alignItems: "stretch", gap: 10 }}>
+                <SquareArtwork
                   source={vehicleArt(values.category, values.subtype)}
-                  style={{
-                    width: 96,
-                    aspectRatio: 1,
-                    borderRadius: 16,
-                    backgroundColor: "#F1F9F6",
-                  }}
-                  resizeMode="contain"
-                  accessible={false}
+                  size={96}
                 />
-                <View style={{ flex: 1, gap: 6 }}>
+                <View style={{ flex: 1, minWidth: 0, gap: 6 }}>
                   <AppText large>
                     {values.nickname ||
                       values.model ||
@@ -529,8 +512,8 @@ export default function VehicleForm() {
             </Card>
           </>
         )}
-        <AppText muted>{draftError ? t("draftError") : t("draft")}</AppText>
-        {!!error && <ErrorState message={error} retry={() => setError("")} />}
+        <AppText muted>{t("onlineFormNotice")}</AppText>
+        {!!error && <ErrorState message={error} retry={() => void submit()} />}
       </View>
     </Screen>
   );

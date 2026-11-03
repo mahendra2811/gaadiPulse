@@ -1,9 +1,10 @@
+import { releaseFeatures } from "@/src/features/release/scope";
 import { useEffect, useState } from "react";
 import { AppState } from "react-native";
 import { useSession, useAccountId } from "@/src/features/auth/session";
 import { useActiveVehicle } from "@/src/features/garage/hooks";
 import { useRecords, usePermissions } from "@/src/features/records/hooks";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "@/src/lib/query";
 import { client } from "@/src/lib/supabase";
 import { developmentReadings } from "@/src/features/development/repository";
 import { reconcileReminders } from "./notifications";
@@ -28,7 +29,10 @@ export function useReminderReconciliation() {
   }, []);
   const meters = useQuery({
     queryKey: [user, vehicle?.id, "reminder-meters"],
-    enabled: !!vehicle && access.data?.["meters.read"] === true,
+    enabled:
+      releaseFeatures.advancedTools &&
+      !!vehicle &&
+      access.data?.["meters.read"] === true,
     queryFn: async () => {
       if (development) return developmentReadings(vehicle!.id);
       const { data, error } = await client().rpc("latest_meter_readings", {
@@ -40,6 +44,7 @@ export function useReminderReconciliation() {
   });
   useEffect(() => {
     if (
+      !releaseFeatures.advancedTools ||
       !user ||
       !vehicle ||
       !reminders.data ||

@@ -11,7 +11,8 @@ import { useEffect, useState } from "react";
 import { View, Switch } from "react-native";
 import { router, usePreventRemove } from "expo-router";
 import * as Crypto from "expo-crypto";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@/src/lib/query";
 import {
   Screen,
   Card,
@@ -27,7 +28,6 @@ import { useActiveVehicle } from "@/src/features/garage/hooks";
 import { useSession, useAccountId } from "@/src/features/auth/session";
 import { usePermissions } from "@/src/features/records/hooks";
 import { r, recordCopy } from "@/src/features/records/copy";
-import { loadDraft, saveDraft, clearDraft } from "@/src/lib/db";
 import { formVersions, publishForm } from "./api";
 import {
   defaultDefinition,
@@ -85,48 +85,22 @@ function BuilderEditor() {
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [optionDrafts, setOptionDrafts] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
-  const [retryAction, setRetryAction] = useState<"load" | "draft" | "publish">(
-    "load",
-  );
+  const [retryAction, setRetryAction] = useState<"load" | "publish">("load");
   const [busy, setBusy] = useState(false);
   const [invalidNumbers, setInvalidNumbers] = useState<Record<string, boolean>>(
     {},
   );
   const qc = useQueryClient();
   const toast = useToast();
-  const key = `builder.${vehicle?.id}`;
   useEffect(() => {
     if (ready || !vehicle || !user || !query.data) return;
-    let alive = true;
-    void loadDraft(user, key)
-      .then((d) => {
-        if (!alive) return;
-        setDefinition(
-          (d as ProgressDefinition) ??
-            query.data.find((f) => f.published)?.definition ??
-            defaultDefinition,
-        );
-        setReady(true);
-      })
-      .catch((e) => {
-        if (!alive) return;
-        setRetryAction("load");
-        setError(String(e));
-      });
-    return () => {
-      alive = false;
-    };
-  }, [ready, vehicle, user, key, query.data, loadAttempt]);
-  useEffect(() => {
-    if (!ready || !user) return;
-    const timer = setTimeout(() => {
-      void saveDraft(user, key, definition).catch((e) => {
-        setRetryAction("draft");
-        setError(String(e));
-      });
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [definition, ready, user, key]);
+    // Initialize an editable copy of the published server definition.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDefinition(
+      query.data.find((f) => f.published)?.definition ?? defaultDefinition,
+    );
+    setReady(true);
+  }, [ready, vehicle, user, query.data, loadAttempt]);
   const publishedDefinition =
     query.data?.find((version) => version.published)?.definition ??
     defaultDefinition;
@@ -139,16 +113,8 @@ function BuilderEditor() {
         t("unsaved"),
         t("unsavedBody"),
         () => {
-          if (!user) return;
-          void saveDraft(user, key, definition)
-            .then(() => {
-              setLeaving(true);
-              repeat();
-            })
-            .catch((e) => {
-              setRetryAction("draft");
-              setError(String(e));
-            });
+          setLeaving(true);
+          repeat();
         },
         { cancelLabel: t("keepEditing"), confirmLabel: t("leaveForm") },
       ),
@@ -202,7 +168,6 @@ function BuilderEditor() {
       )
         throw new Error(t("numericOnly"));
       await publishForm(vehicle.id, definition, development);
-      await clearDraft(user, key);
       await qc.invalidateQueries({ queryKey: [user, vehicle.id, "forms"] });
       toast(r("saved"), "success");
     } catch (e) {
@@ -274,13 +239,7 @@ function BuilderEditor() {
         disabled={busy}
         onSelect={(next) => {
           const change = () => {
-            if (!user) return;
-            void saveDraft(user, key, definition)
-              .then(() => active.select(next))
-              .catch((e) => {
-                setRetryAction("draft");
-                setError(String(e));
-              });
+            active.select(next);
           };
           if (
             ready &&
@@ -699,10 +658,6 @@ function BuilderEditor() {
             setError("");
             if (retryAction === "load") setLoadAttempt((value) => value + 1);
             else if (retryAction === "publish") void publish();
-            else
-              void saveDraft(user!, key, definition).catch((e) =>
-                setError(String(e)),
-              );
           }}
         />
       )}

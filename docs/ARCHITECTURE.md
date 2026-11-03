@@ -1,7 +1,7 @@
 # Architecture specification
 
 ## Runtime
-`Expo Router Screens → feature hooks / forms → typed repository → local SQLite cache/outbox + Supabase client → RLS + RPC/Edge Functions → PostgreSQL`.
+`Expo Router Screens → feature hooks / forms → typed repository → Supabase client → RLS + RPC/Edge Functions → PostgreSQL`.
 
 ## Directories to CREATE during Prompt 1
 ```text
@@ -25,7 +25,7 @@ src/
   features/{auth,garage,fuel,expenses,meters,maintenance,progress,members,documents,reminders,reports,analytics}/
     api.ts, repository.ts, schemas.ts, hooks.ts, types.ts, components/
   hooks/{useActiveVehicle,useVehicleAccess,usePageLoad,useNetworkStatus,useTheme}.ts
-  lib/{supabase,sqlite,sync,i18n,notifications,queryClient,env}.ts
+  lib/{supabase,query,onlineFetch,i18n,notifications,env}.ts
   stores/{garageStore,uiStore}.ts
   theme/{colors,spacing,typography,motion}.ts
   utils/{money,mileage,readingIntervals,periods,dates}.ts
@@ -45,24 +45,24 @@ Do not create dummy empty modules simply to satisfy a tree. Consolidate where ap
 - `useFuelEntries(vehicleId,filters)` / `useCreateFuel()` / `useUpdateFuel()`: typed query/mutation, idempotency and error status.
 - `useExpenses()`, `useCreateExpense()`, `useMeterReadings()`, `useSaveMeterReading()`.
 - `useProgressForm(vehicleId,version?)`, `usePublishProgressForm()`, `useSubmitDailyProgress()`, `useReviewDailyProgress()`.
-- `useOfflineSync()`: outbox pending/syncing/failed counts, retry action.
+- `/settings/sync` remains a compatibility route for Connection; no sync worker or outbox exists.
 - `useAppLocale()`: future-ready locale switch and string lookup; English only enabled until verified translations supplied.
 
 ## Page loading semantics
 Route required data includes session check, authorized vehicle context and route-essential fetches. Header indicator begins on route navigation and stops only when all required prerequisites resolve or fail; errors show retry. Supplemental charts/images have independent skeletons. Do not display a fabricated numerical percent from elapsed time.
 
 ## App state contracts
-Do not cache a prior vehicle's financial totals under a new selected vehicle. Query keys include user, vehicle and filter. Logout clears local copies according to privacy policy; offline drafts are never silently uploaded after permission revocation.
+Do not cache a prior vehicle's financial totals under a new selected vehicle. Query keys include user, vehicle and filter. Logout clears in-memory account state. No offline drafts or queued uploads exist.
 
 ## Implemented organization after all three prompts
 
 `app/` contains route entrypoints and layouts. Feature modules own auth/settings, garage, records, progress, members, meters, reminders, reports and development storage. Fuel, expense, document, reminder, meter-event and progress entry share typed record primitives instead of duplicating services for each table. `useRecords(kind, vehicleId)` and `usePermissions(vehicleId)` supply the corresponding read contracts. Canonical meter history remains a separate service because baselines, approvals, corrections and resets have different provenance.
 
-TanStack Query keys include account and vehicle. Record lists, reporting snapshots and latest observations have separate namespaces. Zustand stores active selection only. SQLite stores account-scoped form drafts, permission-bound short-lived caches and durable outbox operations. Browser development uses browser persistence. The debug-only development identity uses a separate local namespace and never creates a Supabase session.
+TanStack Query keys include account and vehicle. Record lists, reporting snapshots and latest observations have separate namespaces. Zustand stores active selection only. Forms and query responses live in memory only; failed reads do not fall back to device records. The debug-only preview uses temporary memory and never creates a Supabase session.
 
-Database writes use authorized RPCs, operation receipts, revision checks and audit entries. All public application tables enable RLS. Progress/form reads use sanitized RPCs that remove Owner-only fields for Pilots. Immutable versions retain historical definitions. Four additive migrations implement the database; they have not been executed together during this deferred-testing phase.
+Database writes use authorized RPCs, operation receipts, revision checks and audit entries. All public application tables enable RLS. Progress/form reads use sanitized RPCs that remove Owner-only fields for Pilots. Immutable versions retain historical definitions. Chronological additive migrations implement the database; full compilation currently fails and remains a release blocker.
 
-Sync serializes queued operations with retry backoff, session checks and cancellation on identity changes. Conflicts and rejections require explicit recovery. Confirmed reports exclude provisional operations. Explicit sign-out removes personal working copies; automatic expiration preserves drafts/outbox for the same account. See SYNC_PROTOCOL.md for cache leases and revocation behavior.
+Online saves await backend acknowledgement and preserve open form values on error. Stable operation IDs and revision checks remain. Requests fail fast offline and time out after 20 seconds. Read refetches can run on reconnect; writes require explicit user action. See ONLINE_ONLY_PLAN.md and SYNC_PROTOCOL.md. Earlier offline-first planning is superseded.
 
 Reminders use local notifications from actual date/readings rather than inferred travel. Reports use canonical observations, integer-paise accounting and valid full-to-full fuel intervals. Native exports load Print/Sharing on demand. Privileged account anonymization lives in an operator-authenticated Edge Function and service-role-only database function; its scheduling and provider secrets remain external setup.
 

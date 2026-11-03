@@ -11,14 +11,9 @@ import { client } from "@/src/lib/supabase";
 import { observations as loadObservations } from "@/src/features/meters/api";
 import { useState } from "react";
 import { router } from "expo-router";
-import { useQueries, useQuery } from "@tanstack/react-query";
-import {
-  Screen,
-  Card,
-  AppText,
-  AppButton,
-  ErrorState,
-} from "@/src/components/ui";
+import { useQueries } from "@tanstack/react-query";
+import { useQuery } from "@/src/lib/query";
+import { Screen, Card, AppText, ErrorState } from "@/src/components/ui";
 import { VehicleHeader } from "@/src/components/navigation/VehicleHeader";
 import { useActiveVehicle } from "@/src/features/garage/hooks";
 import { useSession, useAccountId } from "@/src/features/auth/session";
@@ -83,9 +78,9 @@ export function Reports() {
             )
           : "0000-01-01";
   const all = kinds.flatMap((kind, index) =>
-    canRead(kind)
+    canRead(kind) && !queries[index].error
       ? (queries[index].data ?? [])
-          .filter((row) => !row.localStatus && row.status !== "ARCHIVED")
+          .filter((row) => row.status !== "ARCHIVED")
           .map((row) => ({ ...row, kind }))
       : [],
   );
@@ -177,7 +172,7 @@ export function Reports() {
           await Promise.all(
             allowed.map(async (kind) =>
               (await listRecords(user!, v.id, kind, false))
-                .filter((row) => !row.localStatus && row.status !== "ARCHIVED")
+                .filter((row) => row.status !== "ARCHIVED")
                 .map((row) => ({ ...row, kind })),
             ),
           )

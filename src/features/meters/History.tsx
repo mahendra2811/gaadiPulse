@@ -13,9 +13,9 @@ import { observations as loadObservations } from "./api";
 import { useState } from "react";
 import { View } from "react-native";
 import { router } from "expo-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@/src/lib/query";
 import * as Crypto from "expo-crypto";
-import { z } from "zod";
 import {
   Screen,
   AppText,
@@ -37,17 +37,7 @@ import {
   writeDevelopment,
 } from "@/src/features/development/repository";
 import { r } from "@/src/features/records/copy";
-const readingSchema = z.object({
-  id: z.string(),
-  reading_type: z.enum(["KM", "HOURS"]),
-  value: z.coerce.number(),
-  observed_at: z.string(),
-  entered_at: z.string().optional(),
-  source: z.string().optional(),
-  status: z.string().optional(),
-  is_reset: z.boolean().optional(),
-});
-type Reading = z.infer<typeof readingSchema>;
+type Reading = Awaited<ReturnType<typeof loadObservations>>[number];
 export default function MeterHistory() {
   const active = useActiveVehicle();
   const vehicle = active.vehicle;
@@ -61,6 +51,7 @@ export default function MeterHistory() {
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [operation, setOperation] = useState(() => Crypto.randomUUID());
   const [type, setType] = useState("ALL");
   const [limit, setLimit] = useState(12);
   const [showMeasured, setShowMeasured] = useState(false);
@@ -93,10 +84,11 @@ export default function MeterHistory() {
           p_expected: selected.value,
           p_value: replacement,
           p_reason: reason,
-          p_operation: Crypto.randomUUID(),
+          p_operation: operation,
         });
         if (error) throw new Error(error.message);
       }
+      setOperation(Crypto.randomUUID());
       await qc.invalidateQueries();
       setSelected(null);
       toast(r("saved"));
@@ -154,6 +146,7 @@ export default function MeterHistory() {
               onCorrect={
                 permissions.data?.owner && row.status !== "CORRECTED"
                   ? () => {
+                      setOperation(Crypto.randomUUID());
                       setSelected(row);
                       setValue(String(row.value));
                       setReason("");

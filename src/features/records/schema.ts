@@ -42,9 +42,7 @@ export const recordSchema = z.object({
   updated_at: z.string(),
   payload: z.record(z.string(), z.unknown()),
 });
-export type RecordEntry = z.infer<typeof recordSchema> & {
-  localStatus?: "PENDING" | "REJECTED" | "CONFLICT";
-};
+export type RecordEntry = z.infer<typeof recordSchema>;
 const positive = z.coerce.number().positive().finite();
 const optionalReading = z.union([
   z.literal(""),

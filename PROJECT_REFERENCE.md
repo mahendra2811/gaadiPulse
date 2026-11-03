@@ -1,8 +1,12 @@
 # GaadiPulse — PROJECT_REFERENCE.md
 
+> Current override (3 November 2026): latest user instruction makes the app online-only. Offline draft/cache/outbox descriptions below are historical and superseded by [ONLINE_ONLY_PLAN.md](docs/ONLINE_ONLY_PLAN.md). The former Sync status route now displays Connection; live-backend acceptance TODOs remain open.
+
 > Read this entire file before every implementation stage. This is the product contract for Codex. Three stage prompts follow in order. Android-first, English UI initially; Hindi translations later. Product is free.
 
 ## Product identity and goal
+- Android application ID: `com.pooniya.gaadipulse`. User confirmed on 3 November 2026 that the GaadiPulse app entry has been created in Google Play Console. Use this package for release builds and Android OAuth configuration; Play publication has not been confirmed.
+- User-corrected signing fingerprints (4 November 2026): SHA-256 `41:16:50:BA:D9:2A:5D:11:97:F3:0A:0B:89:1B:67:8E:30:A3:CF:C4:FA:C8:68:CA:40:A3:3E:B4:03:95:2D:2D`; SHA-1 `4F:7B:BC:37:B7:77:D2:A3:B8:2F:F2:35:9E:F3:C4:31:1D:DF:52:5B`. Supersede earlier supplied values. Certificate association is user-supplied, not independently verified. Full Digital Asset Links statement and verification status are recorded in `docs/DECISIONS.md`.
 - Brand `GaadiPulse`; tagline `Every Vehicle. Every Detail.`; Hindi marketing tagline later: `हर गाड़ी का पूरा हिसाब।`
 - Android application for private and shared management of two-wheelers, cars, commercial trucks, tippers, tractors, and heavy machinery. Responsive on small Android phones (320–360dp), tablets optional. iOS-compatible architecture, but Android is release target.
 - React Native + Expo Router + TypeScript; Supabase Auth (Google sign-in plus Email OTP), Postgres, Storage-ready architecture, SQL/RLS, Edge Functions; Expo SQLite local database and durable sync queue; TanStack Query, Zustand for only client UI state, React Hook Form + Zod, React Native Reanimated, safe-area, notifications, SVG, testing.

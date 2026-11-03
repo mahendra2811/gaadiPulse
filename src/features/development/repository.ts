@@ -1,5 +1,4 @@
 import * as Crypto from "expo-crypto";
-import { readLocal, writeLocal } from "@/src/lib/localStore";
 import {
   vehicleSchema,
   vehicleRecordSchema,
@@ -12,13 +11,17 @@ export function requireDevelopment() {
   if (!__DEV__)
     throw new Error("Development mode is unavailable in release builds.");
 }
+const previewData = new Map<string, unknown>();
+export function clearDevelopment() {
+  previewData.clear();
+}
 export async function readDevelopment(key: string): Promise<unknown> {
   requireDevelopment();
-  return readLocal(`development.${key}`);
+  return JSON.parse(JSON.stringify(previewData.get(key) ?? null));
 }
 export async function writeDevelopment(key: string, value: unknown) {
   requireDevelopment();
-  return writeLocal(`development.${key}`, value);
+  previewData.set(key, JSON.parse(JSON.stringify(value)));
 }
 export async function listDevelopmentVehicles() {
   return vehicleRecordSchema

@@ -1,6 +1,5 @@
 import { publishDefinitionSchema } from "./schema";
 import { t } from "@/src/lib/i18n";
-import { readLocal, writeLocal } from "@/src/lib/localStore";
 import * as Crypto from "expo-crypto";
 import { client } from "@/src/lib/supabase";
 import {
@@ -39,37 +38,18 @@ export async function formVersions(
   const session = await client().auth.getSession();
   const user = session.data.session?.user.id;
   if (!user) throw new Error("NOT_AUTHENTICATED");
-  const key = `user.${user}.forms.${vehicle}`;
-  let scope: string | null = null;
-  try {
-    scope = JSON.stringify(await access(vehicle, false));
-    const { data, error } = await client().rpc("read_form_versions", {
-      p_vehicle: vehicle,
-    });
-    if (error) throw new Error(error.message);
-    const records = (data ?? []).map((f: FormVersion) => ({
-      ...f,
-      definition: progressDefinitionSchema.parse(f.definition),
-    }));
-    await writeLocal(key, { records, scope, expires: Date.now() + 3600000 });
-    return records;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    const cache = (await readLocal(key)) as {
-      records: FormVersion[];
-      expires: number;
-      scope: string;
-    } | null;
-    if (
-      /network|fetch|offline|connection|timeout/i.test(message) &&
-      cache &&
-      cache.expires > Date.now() &&
-      cache.scope === scope
-    )
-      return cache.records;
-    throw error;
-  }
+  await access(vehicle, false);
+  const { data, error } = await client().rpc("read_form_versions", {
+    p_vehicle: vehicle,
+  });
+  if (error) throw new Error(error.message);
+  const records = (data ?? []).map((f: FormVersion) => ({
+    ...f,
+    definition: progressDefinitionSchema.parse(f.definition),
+  }));
+  return records;
 }
+
 export async function publishForm(
   vehicle: string,
   definition: ProgressDefinition,

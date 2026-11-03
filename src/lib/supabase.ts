@@ -2,6 +2,7 @@ import "react-native-url-polyfill/auto";
 import { createClient } from "@supabase/supabase-js";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
+import { onlineFetch } from "./onlineFetch";
 import { env } from "./env";
 // Chunk tokens because SecureStore values have platform-dependent size limits.
 export const secureStorage = {
@@ -47,6 +48,7 @@ export const secureStorage = {
 };
 export const supabase = env
   ? createClient(env.url, env.key, {
+      global: { fetch: onlineFetch },
       auth: {
         storage: secureStorage,
         autoRefreshToken: true,

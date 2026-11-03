@@ -1,5 +1,7 @@
 # QA and verification status
 
+> Current override (3 November 2026): latest user instruction makes the app online-only. Offline draft/cache/outbox descriptions below are historical and superseded by [ONLINE_ONLY_PLAN.md](ONLINE_ONLY_PLAN.md). The former Sync status route now displays Connection; live-backend acceptance TODOs remain open.
+
 The user explicitly instructed: **do not do testing now; continue implementation**. No Stage 2/3 test, typecheck, lint, SQL migration run, Expo export or native build is claimed. Source-formatting and reading code are implementation activities, not runtime verification.
 
 | Area | Implementation | Verification status |

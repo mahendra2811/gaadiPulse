@@ -34,7 +34,6 @@ const config: ExpoConfig = {
       { icon: "./assets/notification-icon.png", color: "#147D69" },
     ],
     "expo-secure-store",
-    "expo-sqlite",
     [
       "expo-splash-screen",
       {

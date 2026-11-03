@@ -53,3 +53,59 @@ Use one in-app confirmation host rather than browser confirm dialogs. Flush supp
 ## 2026-11-03 — Add Vehicle responsive layout
 
 All six wizard sections share a centered 640dp maximum content width, matching the action footer. Category and subtype choices use one measured grid: two columns on phones, three at 540dp available width, and one on very narrow layouts or very large text. Images keep a square contain frame; labels have a separate minimum 44dp area and may wrap for accessibility. The final category uses the same card dimensions instead of spanning a row. Optional catalog suggestions join timezone and initial observations under Additional options. Existing entry fields, drafts, validation and save services are preserved.
+
+## 2026-11-03 — Compact image-first wizard cards
+
+Supersedes the 44dp caption minimum above: category and subtype cards now have an edge-to-edge square image frame and a compact caption targeting approximately 10% of total card height (24dp minimum, expanding for wrapping/large text). The whole card remains the radio touch target. Absolute-fill contained artwork prevents intrinsic PNG dimensions from influencing image height on web. Rows align at the top rather than stretching shorter cards. All six wizard sections retain their shared content width; only image choice cards need this layout.
+
+Image bounds correction: absolute positioning alone does not override React Native Web Image's intrinsic source width/height. Explicit percentage width and height must constrain the image to its square frame; retain contain mode to show the full vehicle without cropping.
+
+## 2026-11-03 — Shared vehicle artwork bounds
+
+Vehicle cards reuse `SquareArtwork`, a square parent with explicit percentage image dimensions and contain mode. Garage uses measured one/two/three-column widths within 640dp and keeps identity/type/role/meter/archive details below the image. Vehicle summary and wizard review identities also follow their square thumbnail. Switcher rows retain compact square thumbnails for list usability. Record/action cards without vehicle artwork retain their domain layouts. Onboarding and empty-state art already have explicit bounded dimensions and are unchanged.
+
+## 2026-11-03 — Compact global header vehicle selector
+
+Authenticated page headers show the active vehicle at right, preferring trimmed nickname then registration, model and subtype. Name truncates at the end to preserve its beginning. The entire control opens the selector when multiple non-archived vehicles exist; a single vehicle has no redundant switch icon. Selection uses the existing active vehicle store and query scoping. Authentication headers omit the selector; existing page titles and form back navigation remain available.
+
+## 2026-11-03 — Focused bike/car rollout
+
+The latest user request temporarily narrows the larger Phase 1 scope. Implement the plan in `docs/FOCUSED_RELEASE_PLAN.md`: bikes/cars, Home, fuel/charging, ordinary expenses, odometer and histories. Preserve advanced source under one reversible `advancedTools` rollout switch instead of commenting out large implementation blocks. Block advanced route entrypoints and hide shortcuts; preserve SQL authorization, migrations, server audit, revisions/conflicts, grants and already queued work. Existing unsupported vehicle history stays readable; creation/new ledger forms are deferred. Category notice directs users to release updates rather than promising an unimplemented notification subscription. Dedicated maintenance is paused while service/repair expense categories remain available. Electric charging remains in the existing fuel ledger with KWH storage units and kWh display labels.
+
+## 2026-11-03 — Horizontal active vehicle summary
+
+User requested a landscape active vehicle card: bounded square bundled artwork occupies 20% of the inner row, with compact identity, available registration/make/model, role and meter unit to its right. Text wraps for long names and larger fonts. The hero card no longer offers Switch vehicle; the existing top header picker handles active selection. Shared non-hero summaries also use the horizontal arrangement, retaining explicit form vehicle selection where needed. No numeric odometer is inferred from the vehicle's meter mode.
+
+
+## 2026-11-03 — Online-only account data
+
+Latest user instruction replaces the offline-first requirements in PROJECT_REFERENCE.md, stage prompts and older handoffs. Implement ONLINE_ONLY_PLAN.md: remove SQLite/browser account caching, draft persistence, outbox and background replay. Open forms use memory only; confirmed SQL/RPC writes gate success feedback and list refresh. Read errors/known disconnection hide old query results. Keep secure sessions, selected vehicle preference, atomic RPCs, operation UUID receipts and revisions. Debug frontend preview is visibly labeled and ephemeral, never a production fallback. Preserve migrations/server data and leave legacy device work untouched but inaccessible. Live-backend TODOs remain explicitly OPEN while frontend work proceeds; do not claim integration or release acceptance.
+# 3 November 2026 — Confirmed Play Console application identity
+
+The user has created the GaadiPulse app entry in Google Play Console and confirmed the Android package name as `com.pooniya.gaadipulse`. The existing default in `app.config.ts` matches. Keep this application ID for release builds and Android OAuth configuration; do not override `ANDROID_PACKAGE` for this Play app. Creating the Console entry does not establish that a build has been uploaded or published.
+
+## 2026-11-04 — User-supplied signing fingerprint, pending verification
+
+User supplied SHA-256: `DE:12:9E:53:8B:93:4A:DA:98:B0:28:8A:CC:E0:61:FD:F9:36:03:3D:A2:30:1C:17:15:95:2D:FE:EC:45:20:3C`. Format is 32 hexadecimal bytes; association with the actual Play app signing certificate has not been independently verified. The supplied SHA-1 repeats this 32-byte value and is invalid as SHA-1; obtain the separate 20-byte SHA-1 from the certificate page.
+
+The supplied Digital Asset Links snippet uses `com.pooniya.gaadiPulse`, conflicting with the previously confirmed `com.pooniya.gaadipulse` and Expo configuration. Preserve the confirmed lowercase application ID pending clarification; any deployed assetlinks statement must match the actual application ID exactly. No website domain was supplied, and no assetlinks deployment or Android HTTPS intent-filter configuration was performed.
+
+## 2026-11-04 — Corrected signing details (supersedes earlier supplied values)
+
+User corrected the Digital Asset Links statement: package `com.pooniya.gaadipulse`; SHA-256 `41:16:50:BA:D9:2A:5D:11:97:F3:0A:0B:89:1B:67:8E:30:A3:CF:C4:FA:C8:68:CA:40:A3:3E:B4:03:95:2D:2D`. User subsequently supplied SHA-1 `4F:7B:BC:37:B7:77:D2:A3:B8:2F:F2:35:9E:F3:C4:31:1D:DF:52:5B` (valid 20-byte hexadecimal format). Use these values instead of the earlier fingerprint and mixed-case package. Certificate association is user-supplied, not independently verified. No domain/deployment was supplied or performed.
+
+```json
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.pooniya.gaadipulse",
+      "sha256_cert_fingerprints": [
+        "41:16:50:BA:D9:2A:5D:11:97:F3:0A:0B:89:1B:67:8E:30:A3:CF:C4:FA:C8:68:CA:40:A3:3E:B4:03:95:2D:2D"
+      ]
+    }
+  }
+]
+```
+

@@ -1,5 +1,7 @@
 # Stage 3 implementation handoff — 2026-10-21
 
+> Latest handoff: see “2026-11-03 — Online-only implementation handoff” at the end. Earlier offline/draft/cache descriptions are historical.
+
 The requested three-prompt implementation is present in source, including the development sign-in bypass. This handoff records implementation, not release acceptance. The user explicitly instructed that testing be deferred. Current type, runtime, SQL, security, accessibility and native behavior remain unverified.
 
 No Git revision is available: this workspace was not initialized as a repository during implementation. Original supplied material remains in `my docs/`.
@@ -155,3 +157,106 @@ Executed checks for this change:
 - `npx eslint src/features/garage/VehicleChoiceGrid.tsx src/features/garage/VehicleForm.tsx src/features/garage/VehicleSubtypeSelector.tsx --max-warnings=0` — PASS.
 - `npx prettier --write src/features/garage/VehicleChoiceGrid.tsx src/features/garage/VehicleForm.tsx src/features/garage/VehicleSubtypeSelector.tsx` — PASS.
 - Browser visual inspection — BLOCKED: in-app browser provider unavailable in this session. Mobile/web visual QA and Android build smoke test were not run. No SQL changes; SQL tests not run for this presentation-only change.
+
+## 2026-11-03 — Compact category/subtype card correction
+
+Updated `src/features/garage/VehicleChoiceGrid.tsx`: removed outer photo padding, isolated contained images in square frames with absolute-fill positioning, reduced caption space from 44dp to a 24dp minimum/approximately 10% of card height, and prevented row stretching. Long captions and accessibility text may increase caption height. Applies to every category and subtype through the shared grid; other wizard sections and persistence unchanged. Decisions recorded in `docs/DECISIONS.md`. No migrations added.
+
+Validation: `npm run typecheck` — PASS after correcting an initial unsupported `StyleSheet.absoluteFillObject` reference to `StyleSheet.absoluteFill`; targeted ESLint with `--max-warnings=0` — PASS; targeted Prettier check — PASS. Browser visual inspection — BLOCKED (CUA returned “No browser is available” for localhost). Unit/SQL tests, Expo export/config and Android build not run for this presentation-only correction. Runtime visual acceptance remains pending on web and Android.
+
+### Image bounds follow-up
+
+The compact card's absolutely positioned Image still inherited the bundled asset's 512×512 size on React Native Web. Added explicit `width: "100%"` and `height: "100%"` to override intrinsic dimensions, confining the entire contained vehicle illustration to its square section without changing card sizes or mappings. `npm run typecheck` and targeted ESLint — PASS; targeted Prettier write — PASS. Browser/device visual verification remains unavailable and was not performed.
+
+### Final review card image correction
+
+Updated `VehicleForm.tsx` final review thumbnail with explicit 96dp width and height, preventing intrinsic asset height from stretching the review card on web. Disabled thumbnail shrinking and allowed the adjacent identity text to wrap within available width. Existing card data and save behavior preserved. Targeted Prettier write, targeted ESLint and `npm run typecheck` — PASS. Browser/Android visual checks not performed; no connected browser available in this session.
+
+## 2026-11-03 — Garage and shared vehicle card audit
+
+Added `src/components/ui/SquareArtwork.tsx`. Updated Garage grid (`screens.tsx`), category/subtype grid, final wizard review and shared VehicleHeader/switcher to use bounded square contained artwork. Garage now measures responsive columns, avoids stretched final cards, places identity/type/access details below the photo and falls back to subtype when optional identity is absent. Summary/review text follows the artwork. Inspected all remaining Image uses: onboarding and empty states already specify both dimensions. No persistence or migration changes.
+
+Executed: `npm run typecheck` — PASS; targeted ESLint on all five changed/new TSX files — PASS; targeted Prettier write — PASS; `npx expo export --platform web --output-dir /tmp/gaadipulse-square-cards-web` — PASS. Browser/device interaction remains unverified (no connected browser in this session). Unit/SQL tests and Android build not run for presentation-only changes. Actual small-screen/large-text layout still needs visual acceptance.
+
+## 2026-11-03 — Remove global development notice
+
+Removed the development/local test data/authentication bypass banner above the app header in `app/_layout.tsx` and its unused `developmentBanner` translation in `src/lib/i18n.ts`, as explicitly requested. Development session behavior and actual authentication/sync error recovery are unchanged.
+
+- `npx eslint app/_layout.tsx src/lib/i18n.ts --max-warnings=0` — PASS.
+- `npm run typecheck` — PASS.
+- Device/browser visual QA and Android build not run for this small notice removal.
+
+## 2026-11-03 — Header vehicle switcher
+
+Added `src/components/navigation/HeaderVehicleSwitcher.tsx` and integrated it into `PageHeader.tsx` outside auth routes. Compact nickname/registration-first label, vehicle icon and swap icon share one press target. Label uses single-line end truncation and a 43% maximum header width. Sheet lists non-archived vehicles with artwork, role, registration and current selection. Selecting updates the existing active vehicle store. One-vehicle accounts show the label without a switch icon. Page title also truncates to prevent horizontal overlap.
+
+Checks executed: `npm run typecheck` — PASS; targeted ESLint on both header files with `--max-warnings=0` — PASS; Prettier on both files — PASS. Device/browser visual QA and Android build smoke test not run. No migrations or backend changes.
+
+## 2026-11-03 — Centered header vehicle picker
+
+Replaced the bottom Sheet in `HeaderVehicleSwitcher.tsx` with a centered transparent Modal. Dialog width is capped at 420dp and height at 80% of its safe-area container. Only the vehicle list scrolls; Switch vehicle title and Cancel stay outside the scroll region. Backdrop press, Cancel, Android back (`onRequestClose`) and accessibility escape dismiss the dialog. Vehicle selection continues to update the existing store and close the dialog.
+
+`npm run typecheck` initially failed because this React Native version exposes `StyleSheet.absoluteFill`, not `absoluteFillObject`; corrected. Final typecheck, targeted ESLint with zero warnings, and targeted Prettier check all PASS. Visual browser/device QA not run.
+
+## 2026-11-03 — Focused bike/car rollout implemented
+
+Latest user direction supersedes the broader first-release product surface. Full plan and paused-feature register: `docs/FOCUSED_RELEASE_PLAN.md`; linked from README. No domain implementation, migration, ledger, membership or draft was deleted.
+
+Added `src/features/release/scope.ts`, `DeferredFeature.tsx`, and `tests/releaseScope.test.ts`. Updated advanced route wrappers under `app/owner`, `app/progress`, `app/reports`, `app/maintenance`, `app/records`; RootLayout notification lifecycle; Dashboard, MoreMenu, VehicleForm, garage screens, record screens/hooks, reminder hooks, settings, FloatingNavigation and English i18n. `advancedTools=false` suppresses Daily Progress, builder/versions, members, approvals, docs, reports/analytics/export, audit panels, maintenance shortcuts and reminders. Direct route wrappers render a deferred screen without mounting advanced domain views. No backend access rules are weakened. Previously scheduled local notifications are cleared with visible retry on failure; existing queued records still synchronize under server checks.
+
+Bike/car setup uses KM-focused choices. Deferred category selection opens a modal without changing category, and Continue/save guards restored unsupported drafts. Existing unsupported histories remain readable; new record forms are deferred. Electric-only mapping already selected ELECTRIC/KWH; retained that behavior and added Charging tab/Home/form/list labels and explicit kWh/kg/L quantity and rate labels. Conventional and plug-in hybrid choices are preserved separately.
+
+Commands actually executed:
+- `npm run typecheck` — PASS on final source.
+- `npx eslint app src/features/release src/features/dashboard/Dashboard.tsx src/features/navigation/MoreMenu.tsx src/features/garage/VehicleForm.tsx src/features/garage/screens.tsx src/features/records/screens.tsx src/features/records/hooks.ts src/features/auth/settings.tsx src/features/reminders/useReminders.ts src/components/navigation/FloatingNavigation.tsx src/lib/i18n.ts tests/releaseScope.test.ts --max-warnings=0` — PASS.
+- Prettier write commands on changed app/source files and the new test — PASS.
+- `npm test` — FAIL: 6 test files passed, 2 failed; 35 tests passed, 1 failed. `foundation.test.ts` could not resolve `@/src/utils/formInput`; `migrations.test.ts` reported PostgreSQL syntax error at end of input. These blockers are outside the modified presentation/scope code. No migrations changed.
+- `npx vitest run tests/releaseScope.test.ts` — PASS, 3 tests. Covers focused/deferred boundaries, restoration flag and electric/hybrid/gas unit mapping.
+- `npm run lint` — FAIL: 25 warnings, including two initial unused modal variables subsequently corrected and existing import/unused warnings across unrelated files. Final targeted lint above passes; no full-repository pass claimed.
+- `npm run format:check` — FAIL: 9 existing files outside this change remain unformatted (shared UI primitives and VehicleChoiceGrid). No unrelated reformat performed.
+- `npx expo export --platform android` — PASS, Hermes bundle and 85 assets exported to ignored dist.
+- `npx expo config --type public --json > /tmp/gaadipulse-focused-expo-config.json` — PASS; local config artifact, not committed.
+
+Browser smoke checks via native Brave accessibility: at existing responsive width 518, More contained Add vehicle, Add meter reading, My Garage, Meter readings and basic account/support only. Navigated Add vehicle, tapped Commercial, observed coming-soon modal, tapped Cancel and confirmed Two wheeler remained selected. Existing browser warning “Unexpected text node” was visible before these interactions and remains unresolved; no clean browser-console claim. No saved financial/vehicle records were created during this smoke check. Full 320/360dp/large-text/EV-save/offline acceptance and native Android build/device QA remain unverified; follow the plan’s manual sequence. Full local Supabase/PostgREST RLS validation not run; migration test failure remains a release blocker.
+
+## 2026-11-03 — Horizontal active vehicle card
+
+Updated `src/components/navigation/VehicleHeader.tsx` with a 20% square artwork column and compact right-side details (identity, available registration/make/model, Owner/Pilot and meter unit). Removed the hero card's Switch vehicle action; existing top header picker remains. Non-hero form selectors retain their behavior. Documented layout decision in `docs/DECISIONS.md`. No data or migration changes.
+
+Validation executed: `npm run typecheck` — PASS; `npx eslint src/components/navigation/VehicleHeader.tsx --max-warnings=0` — PASS; targeted Prettier write/check — PASS. Unit/SQL tests, browser/device visual checks, Expo validation and Android build were not run for this presentation-only change. Small-screen and large-font visual acceptance remains unverified.
+
+## 2026-11-03 — Online-only implementation handoff
+
+Latest user instruction supersedes earlier offline-first requirements and historical offline sections above. Current plan and explicit live-backend TODOs: `docs/ONLINE_ONLY_PLAN.md`. Source implementation is complete for the online-only client change; live backend acceptance is still open while frontend work continues.
+
+### Behavior and changed files
+
+- `src/features/{garage,records,meters,progress}/api.ts` and `src/features/auth/profile.ts`: remove persisted remote-data fallbacks; propagate server errors. Records save directly through existing RPCs without a queue and require a returned identifier. Profile updates require a matching returned row.
+- `src/features/garage/VehicleForm.tsx`, `src/features/records/screens.tsx`, `src/features/progress/Builder.tsx`: remove draft restore/autosave/save-on-leave. Keep current form values on request failure; leaving discards unsaved changes. Preserve stable operation IDs for explicit vehicle/record saves; record-detail mutations and meter corrections retain their operation ID across retries until confirmation.
+- `src/features/records/hooks.ts`, `schema.ts`, `RecordCard.tsx` and Dashboard/report consumers: remove provisional local entries/statuses. Only server responses populate real-account lists/totals.
+- `src/lib/query.ts`, `onlineFetch.ts`, `supabase.ts`, `app/_layout.tsx`: account/vehicle-scoped in-memory reads, hide old results on known disconnection/read failure, no automatic query/mutation retries, fail-fast offline and 20-second request aborts. No reconnect write worker. Secure auth/PKCE storage and active selection remain.
+- Query consumers in auth, garage, members, meter history, progress, records, reminders, reports and vehicle-access hooks use the online read boundary. Reports' parallel reads exclude failed results and block report rendering/export on error.
+- `src/features/records/SyncScreen.tsx`, auth settings/navigation copy and catalogs: Connection replaces queue recovery, retaining the old route for compatibility. `src/features/development/repository.ts` and root banner: explicitly labeled debug-only memory preview, cleared on exit/reload; never a backend fallback. Reminder notification handles use secure metadata storage, not ledger/draft persistence.
+- Removed `src/lib/db.ts`, `src/lib/localStore.ts`, `src/lib/sync/hooks.ts`, `src/lib/sync/outbox.ts`, `expo-sqlite` dependency/lock entries and Expo plugin.
+- Added `tests/onlineOnly.test.ts`; Vitest alias matches the app's TypeScript alias so service-boundary tests load real domain modules. Updated README, architecture, protocol, focused release plan, reference override, security/QA/screen-map override and decisions.
+- No migrations added/modified, no remote deployment, no server reset and no server data deletion. Legacy device files are untouched but never read, shown or replayed by this runtime. Existing staged/unstaged frontend work was preserved.
+
+### Executed validation
+
+- `npm uninstall expo-sqlite` — PASS; removed dependency and lock entries. Native development clients need rebuilding.
+- `npm run typecheck` — PASS on final implementation. Intermediate runs caught missing/new copy keys; these were corrected before the final passing run.
+- `npx vitest run tests/onlineOnly.test.ts` — PASS, final 9 tests: missing acknowledgement rejected; no early success; failure + same-ID explicit retry; successful read followed by failure does not return old ledger; permission/garage/record/meter/form errors propagate; offline requests never schedule a reconnect write; timeout and cancellation.
+- `npm test` — FAIL: last full run had 50 PASS / 1 FAIL across 9 files. Existing `tests/migrations.test.ts` fails with PostgreSQL `syntax error at end of input`, also reported before this change. A ninth targeted online-only test was subsequently added and passed; no later full-suite total is claimed. SQL compilation remains a release blocker.
+- `npm run lint` — FAIL: final full-project run has 17 pre-existing warnings, 0 errors, rejected by `--max-warnings=0` (shared UI import ordering/default import, auth screen duplicate import, assets and older password test import ordering).
+- `npx eslint app/_layout.tsx src/features/auth/profile.ts src/features/auth/session.tsx src/features/auth/settings.tsx src/features/dashboard/Dashboard.tsx src/features/development/repository.ts src/features/garage/VehicleForm.tsx src/features/garage/api.ts src/features/garage/hooks.ts src/features/garage/screens.tsx src/features/members/screens.tsx src/features/meters/History.tsx src/features/meters/api.ts src/features/progress/Builder.tsx src/features/progress/api.ts src/features/records/RecordCard.tsx src/features/records/SyncScreen.tsx src/features/records/api.ts src/features/records/copy.ts src/features/records/hooks.ts src/features/records/schema.ts src/features/records/screens.tsx src/features/reminders/notifications.ts src/features/reports/screens.tsx src/hooks/useVehicleAccess.ts src/lib/errors.ts src/lib/i18n.ts src/lib/query.ts src/lib/onlineFetch.ts src/lib/supabase.ts tests/onlineOnly.test.ts --max-warnings=0` — PASS. Follow-up `npx eslint tests/onlineOnly.test.ts src/features/records/screens.tsx src/features/meters/History.tsx --max-warnings=0` — PASS after final changes to those files.
+- `npm run format:check` — FAIL: 9 existing files (ConfirmationHost, native/web DatePickerField, dateValues, ErrorBoundary, UI index/premium/Timestamp, VehicleChoiceGrid). No unrelated formatting cleanup performed.
+- `npx prettier --check` on all implementation paths listed in the targeted lint command plus `app.config.ts` and `vitest.config.mts` — PASS. Final changed record/meter/test files were also formatted with `npx prettier --write`.
+- `npx expo config --type public --json > /tmp/gaadipulse-online-expo-config.json` — PASS.
+- `npx expo export --platform android` — PASS, Hermes bundle + 85 assets. Repeated successfully after later implementation adjustments; local export log `/tmp/gaadipulse-online-export.log`.
+- From `android/`: `./gradlew app:assembleDebug --console=plain` — PASS, `BUILD SUCCESSFUL in 10m 46s`, 424 tasks. This is native compilation/package smoke validation, not device UI/network acceptance. APK is the ignored debug build output under `android/app/build/outputs/apk/debug/`.
+- `git diff --check HEAD` — PASS at final review; code search found no runtime SQLite, localStorage ledger persistence, outbox, draft persistence or provisional record references.
+- Full local Supabase/PostgREST/JWT/RLS acceptance — BLOCKED / NOT RUN. Supabase CLI and Docker are absent; PGlite migration compilation currently fails. No live backend was deployed or marked verified.
+
+### Next owner/developer actions
+
+Continue frontend flow work in the clearly labeled ephemeral preview. Follow every OPEN item in ONLINE_ONLY_PLAN.md before release: repair/apply migrations in a disposable environment; test actual sign-in, per-vehicle authorization and confirmed writes; exercise Android disconnect/uncertain commit/explicit retry, two-device conflicts and account changes. Verify no automatic replay with legacy device queues present, and test Back/discard, process restart and 320/360dp accessibility. Recheck retained advanced server workflows before enabling those modules. These are remarks/TODOs, not completed integration claims.

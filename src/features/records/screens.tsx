@@ -1,3 +1,5 @@
+import { releaseFeatures, supportsVehicle } from "@/src/features/release/scope";
+import { DeferredFeature } from "@/src/features/release/DeferredFeature";
 import { AdditionalOptions } from "@/src/components/ui/AdditionalOptions";
 import { ZodError } from "zod";
 import { errorMessage } from "@/src/lib/errors";
@@ -29,7 +31,8 @@ import { Linking, View, Switch } from "react-native";
 import { router, useLocalSearchParams, usePreventRemove } from "expo-router";
 import * as Crypto from "expo-crypto";
 import { Controller, useForm, useWatch } from "react-hook-form";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@/src/lib/query";
 import {
   Screen,
   Card,
@@ -45,7 +48,6 @@ import {
 import { VehicleHeader } from "@/src/components/navigation/VehicleHeader";
 import { useActiveVehicle, useVehicles } from "@/src/features/garage/hooks";
 import { useSession, useAccountId } from "@/src/features/auth/session";
-import { clearDraft, loadDraft, saveDraft } from "@/src/lib/db";
 import { money, solveFuel } from "@/src/utils/money";
 import { fuelIntervals, type FuelPoint } from "@/src/utils/fuelEconomy";
 import { expenseAccounting } from "@/src/utils/expenseAccounting";
@@ -196,12 +198,14 @@ export function RecordsList({
         .toLowerCase()
         .includes(search.toLowerCase()),
   );
-  const confirmed = rows.filter(
-    (row) => !row.localStatus && row.status !== "ARCHIVED",
-  );
+  const confirmed = rows.filter((row) => row.status !== "ARCHIVED");
   return (
     <Screen
-      title={r(kind)}
+      title={
+        kind === "fuel" && v?.energy_type === "ELECTRIC"
+          ? t("charging")
+          : r(kind)
+      }
       compact
       loading={
         active.isPending || (!!v && (permissions.isPending || query.isPending))
@@ -309,13 +313,14 @@ export function RecordsList({
                 selected={showArchived}
                 onPress={() => setShowArchived((value) => !value)}
               />
-              {permissions.data?.["reports.read"] && (
-                <TextAction
-                  label={r("analytics")}
-                  icon="stats-chart"
-                  onPress={() => go(kind, "analytics", v.id)}
-                />
-              )}
+              {releaseFeatures.advancedTools &&
+                permissions.data?.["reports.read"] && (
+                  <TextAction
+                    label={r("analytics")}
+                    icon="stats-chart"
+                    onPress={() => go(kind, "analytics", v.id)}
+                  />
+                )}
             </View>
           </Expandable>
           {query.error ? (
@@ -396,7 +401,6 @@ export function RecordForm() {
   const [itemAmounts, setItemAmounts] = useState<Record<number, string>>({});
   const form = useForm<EntryForm>({ defaultValues: defaultEntry() });
   const values = useWatch({ control: form.control }) as EntryForm;
-  const key = `record.${kind}.${v?.id}.${id ?? "new"}`;
   const forms = useQuery({
     queryKey: [user, v?.id, "forms"],
     enabled: !!v && kind === "progress",
@@ -419,61 +423,37 @@ export function RecordForm() {
     }
   }, [kind, ready, values.form_version_id, forms.data, form]);
   useEffect(() => {
-    if (ready || !user || !v || (id && query.isPending)) return;
-    let alive = true;
-    void loadDraft(user, key)
-      .then((d) => {
-        if (!alive) return;
-        const draft = d as { values?: EntryForm; operation?: string } | null;
-        if (draft?.values) {
-          form.reset({ ...defaultEntry(), ...draft.values });
-          if (draft.operation) setOperation(draft.operation);
-        } else if (existing) form.reset(formFromRecord(existing, v.timezone));
-        else
-          form.reset({
-            ...defaultEntry(),
-            title: title ?? "",
-            category:
-              kind === "expenses" && category === "SERVICE"
-                ? "SERVICE"
-                : "OTHER",
-            metadata: source ? JSON.stringify({ expense_id: source }) : "{}",
-            ...defaultFuel(v.energy_type),
-            progress_date: dateInZone(new Date(), v.timezone),
-          });
-        setBoundVehicle(v.id);
-        setReady(true);
-      })
-      .catch((e) => {
-        setError(String(e));
-        setReady(true);
+    if (ready || !user || !v || (id && (query.isPending || query.error)))
+      return;
+    if (existing) form.reset(formFromRecord(existing, v.timezone));
+    else
+      form.reset({
+        ...defaultEntry(),
+        title: title ?? "",
+        category:
+          kind === "expenses" && category === "SERVICE" ? "SERVICE" : "OTHER",
+        metadata: source ? JSON.stringify({ expense_id: source }) : "{}",
+        ...defaultFuel(v.energy_type),
+        progress_date: dateInZone(new Date(), v.timezone),
       });
-    return () => {
-      alive = false;
-    };
+    // Bind the editable form once to the server-confirmed vehicle.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setBoundVehicle(v.id);
+    setReady(true);
   }, [
     ready,
     user,
     v,
     id,
     query.isPending,
+    query.error,
     existing,
-    key,
     form,
     title,
     source,
     category,
     kind,
   ]);
-  useEffect(() => {
-    if (!ready || !user || leaving) return;
-    const timer = setTimeout(() => {
-      void saveDraft(user, key, { values, operation, vehicle_id: v?.id }).catch(
-        (e) => setError(String(e)),
-      );
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [ready, user, values, operation, key, leaving, v?.id]);
   const disablePrevention = usePreventRemove(
     form.formState.isDirty && !leaving,
     ({ repeat }) =>
@@ -481,19 +461,8 @@ export function RecordForm() {
         t("unsaved"),
         t("unsavedBody"),
         () => {
-          if (!user || !v) return;
-          setBusy(true);
-          void saveDraft(user, key, {
-            values: form.getValues(),
-            operation,
-            vehicle_id: v.id,
-          })
-            .then(() => {
-              setLeaving(true);
-              repeat();
-            })
-            .catch((e) => setError(String(e)))
-            .finally(() => setBusy(false));
+          setLeaving(true);
+          repeat();
         },
         { cancelLabel: t("keepEditing"), confirmLabel: t("leaveForm") },
       ),
@@ -668,25 +637,24 @@ export function RecordForm() {
     const next = vehicles.data?.find((item) => item.id === nextId);
     if (!next) return;
     ConfirmDialog(r("switchVehicle"), r("vehicleChanged"), () => {
-      void saveDraft(user, key, { values, operation, vehicle_id: v.id })
-        .then(() => {
-          form.reset({
-            ...values,
-            km: next.meter_mode === "HOURS" ? "" : values.km,
-            hours: next.meter_mode === "KM" ? "" : values.hours,
-            ...defaultFuel(next.energy_type),
-            ...(kind === "fuel"
-              ? { quantity: "", unit_price: "", is_full_tank: false }
-              : {}),
-            answers: kind === "progress" ? {} : values.answers,
-            form_version_id: "",
-          });
-          setBoundVehicle(nextId);
-          active.select(nextId);
-          setOperation(Crypto.randomUUID());
-          toast(r("vehicleChanged"), "info");
-        })
-        .catch((e) => setError(String(e)));
+      form.reset(
+        {
+          ...values,
+          km: next.meter_mode === "HOURS" ? "" : values.km,
+          hours: next.meter_mode === "KM" ? "" : values.hours,
+          ...defaultFuel(next.energy_type),
+          ...(kind === "fuel"
+            ? { quantity: "", unit_price: "", is_full_tank: false }
+            : {}),
+          answers: kind === "progress" ? {} : values.answers,
+          form_version_id: "",
+        },
+        { keepDefaultValues: true },
+      );
+      setBoundVehicle(nextId);
+      active.select(nextId);
+      setOperation(Crypto.randomUUID());
+      toast(r("vehicleChanged"), "info");
     });
   };
   const submit = async (another = false) => {
@@ -749,7 +717,7 @@ export function RecordForm() {
             ? "PENDING_REVIEW"
             : "APPROVED"
           : "ACTIVE";
-      const saved = await saveRecord(
+      await saveRecord(
         user,
         development,
         kind,
@@ -760,12 +728,8 @@ export function RecordForm() {
         existing?.revision,
         status,
       );
-      await clearDraft(user, key);
       await qc.invalidateQueries();
-      toast(
-        saved.pending ? r("pending") : r("saved"),
-        saved.pending ? "warning" : "success",
-      );
+      toast(r("saved"), "success");
       if (another) {
         form.reset({
           ...defaultEntry(),
@@ -843,7 +807,16 @@ export function RecordForm() {
   if (!v)
     return (
       <Screen title={r(kind)}>
-        <EmptyState title={r("noVehicle")} />
+        {vehicles.error ? (
+          <ErrorState
+            message={vehicles.error.message}
+            retry={() => void vehicles.refetch()}
+          />
+        ) : vehicles.isPending ? (
+          <Skeleton />
+        ) : (
+          <EmptyState title={r("noVehicle")} />
+        )}
         <AppButton label={r("back")} onPress={() => router.back()} />
       </Screen>
     );
@@ -920,10 +893,11 @@ export function RecordForm() {
       )}
     </>
   );
+  if (v && !supportsVehicle(v.category)) return <DeferredFeature />;
   return (
     <Screen
       compact
-      title={`${r(id ? "edit" : "add")} · ${r(kind)}`}
+      title={`${r(id ? "edit" : "add")} · ${kind === "fuel" && v?.energy_type === "ELECTRIC" ? t("charging") : r(kind)}`}
       loading={
         !ready ||
         busy ||
@@ -994,20 +968,12 @@ export function RecordForm() {
                   r("reviewCurrentForm"),
                   r("reviewNewVersion"),
                   () => {
-                    void saveDraft(
-                      user!,
-                      `${key}.previous.${values.form_version_id}`,
-                      { values, operation, vehicle_id: v.id },
-                    )
-                      .then(() => {
-                        form.setValue("answers", {});
-                        form.setValue(
-                          "form_version_id",
-                          forms.data!.find((f) => f.published)!.id,
-                        );
-                        setOperation(Crypto.randomUUID());
-                      })
-                      .catch((e) => setError(String(e)));
+                    form.setValue("answers", {});
+                    form.setValue(
+                      "form_version_id",
+                      forms.data!.find((f) => f.published)!.id,
+                    );
+                    setOperation(Crypto.randomUUID());
                   },
                 )
               }
@@ -1163,8 +1129,28 @@ export function RecordForm() {
           />
           <AppText muted>{t("fuelAnyTwo")}</AppText>
           {field("amount", r("amount"), true)}
-          {field("quantity", r("quantity"), true)}
-          {field("unit_price", r("price"), true)}
+          {field(
+            "quantity",
+            t(
+              values.unit === "KWH"
+                ? "chargeQuantity"
+                : values.unit === "KG"
+                  ? "massQuantity"
+                  : "volumeQuantity",
+            ),
+            true,
+          )}
+          {field(
+            "unit_price",
+            t(
+              values.unit === "KWH"
+                ? "chargePrice"
+                : values.unit === "KG"
+                  ? "massPrice"
+                  : "volumePrice",
+            ),
+            true,
+          )}
           {!!derived && (
             <Card>
               <AppText>{derived}</AppText>
@@ -1264,13 +1250,14 @@ export function RecordForm() {
             {["SERVICE", "REPAIR", "BATTERY"].includes(values.category) && (
               <>
                 {metaField("components", r("components"))}
-                {access.data?.["reminders.create"] && (
-                  <>
-                    {metaField("next_date", r("nextService"))}
-                    {metaField("next_km", r("thresholdKm"))}
-                    {metaField("next_hours", r("thresholdHours"))}
-                  </>
-                )}
+                {releaseFeatures.advancedTools &&
+                  access.data?.["reminders.create"] && (
+                    <>
+                      {metaField("next_date", r("nextService"))}
+                      {metaField("next_km", r("thresholdKm"))}
+                      {metaField("next_hours", r("thresholdHours"))}
+                    </>
+                  )}
               </>
             )}
             <AppText>{r("items")}</AppText>
@@ -1359,6 +1346,7 @@ export function RecordForm() {
         )}
         {(kind === "documents" ||
           (kind === "expenses" && values.category === "EMI")) &&
+          releaseFeatures.advancedTools &&
           access.data?.["reminders.create"] && (
             <Card style={{ padding: 16, gap: 10 }}>
               <View
@@ -1512,6 +1500,9 @@ export function RecordDetail() {
   const qc = useQueryClient();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
+  const [mutationOperation, setMutationOperation] = useState(() =>
+    Crypto.randomUUID(),
+  );
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
   const forms = useQuery({
@@ -1525,14 +1516,14 @@ export function RecordDetail() {
     enabled:
       !!vehicle &&
       !!id &&
+      releaseFeatures.advancedTools &&
       owner === true &&
       !development &&
-      !!row &&
-      !row.localStatus,
+      !!row,
     queryFn: () => recordAudit(vehicle!, id!),
   });
   const mutate = async (status: string, payload = row?.payload) => {
-    if (!row || !user || !payload) return;
+    if (!row || !user || !payload || busy) return;
     setBusy(true);
     try {
       await saveRecord(
@@ -1541,11 +1532,12 @@ export function RecordDetail() {
         kind,
         row.vehicle_id,
         payload,
-        Crypto.randomUUID(),
+        mutationOperation,
         row.id,
         row.revision,
         status,
       );
+      setMutationOperation(Crypto.randomUUID());
       await qc.invalidateQueries();
       toast(r("saved"), "success");
     } catch (e) {
@@ -1736,7 +1728,7 @@ export function RecordDetail() {
                 )}
             </>
           )}
-          {editAllowed && !row.localStatus && (
+          {editAllowed && (
             <AppButton
               label={r("edit")}
               onPress={() =>
@@ -1753,8 +1745,7 @@ export function RecordDetail() {
             />
           )}
           {(owner || (["fuel", "expenses"].includes(kind) && editAllowed)) &&
-            kind !== "progress" &&
-            !row.localStatus && (
+            kind !== "progress" && (
               <AppButton
                 secondary
                 disabled={busy}
@@ -1771,7 +1762,8 @@ export function RecordDetail() {
                 }
               />
             )}
-          {kind === "expenses" &&
+          {releaseFeatures.advancedTools &&
+            kind === "expenses" &&
             ["SERVICE", "REPAIR", "INSURANCE", "EMI"].includes(
               String(row.payload.category),
             ) && (
@@ -1844,7 +1836,7 @@ export function RecordDetail() {
               />
             </>
           )}
-          {owner && !development && !row.localStatus && (
+          {releaseFeatures.advancedTools && owner && !development && (
             <Card>
               <AppText large>{r("audit")}</AppText>
               <AppText muted>{r("auditLatest")}</AppText>
@@ -1923,7 +1915,7 @@ export function RecordAnalytics() {
     period,
     v?.timezone ?? "Asia/Kolkata",
     kind,
-  ).filter((row) => !row.localStatus && row.status !== "ARCHIVED");
+  ).filter((row) => row.status !== "ARCHIVED");
   const total = rows.reduce(
     (sum, row) => sum + Number(row.payload.amount_paise ?? 0),
     0,

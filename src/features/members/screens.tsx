@@ -10,7 +10,8 @@ import { FilterChips } from "@/src/components/ui/FilterChips";
 import { permissionLabel } from "@/src/features/records/categories";
 import { useState } from "react";
 import { Switch, View } from "react-native";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@/src/lib/query";
 import { z } from "zod";
 import { router } from "expo-router";
 import {

@@ -110,15 +110,7 @@ export function RecordCard({
 }) {
   const c = useTheme();
   const visual = recordVisuals[kind];
-  const status = row.localStatus
-    ? r(
-        row.localStatus === "CONFLICT"
-          ? "conflict"
-          : row.localStatus === "REJECTED"
-            ? "rejected"
-            : "pending",
-      )
-    : (r(row.status as keyof typeof recordCopy) ?? row.status);
+  const status = r(row.status as keyof typeof recordCopy) ?? row.status;
   const content = (
     <Card style={{ padding: 14, gap: 10, borderRadius: 20 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
@@ -139,10 +131,7 @@ export function RecordCard({
         </Text>
       )}
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-        <RecordBadge
-          label={status}
-          tone={row.localStatus ? "coral" : visual.tone}
-        />
+        <RecordBadge label={status} tone={visual.tone} />
         {kind === "fuel" && (
           <>
             <RecordBadge

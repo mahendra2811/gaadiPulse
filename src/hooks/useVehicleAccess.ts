@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "@/src/lib/query";
 import { useSession, useAccountId } from "@/src/features/auth/session";
 import { client } from "@/src/lib/supabase";
 export function useVehicleAccess(vehicleId?: string) {

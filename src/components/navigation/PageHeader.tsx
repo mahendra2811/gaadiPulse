@@ -1,3 +1,4 @@
+import { HeaderVehicleSwitcher } from "./HeaderVehicleSwitcher";
 import { Pressable, Text, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { usePathname, useRouter } from "expo-router";
@@ -34,14 +35,14 @@ export function PageHeader({
   return (
     <View
       style={{
-        paddingHorizontal: 20,
+        paddingHorizontal: 16,
         paddingVertical: 12,
         backgroundColor: path === "/" ? c.background : c.surface,
         borderBottomWidth: path === "/" ? 0 : 1,
         borderBottomColor: c.line,
         flexDirection: "row",
         alignItems: "center",
-        gap: 12,
+        gap: 8,
       }}
     >
       {navigation.back || onBack ? (
@@ -81,22 +82,25 @@ export function PageHeader({
           <Ionicons name="pulse" size={25} color="#087565" />
         </View>
       )}
-      <View style={{ flex: 1, gap: 2 }}>
+      <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
         {sectionLabel && sectionLabel !== title && (
           <Text style={{ color: c.muted, fontSize: 12 }}>{sectionLabel}</Text>
         )}
         <Text
+          numberOfLines={1}
+          ellipsizeMode="tail"
           accessibilityRole="header"
           style={{
             color: c.ink,
-            fontSize: 24,
-            lineHeight: 31,
+            fontSize: 20,
+            lineHeight: 27,
             fontWeight: "800",
           }}
         >
           {title}
         </Text>
       </View>
+      {!path.startsWith("/auth") && <HeaderVehicleSwitcher />}
     </View>
   );
 }

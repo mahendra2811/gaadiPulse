@@ -1,3 +1,4 @@
+import { deferredPath, releaseFeatures } from "@/src/features/release/scope";
 import { View, Text } from "react-native";
 import type { Href } from "expo-router";
 import { useActiveVehicle } from "@/src/features/garage/hooks";
@@ -241,7 +242,24 @@ export function MoreMenu({ navigate }: { navigate: (href: Href) => void }) {
         />
       )}
       {groups.map((group) => {
-        const items = group.items.filter((item) => item.show !== false);
+        const items = group.items.filter((item) => {
+          if (item.show === false) return false;
+          if (releaseFeatures.advancedTools) return true;
+          const path =
+            typeof item.href === "string" ? item.href : item.href.pathname;
+          if (deferredPath(path)) return false;
+          if (typeof item.href === "object" && "params" in item.href) {
+            const params = item.href.params as
+              Record<string, unknown> | undefined;
+            if (
+              params?.kind &&
+              !["fuel", "expenses", "meters"].includes(String(params.kind))
+            )
+              return false;
+            if (params?.category === "SERVICE") return false;
+          }
+          return true;
+        });
         return items.length ? (
           <View key={group.title} style={{ gap: 6 }}>
             <Text

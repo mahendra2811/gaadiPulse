@@ -70,7 +70,7 @@ export const en = {
   fuelProfile: "Vehicle fuel configuration",
   fuelFixed: "Fuel options and units follow this vehicle's configuration.",
   fuelChanged:
-    "This saved draft uses a fuel that is not configured for this vehicle. Review the fuel selection before saving.",
+    "This entry uses a fuel that is not configured for this vehicle. Review the fuel selection before saving.",
   fuelHistorical:
     "This older record keeps its original fuel. The vehicle's current configuration applies to new entries.",
   fuelMismatch:
@@ -224,9 +224,9 @@ export const en = {
   permissionDenied:
     "You do not have access to this action. Ask a vehicle Owner to review your permissions.",
   recordConflict:
-    "This record or form changed. Review the latest version or open Sync status to recover your draft.",
+    "This record or form changed. Review the latest server version before trying again.",
   networkError:
-    "Unable to connect. Your local drafts are retained. Reconnect and retry.",
+    "Unable to confirm the request. Keep this form open, check your connection and retry. Nothing will upload automatically.",
   invalidData: "Some values are invalid. Review the form and try again.",
   deletionPending:
     "Your account deletion request is pending. Contact your operator for support.",
@@ -235,13 +235,12 @@ export const en = {
   invalidOAuth: "The sign-in callback is incomplete. Start sign-in again.",
   exitDevelopment: "Exit development mode",
   exitDevelopmentBody:
-    "Your local test vehicles remain on this device and are never uploaded.",
+    "Exiting clears the temporary frontend preview vehicles and records. They are never uploaded.",
   chooseDateTime: "Choose date and time",
   dismiss: "Dismiss",
   developmentContinue: "Continue in development mode",
-  developmentBanner: "DEVELOPMENT · Local test data · Authentication bypassed",
   developmentInfo:
-    "This debug build uses device-local test vehicles. Supabase authentication and permissions are bypassed only for local testing. These records are never uploaded.",
+    "Frontend preview only. Test vehicles and records stay in memory until reload or exit. Authentication and permissions are bypassed only in this debug workspace; these records never upload.",
   invalidTimezone: "Enter a valid IANA timezone, such as Asia/Kolkata.",
   identifyVehicle: "Enter a nickname, registration or model.",
   motorcycle: "Motorcycle",
@@ -293,13 +292,25 @@ export const en = {
   loading: "Loading",
   save: "Save",
   saved: "Saved successfully",
+  releaseLaterTitle: "Coming in a later release",
+  releaseLaterBody:
+    "For now, GaadiPulse focuses on bikes and cars, fuel or charging, expenses, odometer readings and history. This tool is paused while we refine that flow.",
+  releaseVehiclesTitle: "More vehicles coming soon",
+  releaseVehiclesBody:
+    "Bikes and cars are supported for now. Commercial, agricultural and heavy vehicles are planned for a future release. Watch the app’s release updates for availability. Existing records are kept safely.",
+  charging: "Charging",
+  addCharging: "Add charging",
+  chargeQuantity: "Energy added (kWh)",
+  chargePrice: "Price per kWh (₹)",
+  volumeQuantity: "Quantity (L)",
+  massQuantity: "Quantity (kg)",
+  volumePrice: "Price per litre (₹)",
+  massPrice: "Price per kg (₹)",
   cancel: "Cancel",
   discard: "Discard",
-  draft: "Your draft is saved on this device.",
-  draftError: "Could not save the draft. Keep this screen open and retry.",
   unsaved: "Leave this form?",
   unsavedBody:
-    "Your changes have not been saved to the server. You can return to your local draft later.",
+    "Your changes have not been saved. Leave and discard them, or keep editing.",
   garage: "My Garage",
   add: "Add vehicle",
   empty: "Your garage starts here",
@@ -362,15 +373,23 @@ export const en = {
   dark: "Dark",
   system: "Use device setting",
   logout: "Sign out",
-  sync: "Sync status",
+  sync: "Connection",
+  saveUnconfirmed:
+    "Could not confirm this save. Retry with the same values. If you changed them after an earlier attempt, check the latest server record before starting a new entry.",
+  onlineFormNotice:
+    "Changes stay on this screen until you save. Leaving discards unsaved changes.",
+  onlineOnlyBody:
+    "An internet connection is required. Records appear only after the server accepts them. There are no offline drafts or background uploads.",
+  developmentNotice:
+    "Frontend preview only. Test data stays in memory, disappears when the app reloads and is never uploaded.",
   about: "About",
   legal: "Privacy and terms",
   privacy:
-    "Your account and vehicle data are stored in the Supabase project configured by the app operator. Vehicle Owners control access. Local drafts are stored on this device and removed on sign-out. This app does not track GPS or serve ads. Contact your app operator for deletion and privacy requests. This pre-release policy must be reviewed by the operator before public distribution.",
+    "Your account and vehicle data are stored in the Supabase project configured by the app operator. Vehicle Owners control access. Forms are held in memory while open; offline drafts and record caches are not stored. This app does not track GPS or serve ads. Contact your app operator for deletion and privacy requests. This pre-release policy must be reviewed by the operator before public distribution.",
   terms:
     "Use accurate records and share access only with trusted people. In-app Owner status does not establish legal vehicle ownership. Entered document metadata is not an official RC or DL. Keep independent records where legally required. This pre-release app must be validated before relying on it for operational decisions.",
   offline:
-    "You are offline. Local drafts remain available; reconnect to save to the server.",
+    "You are offline. Connect to the internet to load or save records. Unsaved changes remain only while this form is open.",
   error: "Something went wrong",
   denied: "Vehicle unavailable or access removed",
   sessionError: "Could not restore your session",
@@ -382,16 +401,11 @@ export const en = {
   meters: "Latest observed readings",
   noReadings: "No observed readings yet",
   noAccess: "You do not have permission to read meter history.",
-  draftCount: "Local drafts",
-  syncBody:
-    "Garage drafts are saved on this device. Saving a vehicle requires a connection and server authorization. No background upload is performed in Stage 1.",
   refresh: "Refresh",
-  noPending: "No automatic sync operations in Stage 1.",
   roleInfo:
     "Access applies to this vehicle. App role is separate from legal ownership.",
   noPhoto: "Photo capture and uploads are coming later.",
-  savedLocal: "Draft saved locally",
-  signoutBody: "Signing out removes your local drafts and cached account data.",
+  signoutBody: "Signing out clears your session and current unsaved changes.",
 } as const;
 export type TranslationKey = keyof typeof en;
 export function t(key: TranslationKey) {

@@ -1,18 +1,21 @@
-import { startReminderFeedback } from "@/src/features/reminders/notifications";
+import { releaseFeatures } from "@/src/features/release/scope";
+import {
+  clearDeviceNotifications,
+  startReminderFeedback,
+} from "@/src/features/reminders/notifications";
 import { ConfirmationHost } from "@/src/components/ui/ConfirmationHost";
 import { MoreDrawerProvider } from "@/src/components/navigation/MoreDrawer";
 import { useMembershipUpdates } from "@/src/hooks/useMembershipUpdates";
-import { useOutboxSync } from "@/src/lib/sync/hooks";
 import {
   authDestination,
   keepsAuthenticatedAuthScreen,
 } from "@/src/features/auth/routing";
-import { Image, View, Text, Appearance, Platform } from "react-native";
+import { Image, View, Appearance, Platform } from "react-native";
 import { artwork } from "@/src/lib/assets";
 import { useConnectivity } from "@/src/lib/connectivity";
 import { ErrorBoundary } from "@/src/components/ui/ErrorBoundary";
 import "react-native-gesture-handler";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Stack, useRouter, useSegments, usePathname } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -34,19 +37,42 @@ import {
 } from "@/src/components/ui";
 import { t } from "@/src/lib/i18n";
 const query = new QueryClient({
-  defaultOptions: { queries: { retry: 1, staleTime: 15000 } },
+  defaultOptions: {
+    queries: { retry: false, staleTime: 0, gcTime: 0, networkMode: "always" },
+    mutations: { retry: false, networkMode: "always" },
+  },
 });
 function ReminderFeedback() {
   const user = useAccountId();
+  const [error, setError] = useState("");
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
-    if (user) return startReminderFeedback(user);
-  }, [user]);
-  return null;
+    if (releaseFeatures.advancedTools) {
+      if (user) return startReminderFeedback(user);
+      return;
+    }
+    let alive = true;
+    void clearDeviceNotifications()
+      .then(() => {
+        if (alive) setError("");
+      })
+      .catch((e) => {
+        if (alive) setError(String(e));
+      });
+    return () => {
+      alive = false;
+    };
+  }, [user, attempt]);
+  return error ? (
+    <ErrorState
+      message={error}
+      retry={() => setAttempt((value) => value + 1)}
+    />
+  ) : null;
 }
 function Routes() {
   useConnectivity();
   useMembershipUpdates();
-  const syncError = useOutboxSync();
   const auth = useSession();
   const profile = useProfile();
   useEffect(() => {
@@ -121,25 +147,14 @@ function Routes() {
       <ToastProvider>
         <ReminderFeedback />
         {auth.development && (
-          <View style={{ backgroundColor: "#122C2A", padding: 8 }}>
-            <Text style={{ color: "#BDF5DC", textAlign: "center" }}>
-              {t("developmentBanner")}
-            </Text>
+          <View style={{ padding: 8 }}>
+            <AppText>{t("developmentNotice")}</AppText>
           </View>
         )}
         {auth.error && (
           <View style={{ padding: 8 }}>
             <AppText>{auth.error}</AppText>
             <AppButton label={t("retry")} onPress={auth.retry} />
-          </View>
-        )}
-        {syncError && (
-          <View style={{ padding: 8 }}>
-            <AppText>{syncError}</AppText>
-            <AppButton
-              label={t("sync")}
-              onPress={() => router.push("/settings/sync")}
-            />
           </View>
         )}
         <MoreDrawerProvider>

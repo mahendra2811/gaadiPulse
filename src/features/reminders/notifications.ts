@@ -3,8 +3,15 @@ import { AppState, Platform } from "react-native";
 import { showToast } from "@/src/lib/toast";
 import * as Notifications from "expo-notifications";
 import { AndroidImportance } from "expo-notifications";
-import { readLocal, writeLocal } from "@/src/lib/localStore";
+import { secureStorage } from "@/src/lib/supabase";
 import type { RecordEntry } from "@/src/features/records/schema";
+async function readLocal(key: string): Promise<unknown> {
+  const raw = await secureStorage.getItem(key);
+  return raw ? JSON.parse(raw) : null;
+}
+async function writeLocal(key: string, value: unknown) {
+  await secureStorage.setItem(key, JSON.stringify(value));
+}
 export async function notificationPermission() {
   if (Platform.OS === "web") return false;
   if (Platform.OS === "android")

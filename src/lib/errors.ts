@@ -14,6 +14,8 @@ export function errorMessage(value: unknown): string {
   return t("error");
 }
 export function readableError(message: string) {
+  if (/INVALID_OPERATION|SAVE_NOT_CONFIRMED/i.test(message))
+    return t("saveUnconfirmed");
   if (/VEHICLE_FUEL_MISMATCH|FUEL_UNIT_INVALID/i.test(message))
     return t("fuelMismatch");
   if (/PERMISSION|FORBIDDEN|OWNER_REQUIRED/i.test(message))
@@ -22,7 +24,7 @@ export function readableError(message: string) {
   if (/CONFLICT|VERSION|LEGACY_OPERATION/i.test(message))
     return t("recordConflict");
   if (
-    /network|fetch failed|failed to fetch|offline|connection|timeout/i.test(
+    /network|fetch failed|failed to fetch|offline|connection|timeout|aborted|timed out/i.test(
       message,
     )
   )

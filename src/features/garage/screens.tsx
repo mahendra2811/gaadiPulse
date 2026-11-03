@@ -1,3 +1,5 @@
+import { releaseFeatures, supportsRecord } from "@/src/features/release/scope";
+import { SquareArtwork } from "@/src/components/ui/SquareArtwork";
 import { Timestamp } from "@/src/components/ui/Timestamp";
 import { recordVisuals } from "@/src/features/records/RecordCard";
 import { SearchField } from "@/src/components/ui/SearchField";
@@ -8,7 +10,7 @@ import { developmentReadings } from "@/src/features/development/repository";
 import { meterObservationSchema } from "@/src/lib/observations";
 import { useVehicleAccess } from "@/src/hooks/useVehicleAccess";
 import { useState } from "react";
-import { Image, View, Text } from "react-native";
+import { View, Text, useWindowDimensions } from "react-native";
 import {
   ColorIcon,
   SectionHeading,
@@ -19,7 +21,8 @@ import {
 } from "@/src/components/ui/premium";
 import { useTheme } from "@/src/lib/theme";
 import { router, useLocalSearchParams } from "expo-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@/src/lib/query";
 import { useVehicles, useActiveVehicle } from "./hooks";
 import { archiveVehicle } from "./api";
 import {
@@ -41,6 +44,16 @@ import { useSession, useAccountId } from "@/src/features/auth/session";
 export function Garage() {
   const query = useVehicles();
   const [search, setSearch] = useState("");
+  const [gridWidth, setGridWidth] = useState(0);
+  const { fontScale } = useWindowDimensions();
+  const columns =
+    gridWidth < 260 || fontScale >= 1.8
+      ? 1
+      : gridWidth >= 540 && fontScale < 1.5
+        ? 3
+        : 2;
+  const cardWidth =
+    gridWidth > 0 ? (gridWidth - (columns - 1) * 10) / columns : undefined;
   const colors = useTheme();
   const vehicles =
     query.data?.filter((v) =>
@@ -89,22 +102,33 @@ export function Garage() {
           {!query.isPending && !vehicles.length && (
             <AppText muted>{t("uiNoSearchResults")}</AppText>
           )}
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+          <View
+            onLayout={(event) => setGridWidth(event.nativeEvent.layout.width)}
+            style={{
+              width: "100%",
+              maxWidth: 640,
+              alignSelf: "center",
+              flexDirection: "row",
+              flexWrap: "wrap",
+              alignItems: "flex-start",
+              gap: 10,
+            }}
+          >
             {vehicles.map((v) => (
               <MotionPress
                 key={v.id}
-                label={`${t("details")}: ${v.nickname || v.registration_number || v.model}`}
+                label={`${t("details")}: ${v.nickname || v.registration_number || v.model || subtypeLabel(v.subtype)}`}
                 onPress={() =>
                   router.push({
                     pathname: "/garage/[id]",
                     params: { id: v.id },
                   })
                 }
-                style={{ width: "47%", flexGrow: 1, maxWidth: "49%" }}
+                style={{ width: cardWidth, minWidth: 0 }}
               >
                 <View
                   style={{
-                    padding: 8,
+                    overflow: "hidden",
                     borderRadius: 20,
                     backgroundColor: colors.surface,
                     gap: 8,
@@ -117,19 +141,12 @@ export function Garage() {
                     elevation: 1,
                   }}
                 >
-                  <Image
+                  <SquareArtwork
                     source={vehicleArt(v.category, v.subtype)}
-                    style={{
-                      width: "100%",
-                      aspectRatio: 1,
-                      borderRadius: 14,
-                      backgroundColor: "#F1F9F6",
-                    }}
-                    resizeMode="contain"
-                    accessible={false}
+                    radius={0}
                   />
                   <View
-                    style={{ paddingHorizontal: 3, gap: 5, paddingBottom: 4 }}
+                    style={{ paddingHorizontal: 10, gap: 5, paddingBottom: 10 }}
                   >
                     <Text
                       style={{
@@ -138,7 +155,10 @@ export function Garage() {
                         color: colors.ink,
                       }}
                     >
-                      {v.nickname || v.registration_number || v.model}
+                      {v.nickname ||
+                        v.registration_number ||
+                        v.model ||
+                        subtypeLabel(v.subtype)}
                     </Text>
                     <Text style={{ fontSize: 12, color: colors.muted }}>
                       {subtypeLabel(v.subtype)}
@@ -238,6 +258,7 @@ export function VehicleDetails() {
             )
               .filter(
                 (kind) =>
+                  supportsRecord(kind) &&
                   access.data?.[
                     kind === "progress" ? "progress.view" : `${kind}.read`
                   ],
@@ -280,22 +301,23 @@ export function VehicleDetails() {
               }
             />
           )}
-          {access.data?.["expenses.create"] && (
-            <AppButton
-              label={r("addMaintenance")}
-              onPress={() =>
-                router.push({
-                  pathname: "/records/[kind]/[action]",
-                  params: {
-                    kind: "expenses",
-                    action: "add",
-                    vehicle: id,
-                    category: "SERVICE",
-                  },
-                })
-              }
-            />
-          )}
+          {releaseFeatures.advancedTools &&
+            access.data?.["expenses.create"] && (
+              <AppButton
+                label={r("addMaintenance")}
+                onPress={() =>
+                  router.push({
+                    pathname: "/records/[kind]/[action]",
+                    params: {
+                      kind: "expenses",
+                      action: "add",
+                      vehicle: id,
+                      category: "SERVICE",
+                    },
+                  })
+                }
+              />
+            )}
           {vehicle.role === "OWNER" && (
             <>
               <AppButton

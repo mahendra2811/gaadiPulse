@@ -1,7 +1,6 @@
-import { useToast } from "@/src/components/ui";
 import { useEffect, useRef } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { clearVehicleCache } from "@/src/lib/localStore";
+import { useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@/src/lib/query";
 import { useSession, useAccountId } from "@/src/features/auth/session";
 import { useUI } from "@/src/state/ui";
 import { listVehicles } from "./api";
@@ -10,7 +9,6 @@ export function useVehicles() {
   const { development } = useSession();
   const user = useAccountId();
   const qc = useQueryClient();
-  const toast = useToast();
   const previous = useRef<string[]>([]);
   const result = useQuery({
     queryKey: [user, "vehicles"],
@@ -25,11 +23,10 @@ export function useVehicles() {
       qc.removeQueries({
         predicate: (q) => q.queryKey[0] === user && q.queryKey[1] === removed,
       });
-      void clearVehicleCache(user, removed).catch((e) => toast(String(e)));
     }
     previous.current = ids;
-  }, [result.data, user, qc, toast]);
-  return result;
+  }, [result.data, user, qc]);
+  return { ...result, data: result.error ? undefined : result.data };
 }
 export function useActiveVehicle() {
   const query = useVehicles();

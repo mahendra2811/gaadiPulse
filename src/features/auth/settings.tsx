@@ -1,6 +1,6 @@
+import { releaseFeatures } from "@/src/features/release/scope";
 import { AdditionalOptions } from "@/src/components/ui/AdditionalOptions";
 import { errorMessage } from "@/src/lib/errors";
-import { Card } from "@/src/components/ui";
 import {
   MenuRow,
   SectionHeading,
@@ -12,10 +12,11 @@ import { notificationPermission } from "@/src/features/reminders/notifications";
 import { r } from "@/src/features/records/copy";
 import { useEffect, useState, useRef } from "react";
 import { router, usePreventRemove } from "expo-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useProfile, updateProfile } from "./profile";
 import { useSession, useAccountId } from "./session";
 import {
+  Card,
   Screen,
   AppButton,
   AppText,
@@ -26,7 +27,6 @@ import {
   useToast,
 } from "@/src/components/ui";
 import { t } from "@/src/lib/i18n";
-import { draftCount } from "@/src/lib/db";
 import type { ThemeMode } from "@/src/lib/theme";
 export { MoreDrawerRoute as More } from "@/src/components/navigation/MoreDrawer";
 export function Settings() {
@@ -60,21 +60,23 @@ export function Settings() {
         />
         <InfoRows items={[{ label: t("language"), value: t("english") }]} />
         <AppText muted>{t("hindi")}</AppText>
-        <MenuRow
-          label={r("notificationPermission")}
-          icon="notifications"
-          tone="coral"
-          onPress={() => {
-            void notificationPermission()
-              .then((allowed) =>
-                toast(
-                  r(allowed ? "notificationsEnabled" : "notificationDenied"),
-                  allowed ? "info" : "warning",
-                ),
-              )
-              .catch((e) => setError(String(e)));
-          }}
-        />
+        {releaseFeatures.advancedTools && (
+          <MenuRow
+            label={r("notificationPermission")}
+            icon="notifications"
+            tone="coral"
+            onPress={() => {
+              void notificationPermission()
+                .then((allowed) =>
+                  toast(
+                    r(allowed ? "notificationsEnabled" : "notificationDenied"),
+                    allowed ? "info" : "warning",
+                  ),
+                )
+                .catch((e) => setError(String(e)));
+            }}
+          />
+        )}
       </Card>
       <Card style={{ padding: 16 }}>
         <MenuRow
@@ -228,30 +230,6 @@ export function Profile() {
         />
       )}
       {error && <ErrorState message={error} retry={() => setError("")} />}
-    </Screen>
-  );
-}
-export function Sync() {
-  const user = useAccountId();
-  const query = useQuery({
-    queryKey: [user, "draft-count"],
-    queryFn: () => draftCount(user!),
-    enabled: !!user,
-  });
-  return (
-    <Screen title={t("sync")} loading={query.isPending}>
-      <AppText>{t("syncBody")}</AppText>
-      <AppText>
-        {t("draftCount")}: {query.data ?? "—"}
-      </AppText>
-      <AppText>{t("noPending")}</AppText>
-      <AppButton label={t("refresh")} onPress={() => void query.refetch()} />
-      {query.error && (
-        <ErrorState
-          message={query.error.message}
-          retry={() => void query.refetch()}
-        />
-      )}
     </Screen>
   );
 }

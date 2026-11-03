@@ -1,4 +1,16 @@
 export const recordCopy = {
+  energy_type: "Energy type",
+  unit_price: "Price per unit",
+  deleteRecord: "Delete record",
+  deleteRecordBody:
+    "Delete this record? It will be removed from your records and cannot be restored in the app. Its history is retained securely.",
+  recordDeleted: "Record deleted",
+  partialFillShort: "PF",
+  fullFillShort: "FF",
+  partialChargeShort: "PC",
+  fullChargeShort: "FC",
+
+  addRecord: "Add Record",
   fullCharge: "Full charge",
   partialCharge: "Partial charge",
 

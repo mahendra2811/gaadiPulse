@@ -1,5 +1,6 @@
+import { Popup } from "./Popup";
 import { useState, type ComponentType, type ComponentProps } from "react";
-import { Modal, Platform, Pressable, Text, View } from "react-native";
+import { Platform, Pressable, Text, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import type { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useTheme } from "@/src/lib/theme";
@@ -18,7 +19,9 @@ export function DatePickerField({
   const c = useTheme();
   const [pickerError, setPickerError] = useState("");
   const [Picker, setPicker] = useState<ComponentType<
-    ComponentProps<typeof import("@react-native-community/datetimepicker").default>
+    ComponentProps<
+      typeof import("@react-native-community/datetimepicker").default
+    >
   > | null>(null);
   const [iosMode, setIosMode] = useState<"date" | "time">("date");
   const [draft, setDraft] = useState(() => fieldDate(value, mode));
@@ -37,7 +40,11 @@ export function DatePickerField({
             if (event.type !== "set" || !date) return;
             const next = new Date(current);
             if (part === "date")
-              next.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+              next.setFullYear(
+                date.getFullYear(),
+                date.getMonth(),
+                date.getDate(),
+              );
             else next.setHours(date.getHours(), date.getMinutes(), 0, 0);
             onChange(formatDateValue(next, mode));
           },
@@ -107,74 +114,62 @@ export function DatePickerField({
           ))}
       </View>
       {!!(error || pickerError) && (
-        <Text accessibilityRole="alert" style={{ color: c.danger, fontSize: 13 }}>
+        <Text
+          accessibilityRole="alert"
+          style={{ color: c.danger, fontSize: 13 }}
+        >
           {error || pickerError}
         </Text>
       )}
       {Picker && (
-        <Modal transparent animationType="fade" onRequestClose={() => setPicker(null)}>
+        <Popup visible onClose={() => setPicker(null)} title={label}>
+          <Picker
+            value={draft}
+            mode={iosMode}
+            display="spinner"
+            maximumDate={
+              iosMode === "date" && !allowFuture ? new Date() : undefined
+            }
+            onChange={(_, date) => {
+              if (date) setDraft(date);
+            }}
+          />
           <View
             style={{
-              flex: 1,
-              justifyContent: "center",
-              padding: 20,
-              backgroundColor: "#0008",
+              flexDirection: "row",
+              justifyContent: "flex-end",
+              gap: 16,
             }}
           >
-            <View
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setPicker(null)}
               style={{
-                padding: 18,
-                gap: 14,
-                borderRadius: 24,
-                backgroundColor: c.surface,
+                minHeight: 44,
+                justifyContent: "center",
+                padding: 10,
               }}
             >
-              <Text style={{ color: c.ink, fontWeight: "700", fontSize: 17 }}>{label}</Text>
-              <Picker
-                value={draft}
-                mode={iosMode}
-                display="spinner"
-                maximumDate={iosMode === "date" && !allowFuture ? new Date() : undefined}
-                onChange={(_, date) => {
-                  if (date) setDraft(date);
-                }}
-              />
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "flex-end",
-                  gap: 16,
-                }}
-              >
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => setPicker(null)}
-                  style={{
-                    minHeight: 44,
-                    justifyContent: "center",
-                    padding: 10,
-                  }}
-                >
-                  <Text style={{ color: c.muted }}>{t("cancel")}</Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => {
-                    onChange(formatDateValue(draft, mode));
-                    setPicker(null);
-                  }}
-                  style={{
-                    minHeight: 44,
-                    justifyContent: "center",
-                    padding: 10,
-                  }}
-                >
-                  <Text style={{ color: c.primary, fontWeight: "700" }}>{t("uiDone")}</Text>
-                </Pressable>
-              </View>
-            </View>
+              <Text style={{ color: c.muted }}>{t("cancel")}</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                onChange(formatDateValue(draft, mode));
+                setPicker(null);
+              }}
+              style={{
+                minHeight: 44,
+                justifyContent: "center",
+                padding: 10,
+              }}
+            >
+              <Text style={{ color: c.primary, fontWeight: "700" }}>
+                {t("uiDone")}
+              </Text>
+            </Pressable>
           </View>
-        </Modal>
+        </Popup>
       )}
     </View>
   );

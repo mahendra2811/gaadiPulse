@@ -80,12 +80,6 @@ export function Settings() {
       </Card>
       <Card style={{ padding: 16 }}>
         <MenuRow
-          label={t("sync")}
-          icon="cloud-upload"
-          tone="cyan"
-          onPress={() => router.push("/settings/sync")}
-        />
-        <MenuRow
           label={t("legal")}
           icon="document-text"
           tone="amber"

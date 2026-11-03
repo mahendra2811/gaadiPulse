@@ -113,3 +113,53 @@ User corrected the Digital Asset Links statement: package `com.pooniya.gaadipuls
 ## 2026-11-04 — Replace initial authentication UI
 
 User requested removal of the earlier onboarding/auth design and development entry flow. Signed-out launch and logout now target `/auth/login`; `/auth/welcome` remains a redirect for compatible links. Email/password login is the primary form with Google and optional email-code sign-in. Account creation progresses through email, password/confirmation and email verification; the existing authenticated profile write collects display name before first Home access. Established accounts retain the session/profile routing to Home. Password recovery remains on its route after verification establishes a session. Auth uses the shared palette, gradient, bundled brand art, safe areas, scrollable keyboard avoidance, accessible controls and English translation keys. Development entry buttons were removed from auth/session-error/settings UI; retained domain preview internals remain inaccessible from these entry points. No migrations, server data or credentials changed.
+
+## 2026-11-04 — Header-only vehicle switching
+
+User requested removal of Switch vehicle actions from the vehicle summary cards on Fuel, Expenses and other pages. Removed the action and its selection sheet from the shared `VehicleHeader` component. The global header picker remains the switching entry point. Existing explicitly bound record context is preserved; no persistence or access-control changes.
+
+## 2026-11-04 — Owner edit and typed-name vehicle deletion
+
+Owner Garage cards now have a separate Edit action. The edit wizard includes Delete vehicle below its content. Deletion requires the exact saved vehicle identity (nickname, registration, model, then subtype fallback), checked both client-side and in a verified-owner SQL RPC under the vehicle row lock. Unsaved identity edits cannot change the confirmation target. Use additive soft deletion (`deleted_at`) to preserve monetary records, receipts and audit history. Normal member/owner access helpers exclude deleted vehicles, removing them from garages and blocking normal record operations; unresolved/resolved email grants are revoked. An unchanged owner retry returns the same vehicle ID without a second deletion event. No permanent erase or restore UI is implied. UI explains retained history and impact on all members. This supersedes any earlier suggestion to use archive as deletion. New migration must be applied to the backend before the deletion RPC can work; no remote deployment performed in this session.
+
+## 2026-11-04 — Single-page vehicle edit
+
+User requested a plain single-page edit form instead of the add-vehicle wizard. Existing vehicle edits now show nickname, registration, category/subtype, make/model, energy type, meter mode and timezone together with Save/Delete at the bottom. New-vehicle creation retains its wizard. Ownership remains per-vehicle authorization, not an editable profile field. Meter values remain timestamped observations via the existing Add meter reading form, because `save_vehicle` does not update historical readings on edit; the edit page links directly to that form rather than presenting a nonfunctional kilometre input. Existing dirty-form confirmation applies when leaving for readings.
+
+## 2026-11-04 — Edit dropdowns and subtype meter options
+
+Single-page vehicle edit now uses accessible modal dropdown fields for category, subtype and meter mode. Since the catalog specifies recommended default modes rather than a separate capability matrix, use an explicit UI policy based on those defaults: KM subtypes offer KM; HOURS subtypes offer HOURS; BOTH subtypes offer KM/HOURS/BOTH. Category-specific Other defaults are respected. This is a product UI policy, not a claim about physical vehicle capabilities. Bike/car release restrictions on new category choices remain; retained supported dual-mode subtypes can select BOTH when those categories are available. Category/subtype changes reset an incompatible meter choice, and edit submit rejects unavailable modes. Historical readings remain intact; an existing incompatible mode requires an explicit valid selection before save. No new SQL restriction or migration; server permissions and historical mode support remain unchanged. New-vehicle wizard is unchanged.
+
+## 2026-11-04 — Quick fuel and expense entry
+
+User prioritizes fuel amount plus quantity; add/edit fuel submit now requires both, while the shared historical any-two arithmetic helper remains intact. Unit price is derived when blank; optional explicit receipt rate is under Additional options and retains consistency checks. Full/partial state also moves into that section without changing its stored meaning or full-to-full rules. Energy identity is compact, event timestamp stays visible after core fields, and missing readings remain allowed. Expense category uses a dropdown. Additional options has a compact header on these forms, and the record-form Connection shortcut is removed; online errors/retry and acknowledged server writes remain intact. No offline queue or fallback introduced.
+
+## 2026-11-04 — No standalone Connection page
+
+User approved removal of the former Sync/Connection screen for the online-only app. Remove all navigation entries; `/settings/sync` redirects to `/settings` for old links. Per-screen offline/error/retry handling remains. This supersedes earlier documentation describing a standalone Connection destination.
+
+## 2026-11-04 — Shared compact fuel history
+
+Fuel history uses one shared card with thin row separators. Each tappable row shows amount with purchased quantity in parentheses (L, kg or kWh), with a smaller timestamp and a partial fill/charge label only when applicable. Omit redundant fuel identity and full-fill labels from this list. Use theme primary color for amount and partial state; preserve stored values, detail navigation, archived status and existing data permissions. Missing historical quantity is omitted rather than inferred.
+
+## 2026-11-04 — Fuel detail popup and owner-only ledger deletion
+
+Fuel row chevrons indicate the existing full-row detail action; use a shared Sheet popup reusing RecordDetail, with icon-labeled Edit/Delete actions. Existing direct detail URLs remain supported and Edit opens the existing form. Fuel/expense histories omit archived filters and recovery actions. Delete retains ARCHIVED storage and audit history; a new SQL trigger requires verified vehicle ownership on fuel/expense deletion and rejects updates/restoration of deleted ledger rows. Apply migration 202611040008 to enforce the new rule on the connected backend. No remote deployment performed.
+
+## 2026-11-04 — Application-wide centered popups
+
+Latest user instruction replaces bottom-opening sheets with centered, content-height dialogs. `Popup.tsx` is the only app-managed React Native Modal: shared Sheets, fuel details, dropdowns, vehicle switching, More, confirmations, saved-record feedback, release notices and the iOS date-picker wrapper reuse it. Outside taps, the 44dp close icon, Android Back and accessibility Escape dismiss through each caller's existing close handler. Confirmations dismiss as cancel and never run their action on outside taps. Keep explicit confirm/save actions and existing navigation intact. Long content scrolls within safe-area/keyboard-aware bounds; no bottom-slide animation. Native Android system date/time pickers retain the platform dialog.
+
+Use a subtle 3px filter on application content while any popup is visible (reference-counted for stacked popups), plus a dimmed backdrop; modal surfaces stay sharp in their separate modal layer. Web and Android 12+ support this blur; iOS and older Android keep the dimmed backdrop. Platform filter support: https://reactnative.dev/docs/view-style-props.html#filter . An attempted expo-blur installation was blocked by registry DNS and removed; no dependency or lockfile change is retained. Native blur/dismissal behavior still needs device verification.
+
+## 2026-11-04 — Record deletion confirmation inside its popup
+
+Delete now replaces RecordDetail content with an explicit confirmation in the same popup instead of opening the global confirmation Modal above an already-open Modal. This removes dialog stacking/hidden-confirmation behavior. The mutation stays mounted for busy state and retryable errors; successful acknowledged deletion closes the details popup, and Cancel closes it without deleting. Direct detail pages reuse the same confirmation state. Owner authorization and soft-deletion storage are unchanged.
+
+## 2026-11-04 — Compact expense history
+
+Expense history follows the fuel record presentation: one card with separated tappable rows, amount and expense title, compact category and timestamp, and a details chevron. Rows open the existing centered record details popup with existing edit and owner-only delete confirmation. Expense data, direct detail links and permissions are unchanged.
+
+## 2026-11-04 — Manual meter readings cannot decrease
+
+New Add Meter entries compare each supplied KM/HOURS value independently with the latest active observation strictly earlier than its selected observation timestamp, allowing equality. Show the previous value when the member can read meter history; surface history loading errors with retry. Late observations remain possible and are compared with the preceding observation at their actual time. Remove the reset switch from this form; historical reset/correction data remains intact. Migration 202611040009 enforces the rule on manual record-linked observations under a vehicle row lock and rejects new reset flags for this flow. Existing correction and initial-reading workflows are unchanged. Backend migration must be applied before this guard is active in the connected database.

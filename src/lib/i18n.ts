@@ -1,4 +1,36 @@
 export const en = {
+  lastMeterReading: "Previous reading: {value}",
+  readingBelowPrevious:
+    "Reading must be at least the previous reading ({value}).",
+  readingBelowPreviousServer:
+    "Reading must be at least the previous reading for the selected time. Check the reading and try again.",
+  closePopup: "Close popup",
+  fuelSavedTitle: "Record saved",
+  fuelSavedRedirect:
+    "Your fuel or charging record was saved successfully. Returning to Fuel in 4 seconds, or tap OK to continue now.",
+  savedDialogOk: "OK",
+
+  fuelPrimaryRequired:
+    "Enter the total amount and quantity to save this record.",
+  fuelQuickHelp:
+    "Enter amount and quantity. The unit price is calculated automatically; you can enter the receipt rate under Additional options.",
+
+  chooseAllowedMeter:
+    "Choose a meter mode available for this vehicle type and subtype.",
+  selectOption: "Select an option",
+  editEnergyLabel: "Fuel / energy type",
+  editMeterHelp:
+    "Meter settings do not overwrite recorded kilometres. Add a timestamped reading to update your vehicle history.",
+  addMeterReading: "Add meter reading",
+
+  deleteVehicle: "Delete vehicle",
+  deleteVehicleHelp:
+    "Only an Owner can delete this vehicle. It will be removed for all members. Financial records and audit history are retained; this is not permanent data erasure.",
+  deleteVehicleTypeName:
+    "To confirm, type the exact vehicle name shown below. Unsaved changes will be discarded.",
+  vehicleNameConfirmation: "Vehicle name to confirm deletion",
+  vehicleDeleted: "Vehicle deleted",
+
   authRestoreTitle: "Opening your garage",
   authRestoreHint: "Checking your saved sign-in securely.",
   authProfileTitle: "Make it yours",

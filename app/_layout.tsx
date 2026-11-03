@@ -1,3 +1,4 @@
+import { PopupBackground } from "@/src/components/ui/Popup";
 import { releaseFeatures } from "@/src/features/release/scope";
 import {
   clearDeviceNotifications,
@@ -165,7 +166,9 @@ export default function RootLayout() {
       <QueryClientProvider client={query}>
         <SessionProvider>
           <ErrorBoundary>
-            <Routes />
+            <PopupBackground>
+              <Routes />
+            </PopupBackground>
           </ErrorBoundary>
         </SessionProvider>
       </QueryClientProvider>

@@ -1,3 +1,6 @@
+import { DropdownField } from "@/src/components/ui/DropdownField";
+import { allowedMeterModes } from "./meterOptions";
+import { DeleteVehicle } from "./DeleteVehicle";
 import { supportsVehicle, releaseFeatures } from "@/src/features/release/scope";
 import { VehicleComingSoon } from "@/src/features/release/DeferredFeature";
 import { SquareArtwork } from "@/src/components/ui/SquareArtwork";
@@ -135,6 +138,7 @@ export default function VehicleForm() {
           />
         ) : (
           <InputField
+            editable={!busy && ready}
             label={label}
             value={String(value ?? "")}
             onChangeText={onChange}
@@ -162,6 +166,16 @@ export default function VehicleForm() {
       if (busy || !user) return;
       if (!supportsVehicle(input.category)) {
         setComingSoon(true);
+        return;
+      }
+      if (
+        id &&
+        !allowedMeterModes(input.category, input.subtype).includes(
+          input.meter_mode,
+        )
+      ) {
+        form.setError("meter_mode", { message: t("chooseAllowedMeter") });
+        setError(t("chooseAllowedMeter"));
         return;
       }
       setBusy(true);
@@ -244,6 +258,117 @@ export default function VehicleForm() {
       <Screen title={t("edit")}>
         <AppText>{t("denied")}</AppText>
         <AppButton label={t("back")} onPress={() => router.back()} />
+      </Screen>
+    );
+  if (id)
+    return (
+      <Screen title={t("uiEditVehicle")} compact loading={!ready || busy}>
+        <View
+          style={{ width: "100%", maxWidth: 640, alignSelf: "center", gap: 18 }}
+        >
+          {field("nickname", t("nickname"))}
+          {field("registration_number", t("registration"))}
+          <DropdownField
+            label={t("categoryStep")}
+            disabled={busy || !ready}
+            options={categories
+              .filter(supportsVehicle)
+              .map((category) => ({ value: category, label: t(category) }))}
+            value={values.category}
+            onChange={(category) => {
+              form.setValue("category", category, { shouldDirty: true });
+              const subtype = subtypeOptions(category).some(
+                (option) => option.id === values.subtype,
+              )
+                ? values.subtype
+                : "";
+              form.setValue("subtype", subtype, { shouldDirty: true });
+              form.setValue("meter_mode", defaultMeter(category, subtype), {
+                shouldDirty: true,
+              });
+            }}
+          />
+          <DropdownField
+            label={t("subtypeStep")}
+            disabled={busy || !ready}
+            options={subtypeOptions(values.category).map((option) => ({
+              value: option.id,
+              label: subtypeLabel(option.id),
+            }))}
+            value={values.subtype ?? ""}
+            onChange={(subtype) => {
+              form.setValue("subtype", subtype, { shouldDirty: true });
+              const modes = allowedMeterModes(values.category, subtype);
+              if (!modes.includes(values.meter_mode))
+                form.setValue(
+                  "meter_mode",
+                  defaultMeter(values.category, subtype),
+                  { shouldDirty: true },
+                );
+            }}
+          />
+          {form.formState.errors.subtype?.message && (
+            <AppText>{form.formState.errors.subtype.message}</AppText>
+          )}
+          {field("brand", t("brand"))}
+          {field("model", t("model"))}
+          <AppText>{t("editEnergyLabel")}</AppText>
+          <Choice
+            compact
+            values={vehicleEnergyTypes}
+            value={values.energy_type}
+            onChange={(energy) => {
+              if (!busy)
+                form.setValue("energy_type", energy, { shouldDirty: true });
+            }}
+          />
+          <DropdownField
+            label={t("meterStep")}
+            disabled={busy || !ready || !values.subtype}
+            options={allowedMeterModes(
+              values.category,
+              values.subtype ?? "",
+            ).map((mode) => ({ value: mode, label: t(mode) }))}
+            value={values.meter_mode}
+            onChange={(mode) =>
+              form.setValue("meter_mode", mode, { shouldDirty: true })
+            }
+          />
+          <AppText muted>{t("editMeterHelp")}</AppText>
+          <AppButton
+            secondary
+            label={t("addMeterReading")}
+            disabled={busy || !ready}
+            onPress={() =>
+              router.push({
+                pathname: "/records/[kind]/[action]",
+                params: { kind: "meters", action: "add", vehicle: id },
+              })
+            }
+          />
+          {field("timezone", t("timezone"))}
+          {!!error && <ErrorState message={error} retry={() => setError("")} />}
+          <AppButton
+            label={t("save")}
+            disabled={busy || !ready || !vehicle}
+            onPress={() => void submit()}
+          />
+          {vehicle?.role === "OWNER" && !development && (
+            <DeleteVehicle
+              vehicle={vehicle}
+              onBusyChange={setBusy}
+              disabled={busy || !ready}
+              onDeleted={async () => {
+                setAllowExit(true);
+                disablePrevention();
+                await qc.cancelQueries();
+                qc.clear();
+                toast(t("vehicleDeleted"), "success");
+                router.replace("/garage");
+              }}
+            />
+          )}
+        </View>
       </Screen>
     );
   return (
@@ -511,6 +636,21 @@ export default function VehicleForm() {
               ))}
             </Card>
           </>
+        )}
+        {id && vehicle?.role === "OWNER" && !development && (
+          <DeleteVehicle
+            vehicle={vehicle}
+            onBusyChange={setBusy}
+            disabled={busy || !ready}
+            onDeleted={async () => {
+              setAllowExit(true);
+              disablePrevention();
+              await qc.cancelQueries();
+              qc.clear();
+              toast(t("vehicleDeleted"), "success");
+              router.replace("/garage");
+            }}
+          />
         )}
         <AppText muted>{t("onlineFormNotice")}</AppText>
         {!!error && <ErrorState message={error} retry={() => void submit()} />}

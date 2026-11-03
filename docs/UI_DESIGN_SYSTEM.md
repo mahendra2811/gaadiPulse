@@ -30,3 +30,7 @@ Forest `#122C2A`; emerald `#147D69`; vibrant mint `#24C48E`; background `#F5F7F6
 
 ## Typography
 - System or bundled freely distributable font, scalable sizes from 12 to 28sp, tabular numerals for amounts/meters, accessible large-font layouts. Never package unrelated commercial fonts.
+
+## 4 November 2026 — Shared popup standard (latest user override)
+
+All app-managed dialogs use `src/components/ui/Popup.tsx`: centered placement, rounded surface up to 480dp wide (caller may choose a smaller maximum), natural content height capped by the available screen, scrollable overflow, safe-area/keyboard accommodation, and a top-right 44dp close target. Outside taps, Back and accessibility Escape call the same close handler. Confirmations cancel on dismissal. Use a subtle blurred/dimmed background, with dim-only fallback on platforms without filter blur. Sheets and the More menu follow this same standard. Native Android system date/time pickers retain their platform presentation. Replace earlier bottom-sheet styling guidance with this shared primitive for future app popups.

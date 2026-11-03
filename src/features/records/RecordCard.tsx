@@ -102,15 +102,109 @@ export function RecordCard({
   kind,
   timezone,
   onPress,
+  separated = false,
 }: {
   row: RecordEntry;
   kind: Kind;
   timezone?: string;
   onPress?: () => void;
+  separated?: boolean;
 }) {
   const c = useTheme();
   const visual = recordVisuals[kind];
   const status = r(row.status as keyof typeof recordCopy) ?? row.status;
+  if (kind === "fuel" || kind === "expenses") {
+    const energy = String(row.payload.energy_type ?? "");
+    const fillLabel = r(
+      energy === "ELECTRIC"
+        ? row.payload.is_full_tank
+          ? "fullCharge"
+          : "partialCharge"
+        : row.payload.is_full_tank
+          ? "full"
+          : "partial",
+    );
+    const unit = String(row.payload.unit ?? "L");
+    const unitLabel = unit === "KWH" ? "kWh" : unit === "KG" ? "kg" : "L";
+    const quantity = row.payload.quantity;
+    const quantityLabel =
+      quantity === null || quantity === undefined
+        ? ""
+        : `${quantity} ${unitLabel}`;
+    const title = String(row.payload.title ?? "");
+    const category = String(row.payload.category ?? "");
+    const categoryLabel = r(category as keyof typeof recordCopy) ?? category;
+    const secondaryLabel = kind === "expenses" ? categoryLabel : fillLabel;
+    const primaryDetail = kind === "expenses" ? title : quantityLabel;
+    const amount = money(Number(row.payload.amount_paise ?? 0));
+    const date = recordDate(row, kind, timezone);
+    const compactContent = (
+      <View
+        style={{
+          paddingVertical: 14,
+          paddingHorizontal: 16,
+          gap: 6,
+          minHeight: 64,
+          borderTopWidth: separated ? 1 : 0,
+          borderTopColor: c.line,
+        }}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <View style={{ flex: 1, gap: 6 }}>
+            <Text style={{ color: c.primary, fontWeight: "700", fontSize: 19 }}>
+              {amount}
+              {primaryDetail ? (
+                <Text style={{ color: c.ink, fontWeight: "500", fontSize: 15 }}>
+                  {` (${primaryDetail})`}
+                </Text>
+              ) : null}
+            </Text>
+            <View
+              style={{
+                flexDirection: "row",
+                flexWrap: "wrap",
+                gap: 8,
+                alignItems: "center",
+              }}
+            >
+              <Text
+                style={{ color: c.primary, fontSize: 11, fontWeight: "600" }}
+              >
+                {secondaryLabel}
+              </Text>
+              {row.status === "ARCHIVED" && (
+                <Text style={{ color: c.muted, fontSize: 11 }}>{status}</Text>
+              )}
+              <Text
+                style={{
+                  color: c.muted,
+                  fontSize: 11,
+                  lineHeight: 16,
+                  marginLeft: "auto",
+                  flexShrink: 1,
+                }}
+              >
+                {date}
+              </Text>
+            </View>
+          </View>
+          {kind === "expenses" && onPress && (
+            <Ionicons name="chevron-forward" size={20} color={c.primary} />
+          )}
+        </View>
+      </View>
+    );
+    return onPress ? (
+      <MotionPress
+        label={`${r("detail")}: ${amount}, ${primaryDetail}, ${secondaryLabel}, ${date}${row.status === "ARCHIVED" ? `, ${status}` : ""}`}
+        onPress={onPress}
+      >
+        {compactContent}
+      </MotionPress>
+    ) : (
+      compactContent
+    );
+  }
   const content = (
     <Card style={{ padding: 14, gap: 10, borderRadius: 20 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
@@ -132,33 +226,6 @@ export function RecordCard({
       )}
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
         <RecordBadge label={status} tone={visual.tone} />
-        {kind === "fuel" && (
-          <>
-            <RecordBadge
-              label={
-                r(String(row.payload.energy_type) as keyof typeof recordCopy) ??
-                String(row.payload.energy_type)
-              }
-            />
-            <RecordBadge
-              label={`${row.payload.quantity ?? "—"} ${row.payload.unit ?? ""}`}
-            />
-            <RecordBadge
-              label={r(row.payload.is_full_tank ? "full" : "partial")}
-            />
-            {!row.payload.reading_at && (
-              <RecordBadge label={r("pendingReading")} tone="coral" />
-            )}
-          </>
-        )}
-        {kind === "expenses" && row.payload.category !== undefined && (
-          <RecordBadge
-            label={
-              r(String(row.payload.category) as keyof typeof recordCopy) ??
-              String(row.payload.category)
-            }
-          />
-        )}
         {kind === "meters" && (
           <>
             {row.payload.km !== null && row.payload.km !== undefined && (

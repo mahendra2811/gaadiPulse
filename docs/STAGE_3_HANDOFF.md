@@ -280,3 +280,123 @@ Browser QA: inspected live localhost preview in Brave, login and signup layout a
 ## 2026-11-04 — Simple password visibility controls
 
 Added `src/features/auth/PasswordField.tsx` and updated `PasswordScreen.tsx`. Each password/confirmation input has its own accessible 52dp eye toggle, masked by default, with independent visibility. Shared by signup, login and password recovery. Removed the previous shared text toggle. No credential storage, validation, API or SQL changes. Targeted Prettier write, `npm run typecheck` and targeted ESLint with zero warnings — PASS. Browser/device visual interaction and native builds not run for this small control change.
+
+## 2026-11-04 — Remove card vehicle switch action
+
+Updated `src/components/navigation/VehicleHeader.tsx` to remove the card-level Switch vehicle action and its sheet across all consumers, including Fuel and Expenses. Global `HeaderVehicleSwitcher` remains. Legacy optional props remain accepted for caller compatibility but no card selector is rendered. Record/form vehicle binding and save guards are unchanged; existing record context remains fixed. Targeted Prettier write, `npm run typecheck` and targeted ESLint with zero warnings — PASS. No migration changes. Unit/SQL tests, visual/device QA and native builds not run for this small UI removal.
+
+## 2026-11-04 — Fuel Add Record button
+
+Updated `src/features/records/screens.tsx` and `copy.ts`: Fuel/Charging lists now show a full-width shared gradient button labeled Add Record (52dp minimum height) instead of the small heading Add action. Opens the existing vehicle-scoped add form; create permission and archived-vehicle guards remain. Generic label applies to all energy types. Targeted Prettier write, `npm run typecheck`, and targeted ESLint with zero warnings — PASS. No migrations. Visual/device QA, unit/SQL tests and native builds not run for this presentation-only change.
+
+## 2026-11-04 — Owner Garage edit and vehicle deletion
+
+Added `src/features/garage/DeleteVehicle.tsx`, `tests/vehicleDeletion.test.ts` and additive migration `supabase/migrations/202611040007_vehicle_deletion.sql`. Updated garage `screens.tsx`, `VehicleForm.tsx`, `api.ts` and English i18n. Owner cards expose a separate Edit button (outside the details press target). Edit wizard bottom contains typed exact-name deletion; shared busy state blocks concurrent save actions. API waits for matching RPC acknowledgement before clearing account query state and navigating to Garage. No client-side deletion fallback.
+
+SQL: soft deletion preserves vehicle/ledger/audit rows. Verified active Owner required; exact saved identity compared server-side; row locking and unchanged retry handling; email grants revoked; member/owner access helpers deny deleted vehicles, including normal direct API/RLS access that uses these helpers. No server migration applied remotely and no real vehicle deleted.
+
+Validation:
+- Targeted Prettier write — PASS.
+- `npm run typecheck` — PASS.
+- Targeted ESLint on changed garage/i18n files and new deletion test, zero warnings — PASS.
+- `npx vitest run tests/vehicleDeletion.test.ts tests/migrations.test.ts` — new deletion test PASS; full migration-chain test FAIL with existing `syntax error at end of input`. Isolated PGlite deletion test covers Pilot/outsider/unverified/anonymous rejection, wrong-name rejection, Owner success, unchanged retry, deleted access denial, grant revocation and retained vehicle/audit rows. Fixture does not prove full hosted RLS integration.
+
+External gate: apply the new chronological migration through the normal reviewed migration process after resolving the existing full-chain compilation blocker. Real Supabase RLS/REST, owner-vs-Pilot UI, typed confirmation, stale owner revocation/concurrent changes and Android device verification remain pending. No permanent data purge or backend reset.
+
+Additional checks for vehicle deletion: `npx expo config --type public --json > /tmp/gaadipulse-delete-config.json` — PASS; `npx expo export --platform android --output-dir /tmp/gaadipulse-delete-android` (log `/tmp/gaadipulse-delete-export.log`) — PASS. Hermes export is not a signed native APK/AAB build. Browser/device visual checks and native build not run.
+
+## 2026-11-04 — Plain single-page vehicle editing
+
+Updated `src/features/garage/VehicleForm.tsx` and `src/lib/i18n.ts`. Existing vehicle edit bypasses wizard steps, illustrations and review page. All major identity/category/energy/meter settings appear together; Save and owner typed-name Delete remain at bottom. New vehicle wizard retained. Add meter reading links to the real vehicle-scoped observation form; edit does not overwrite historical readings or impersonate another owner. No SQL changes.
+
+Targeted Prettier write/check — PASS; `npm run typecheck` — PASS after correcting an initial unsupported `editable` prop on DateTimeInput (moved to InputField); targeted ESLint with zero warnings — PASS. Browser/device visual QA, unit/SQL tests, Expo validation/export and native build not run for this form-layout change. Deletion still requires the previously added migration; its deployment/full-chain blocker remains unchanged.
+
+## 2026-11-04 — Dropdowns for vehicle edit and meter choices
+
+Added `src/components/ui/DropdownField.tsx`, `src/features/garage/meterOptions.ts`, `tests/meterOptions.test.ts`; updated `VehicleForm.tsx` and English i18n. Edit category/subtype/meter choices now use labeled dropdown controls with selected values, scrollable selection dialog, Cancel/backdrop/Android Back dismissal and accessible selection states. Meter options follow documented catalog-default UI policy: road KM-only, engine HOURS-only, dual subtypes KM/HOURS/BOTH. Changing category/subtype removes incompatible selection; edit save validates the resulting mode. New vehicle wizard/focused release category availability preserved. No data migration or SQL changes.
+
+Executed targeted Prettier write — PASS; `npm run typecheck` — PASS; targeted ESLint on all changed/new files and test with zero warnings — PASS; `npx vitest run tests/meterOptions.test.ts` — PASS, 3 tests (bike/car, tractor/tipper/generator, missing subtype and category-specific Other). Browser/device visual QA, full tests, SQL validation, Expo export/config and native build not run for this UI-only change. Existing full-migration/deletion deployment blockers remain unchanged.
+
+## 2026-11-04 — Compact icon dropdown choices
+
+Updated `src/components/ui/DropdownField.tsx`: removed bottom Cancel button, retained outside-tap/Android Back dismissal and added accessibility escape. Compact label above icon-led 64dp minimum option rows with borders and selected-state radio/check indicators. Existing two/three-option choices and selection behavior preserved. Targeted Prettier write, `npm run typecheck`, targeted ESLint with zero warnings — PASS. No browser/device visual verification, tests, SQL changes or native build for this presentation-only change.
+
+## 2026-11-04 — Expenses Add Record button
+
+Updated `src/features/records/screens.tsx`: Expenses now shares Fuel's full-width gradient Add Record button, replacing the small heading Add action. Opens the existing vehicle-scoped expense form; create permission and archived-vehicle guards preserved. Targeted Prettier write, `npm run typecheck`, targeted ESLint with zero warnings — PASS. No migrations; visual/device QA, unit/SQL tests and native build not run for this presentation-only change.
+
+## 2026-11-04 — Fuel/expense form simplification
+
+Updated `src/features/records/screens.tsx`, `src/components/ui/AdditionalOptions.tsx` and English i18n. Fuel amount/quantity are marked required and checked on submit; optional unit rate remains validated/calculated by existing paise-safe solver. Compact fuel identity replaces repeated profile/unit rows; timestamp follows core inputs. Full/partial, optional receipt rate, station, payment, meter and notes remain under collapsed Additional options. Expense amount/title/category are primary with dropdown category, and optional fields remain collapsed. Removed record-form Connection button. No API/migration changes; actual server confirmation/error/retry semantics retained.
+
+Checks: targeted Prettier write — PASS; `npm run typecheck` — PASS; targeted ESLint with zero warnings — PASS; `npx vitest run tests/foundation.test.ts tests/onlineOnly.test.ts` — PASS, 16 tests covering domain arithmetic and online-only behavior. Browser/live form/device visual QA, real saves, full SQL tests, Expo export/config and native builds not run for this refinement. No real record created. Existing migration deployment blocker remains unchanged.
+
+## 2026-11-04 — Remove Connection/Sync destination
+
+Removed Sync/Connection entries from MoreMenu, Settings and Help, deleted unused `src/features/records/SyncScreen.tsx`, and replaced `app/settings/sync.tsx` with a compatibility redirect to Settings. Existing per-screen connection errors/retry remain. Targeted Prettier write, `npm run typecheck`, targeted ESLint with zero warnings — PASS. Browser/device QA and native builds not run; no backend changes.
+
+## 2026-11-04 — Single record-form save action
+
+Updated `src/features/records/screens.tsx`: removed Save & add another from fuel entry footer and the duplicate bottom Back button from record forms. Connection shortcut was already removed. Save remains the single normal form submission action; existing header/system navigation, field controls and error recovery remain. Targeted Prettier write, `npm run typecheck`, targeted ESLint with zero warnings — PASS. Visual/device QA and native build not run; no backend changes.
+
+## 2026-11-04 — Separate full/partial choices
+
+Updated `src/features/records/screens.tsx`: replaced the single fill-state toggle with two mutually exclusive FilterChips for Partial fill/Full fill (Partial charge/Full charge for electric). Both map to the existing `is_full_tank` boolean; selecting the active option does not deselect it. Writes are ignored while submitting. Targeted Prettier write, `npm run typecheck`, targeted ESLint with zero warnings — PASS. No schema changes; visual/device QA and native build not run.
+
+## 2026-11-04 — Fuel save confirmation and timed return
+
+Added `src/features/records/RecordSavedDialog.tsx`; updated record screens and English i18n. A confirmed fuel/charging save now shows a success modal with OK, then replaces the form with `/(tabs)/fuel` (public URL `/fuel`) on OK or after 4000ms. Saved vehicle becomes active so the destination shows that vehicle. Dirty-form prevention is cleared only following save acknowledgement; resubmission is disabled while success is displayed. Timer cleans up on unmount. Android modal Back also continues to Fuel. Other record types keep their existing completion behavior.
+
+Targeted Prettier write, `npm run typecheck`, targeted ESLint with zero warnings — PASS. `npx vitest run tests/onlineOnly.test.ts` — PASS, 9 tests for underlying acknowledgement/error/retry behavior; this does not test the modal timer/UI. Real save, timing/navigation on device, visual QA and native build not run. No migration changes.
+
+## 2026-11-04 — Minimal fuel history cards
+
+Updated `src/features/records/RecordCard.tsx` and `copy.ts`. Fuel/charging cards now emphasize a 28sp amount with small energy shorthand (P/D/E/CNG etc.), PF/FF or PC/FC state, and event date/time aligned to the bottom right with wrapping. Removed fuel icons, generic title, quantity, confirmed and missing-reading badges from the summary; full record remains available by tapping. Archived state remains visible when archived entries are requested. Accessible press labels retain expanded fuel/fill descriptions. Other domain cards unchanged.
+
+Targeted Prettier write, `npm run typecheck`, targeted ESLint with zero warnings — PASS. Visual/device QA, tests, SQL checks and native builds not run for this presentation-only change. No data/API changes.
+
+### 2026-11-04 — Compact fuel history follow-up
+
+Changed `src/features/records/RecordCard.tsx` and `src/features/records/screens.tsx`: shared fuel list card, thin separators, amount plus quantity, small partial-state/time metadata and theme accents. Recorded presentation decision in `docs/DECISIONS.md`. No migrations or backend changes. Prettier on both changed TSX files: PASS. `npm run typecheck`: PASS. Targeted ESLint result recorded below. Browser/device visual verification, unit/SQL suites, Expo config and Android build were not run for this presentation-only follow-up; no stage/release completion claimed.
+
+Validation detail: initial typecheck FAIL (separator used nonexistent theme `border` token); corrected to existing `line` token and reran `npm run typecheck`: PASS. `npx eslint src/features/records/RecordCard.tsx src/features/records/screens.tsx --max-warnings=0`: PASS.
+
+### 2026-11-04 — Fuel detail popup and Delete follow-up
+
+Changed RecordCard.tsx, records/screens.tsx and records/copy.ts: row chevron, shared details popup, Edit/Delete icon actions, owner-only deletion UI, no ledger archive/recovery filters, retained detail URLs and optional detail values. Added supabase/migrations/202611040008_record_soft_deletion.sql and tests/recordDeletion.test.ts. Database trigger protects fuel and expenses from Pilot deletion and recovery of deleted rows. Requires external application of the migration; not deployed remotely.
+
+Validation: `npx vitest run tests/recordDeletion.test.ts` PASS (PGlite, verified owner vs Pilot/unverified user, retained rows and rejected restore). Prettier changed TSX/copy/test files PASS. Initial TypeScript checks caught missing detail-label translation keys; keys added before final rerun. Final TypeScript/lint results below. Live backend, browser/mobile visual checks, full SQL migration suite, Expo config and Android build NOT RUN; release acceptance remains open.
+
+Final `npm run typecheck`: PASS. Final `npx eslint src/features/records/RecordCard.tsx src/features/records/screens.tsx src/features/records/copy.ts tests/recordDeletion.test.ts --max-warnings=0`: PASS.
+
+### 2026-11-04 — Shared centered popup follow-up
+
+Added `src/components/ui/Popup.tsx` and root PopupBackground in `app/_layout.tsx`. Updated shared Sheet in `src/components/ui/index.tsx`, DropdownField, ConfirmationHost, DatePickerField, HeaderVehicleSwitcher, MoreDrawer, RecordSavedDialog, VehicleComingSoon (`features/release/DeferredFeature.tsx`), and English close-popup text. All app-managed Modal usage now goes through Popup. Centered dialogs size to content, scroll long content, provide outside-click dismissal and close icons, and preserve caller actions. No business data or migrations changed. Updated DECISIONS and UI_DESIGN_SYSTEM. Prior worktree edits were preserved.
+
+Validation performed:
+- Prettier on changed popup/navigation/root TSX and i18n files: PASS.
+- `npm run typecheck`: PASS after removing the unavailable expo-blur dependency attempt.
+- Targeted `npx eslint app/_layout.tsx src/components/ui/Popup.tsx src/components/ui/ConfirmationHost.tsx src/components/ui/DropdownField.tsx src/components/ui/DatePickerField.tsx src/components/ui/index.tsx src/components/navigation/HeaderVehicleSwitcher.tsx src/components/navigation/MoreDrawer.tsx src/features/records/RecordSavedDialog.tsx src/features/release/DeferredFeature.tsx src/lib/i18n.ts --max-warnings=0`: PASS after moving an existing type export below imports (initial lint FAIL: import/first warnings).
+- `npx expo export --platform web --output-dir /tmp/gaadipulse-popup-web`: PASS; output is temporary, not published.
+- `npx expo config --type public --json > /tmp/gaadipulse-popup-expo-config.json`: PASS.
+- `npx expo install expo-blur`: BLOCKED by registry DNS/unavailable network. Removed attempted dependency; package.json/package-lock.json unchanged by this follow-up. Implemented platform filter blur without new packages.
+- Browser visual/interaction checks: BLOCKED, computer-use service startup failed and no browser surfaces were available. Do not interpret compilation as visual verification.
+- Unit/SQL suites and Android native build/device checks: NOT RUN for this UI-only change. No new behavioral tests duplicating implementation were added. Manual follow-up: verify outside click/close/Back, long-content scrolling, keyboard behavior, stacked confirmation cancellation and Android blur on device. iOS/older Android use a dim-only backdrop. No remote setup or deployment required by this change; release acceptance remains open.
+
+### 2026-11-04 — Delete click popup correction
+
+Changed `src/features/records/screens.tsx`: RecordDetail uses an in-place delete confirmation, avoiding a second native Modal above the details popup. Delete replaces the details; confirming waits for saveRecord, then closes on success. Cancel closes without writing. Failed deletion retains the confirmation with retry. Per-vehicle ownership and the existing deletion RPC/trigger contract are unchanged. Prettier on screens.tsx PASS; `npm run typecheck` PASS; `npx eslint src/features/records/screens.tsx --max-warnings=0` PASS. Browser/device interaction verification NOT RUN (computer-use service unavailable in prior attempt). No new SQL, dependency changes, or stage/release completion claim.
+
+## 2026-11-04 — Grouped fuel rows refinement
+
+Inspected current RecordCard/RecordsList implementation: fuel rows already share one enclosing Card with thin separators and quantity alongside amount. Refined `RecordCard.tsx` to retain that structure, show expanded Full fill/Partial fill (charge wording for electric), omit repeated energy names and remove the row chevron. Amount retains primary color and quantity is shown in brackets with L/kg/kWh; small date/time remains below at right. Existing detail-opening handler preserved. Targeted Prettier write, `npm run typecheck`, targeted ESLint on RecordCard/screens with zero warnings — PASS. Visual/device QA, tests and native build not run for this presentation-only refinement.
+
+### 2026-11-04 — Compact expense history follow-up
+
+Changed `src/features/records/RecordCard.tsx` and `src/features/records/screens.tsx` to use a shared list card and details popup for expense records. Rows show amount, title, category, timestamp and chevron; the existing owner-only delete confirmation and edit form are reused. No new migration or service changes. Prettier on both files: PASS; `npm run typecheck`: PASS; targeted `npx eslint src/features/records/RecordCard.tsx src/features/records/screens.tsx --max-warnings=0`: PASS; `npx vitest run tests/recordDeletion.test.ts`: PASS (existing PGlite deletion guard tests). Browser/device visual checks NOT RUN; the computer-use service was unavailable in the previous attempt. Full SQL suite and Android build NOT RUN for this UI change. The previously created `202611040008_record_soft_deletion.sql` still needs deployment to enforce deletion rules on the backend; no remote deployment was performed.
+
+### 2026-11-04 — Manual meter monotonicity
+
+Changed `src/features/records/screens.tsx`, `src/lib/i18n.ts` and `src/lib/errors.ts`; added `supabase/migrations/202611040009_manual_meter_monotonic.sql` and `tests/manualMeterMonotonic.test.ts`. New standalone manual KM/HOURS entries cannot be less than the most recent earlier active observation for the same vehicle and type; equality and truthfully timed late entries are allowed. The form shows preceding values when readable, provides retry on history errors, and no longer offers a reset switch. Database enforcement requires applying the new migration; it has not been deployed. Other record paths and correction history were not altered.
+
+Validation: Prettier changed files PASS; `npm run typecheck` PASS; `npx eslint src/features/records/screens.tsx src/lib/i18n.ts src/lib/errors.ts --max-warnings=0` PASS; `npx vitest run tests/manualMeterMonotonic.test.ts` PASS using PGlite (lower/equal, KM/HOURS, vehicle isolation, late entries, reset). Full local Supabase migration/RLS suite, live backend, visual/device checks, Expo config and Android build NOT RUN for this follow-up. No release acceptance claimed.

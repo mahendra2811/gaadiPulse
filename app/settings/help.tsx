@@ -5,11 +5,6 @@ export default function Help() {
   return (
     <Screen title={r("help")}>
       <AppText>{r("helpBody")}</AppText>
-      <AppButton
-        secondary
-        label={r("sync")}
-        onPress={() => router.push("/settings/sync")}
-      />
       <AppButton secondary label={r("back")} onPress={() => router.back()} />
     </Screen>
   );

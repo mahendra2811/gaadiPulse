@@ -1,5 +1,7 @@
+import { RecordSavedDialog } from "./RecordSavedDialog";
 import { releaseFeatures, supportsVehicle } from "@/src/features/release/scope";
 import { DeferredFeature } from "@/src/features/release/DeferredFeature";
+import { DropdownField } from "@/src/components/ui/DropdownField";
 import { AdditionalOptions } from "@/src/components/ui/AdditionalOptions";
 import { ZodError } from "zod";
 import { errorMessage } from "@/src/lib/errors";
@@ -26,7 +28,7 @@ import {
 import { t } from "@/src/lib/i18n";
 import { DateTimeInput } from "@/src/components/ui/fields";
 import { observations as loadObservations } from "@/src/features/meters/api";
-import { useEffect, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { Linking, View, Switch } from "react-native";
 import { router, useLocalSearchParams, usePreventRemove } from "expo-router";
 import * as Crypto from "expo-crypto";
@@ -35,6 +37,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useQuery } from "@/src/lib/query";
 import {
   Screen,
+  Sheet,
   Card,
   AppText,
   AppButton,
@@ -180,6 +183,7 @@ export function RecordsList({
   );
   const [limit, setLimit] = useState(30);
   const [showArchived, setShowArchived] = useState(false);
+  const [detailId, setDetailId] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(!!initialStatus);
   const canCreate =
     permissions.data?.[
@@ -230,9 +234,23 @@ export function RecordsList({
         <>
           <SectionHeading
             title={t("uiRecords")}
-            action={canCreate && !v.archived_at ? r("add") : undefined}
+            action={
+              !["fuel", "expenses"].includes(kind) &&
+              canCreate &&
+              !v.archived_at
+                ? r("add")
+                : undefined
+            }
             onAction={() => go(kind, "add", v.id)}
           />
+          {["fuel", "expenses"].includes(kind) &&
+            canCreate &&
+            !v.archived_at && (
+              <GradientButton
+                label={r("addRecord")}
+                onPress={() => go(kind, "add", v.id)}
+              />
+            )}
           {["fuel", "expenses"].includes(kind) &&
             permissions.data?.[`${kind}.read`] && (
               <RecordSummary
@@ -308,11 +326,13 @@ export function RecordsList({
                   }}
                 />
               )}
-              <ChoiceChip
-                label={r(showArchived ? "hideArchived" : "showArchived")}
-                selected={showArchived}
-                onPress={() => setShowArchived((value) => !value)}
-              />
+              {kind !== "fuel" && kind !== "expenses" && (
+                <ChoiceChip
+                  label={r(showArchived ? "hideArchived" : "showArchived")}
+                  selected={showArchived}
+                  onPress={() => setShowArchived((value) => !value)}
+                />
+              )}
               {releaseFeatures.advancedTools &&
                 permissions.data?.["reports.read"] && (
                   <TextAction
@@ -339,6 +359,19 @@ export function RecordsList({
               }
               title={r("noData")}
             />
+          ) : kind === "fuel" || kind === "expenses" ? (
+            <Card style={{ padding: 0, gap: 0, overflow: "hidden" }}>
+              {rows.slice(0, limit).map((row, index) => (
+                <RecordCard
+                  key={row.id}
+                  row={row}
+                  kind={kind}
+                  timezone={v.timezone}
+                  separated={index > 0}
+                  onPress={() => setDetailId(row.id)}
+                />
+              ))}
+            </Card>
           ) : (
             rows
               .slice(0, limit)
@@ -351,6 +384,14 @@ export function RecordsList({
                   onPress={() => go(kind, row.id, v.id)}
                 />
               ))
+          )}
+          {detailId && v && (
+            <Sheet visible onClose={() => setDetailId(null)}>
+              <RecordDetail
+                context={{ kind, id: detailId, vehicle: v.id }}
+                onClose={() => setDetailId(null)}
+              />
+            </Sheet>
           )}
           {rows.length > limit && (
             <TextAction
@@ -391,6 +432,10 @@ export function RecordForm() {
   const access = usePermissions(v?.id);
   const qc = useQueryClient();
   const toast = useToast();
+  const [saved, setSaved] = useState(false);
+  const completeFuel = useCallback(() => {
+    router.replace("/(tabs)/fuel");
+  }, []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [additionalOpen, setAdditionalOpen] = useState(false);
@@ -411,6 +456,24 @@ export function RecordForm() {
     forms.data?.find((f) => f.published)?.definition ??
     defaultDefinition;
   const owner = access.data?.owner === true;
+  const meterHistory = useQuery({
+    queryKey: [user, v?.id, "meter-history-for-entry"],
+    enabled:
+      !!user &&
+      !!v &&
+      kind === "meters" &&
+      !id &&
+      !!access.data?.["meters.read"],
+    queryFn: () => loadObservations(user!, v!.id, development),
+  });
+  const previousReading = (type: "KM" | "HOURS") =>
+    meterHistory.data
+      ?.filter(
+        (reading) =>
+          reading.reading_type === type &&
+          Date.parse(reading.observed_at) < Date.parse(values.observed_at),
+      )
+      .sort((a, b) => Date.parse(b.observed_at) - Date.parse(a.observed_at))[0];
   const categories = useQuery({
     queryKey: [user, v?.id, "expense-categories"],
     enabled: !!v && kind === "expenses",
@@ -482,8 +545,8 @@ export function RecordForm() {
         kind === "documents" &&
         metadata.create_reminder === true) ||
       (name === "observed_at" && (values.km !== "" || values.hours !== ""));
-    const triple =
-      kind === "fuel" && ["amount", "quantity", "unit_price"].includes(name);
+    const fuelRequired =
+      kind === "fuel" && ["amount", "quantity"].includes(name);
     const money = ["amount", "unit_price", "principal", "interest"].includes(
       name,
     );
@@ -503,7 +566,7 @@ export function RecordForm() {
               allowFuture={name === "due_at"}
               mode={name === "progress_date" ? "date" : "datetime"}
               required={required}
-              optional={!required && !triple}
+              optional={!required}
               error={
                 typeof form.formState.errors[name]?.message === "string"
                   ? String(form.formState.errors[name]?.message)
@@ -513,10 +576,14 @@ export function RecordForm() {
           ) : (
             <InputField
               label={label}
-              required={required || (kind === "expenses" && name === "amount")}
+              required={
+                required ||
+                fuelRequired ||
+                (kind === "expenses" && name === "amount")
+              }
               optional={
                 !required &&
-                !triple &&
+                !fuelRequired &&
                 !(kind === "expenses" && name === "amount") &&
                 !(kind === "meters" && ["km", "hours"].includes(name))
               }
@@ -658,10 +725,20 @@ export function RecordForm() {
     });
   };
   const submit = async (another = false) => {
-    if (busy || !user || !v) return;
+    if (busy || saved || !user || !v) return;
     setBusy(true);
     setError("");
     try {
+      if (
+        kind === "fuel" &&
+        (!values.amount.trim() || !values.quantity.trim())
+      ) {
+        if (!values.amount.trim())
+          form.setError("amount", { message: t("requiredValue") });
+        if (!values.quantity.trim())
+          form.setError("quantity", { message: t("requiredValue") });
+        throw new Error(t("fuelPrimaryRequired"));
+      }
       if (
         kind === "fuel" &&
         (!permittedFuel(v.energy_type, values.energy_type, existing?.payload) ||
@@ -669,6 +746,22 @@ export function RecordForm() {
       )
         throw new Error(t("fuelMismatch"));
       form.clearErrors();
+      if (kind === "meters" && !id) {
+        for (const [key, type] of [
+          ["km", "KM"],
+          ["hours", "HOURS"],
+        ] as const) {
+          const previous = previousReading(type);
+          if (values[key] && previous && Number(values[key]) < previous.value) {
+            const message = t("readingBelowPrevious").replace(
+              "{value}",
+              `${previous.value} ${type}`,
+            );
+            form.setError(key, { message });
+            throw new Error(message);
+          }
+        }
+      }
       const payload = entryPayload(kind, form.getValues(), {
         meterMode: v.meter_mode,
         original: existing?.payload,
@@ -729,6 +822,13 @@ export function RecordForm() {
         status,
       );
       await qc.invalidateQueries();
+      if (kind === "fuel") {
+        active.select(v.id);
+        setLeaving(true);
+        disablePrevention();
+        setSaved(true);
+        return;
+      }
       toast(r("saved"), "success");
       if (another) {
         form.reset({
@@ -867,7 +967,35 @@ export function RecordForm() {
               (v.meter_mode === "KM" && values.hours !== "")) && (
               <AppText muted>{t("legacyReading")}</AppText>
             )}
+          {kind === "meters" && !id && meterHistory.error && (
+            <ErrorState
+              message={meterHistory.error.message}
+              retry={() => void meterHistory.refetch()}
+            />
+          )}
+          {kind === "meters" &&
+            !id &&
+            previousReading("KM") &&
+            v.meter_mode !== "HOURS" && (
+              <AppText muted>
+                {t("lastMeterReading").replace(
+                  "{value}",
+                  `${previousReading("KM")!.value} KM`,
+                )}
+              </AppText>
+            )}
           {v.meter_mode !== "HOURS" && field("km", r("distance"), true)}
+          {kind === "meters" &&
+            !id &&
+            previousReading("HOURS") &&
+            v.meter_mode !== "KM" && (
+              <AppText muted>
+                {t("lastMeterReading").replace(
+                  "{value}",
+                  `${previousReading("HOURS")!.value} HOURS`,
+                )}
+              </AppText>
+            )}
           {v.meter_mode !== "KM" && field("hours", r("hours"), true)}
           {values.km !== "" || values.hours !== "" ? (
             field("observed_at", r("observed"))
@@ -919,6 +1047,7 @@ export function RecordForm() {
               label={r(kind === "progress" ? "submit" : "save")}
               disabled={
                 busy ||
+                saved ||
                 !ready ||
                 (kind === "progress" &&
                   (forms.isPending || !values.form_version_id))
@@ -926,17 +1055,10 @@ export function RecordForm() {
               onPress={() => void submit()}
             />
           </View>
-          {!id && kind === "fuel" && (
-            <TextAction
-              label={r("saveAnother")}
-              icon="add-circle-outline"
-              disabled={busy || !ready}
-              onPress={() => void submit(true)}
-            />
-          )}
         </View>
       }
     >
+      {saved && <RecordSavedDialog onContinue={completeFuel} />}
       {id ? (
         <VehicleHeader vehicleId={v.id} allowSwitch={false} />
       ) : (
@@ -1021,15 +1143,16 @@ export function RecordForm() {
             }
           />
         </>
-      ) : ["fuel", "expenses"].includes(kind) ? (
-        field("event_at", r("event"))
       ) : null}
       {kind === "fuel" && (
         <>
           <Card style={{ padding: 16, gap: 10 }}>
-            <AppText muted>{t("fuelProfile")}</AppText>
-            <AppText large>{t(v.energy_type)}</AppText>
-            <AppText muted>{t("fuelFixed")}</AppText>
+            <AppText>
+              {t("uiEnergyType")}:{" "}
+              {r(values.energy_type as keyof typeof recordCopy) ??
+                values.energy_type}{" "}
+              · {values.unit}
+            </AppText>
             {["HYBRID", "DIESEL_HYBRID"].includes(v.energy_type) && (
               <AppText muted>{t("fuelHybridHelp")}</AppText>
             )}
@@ -1067,17 +1190,6 @@ export function RecordForm() {
                 }}
               />
             )}
-            <InfoRows
-              items={[
-                {
-                  label: t("uiEnergyType"),
-                  value:
-                    r(values.energy_type as keyof typeof recordCopy) ??
-                    values.energy_type,
-                },
-                { label: r("quantity"), value: values.unit },
-              ]}
-            />
             {(!permittedFuel(
               v.energy_type,
               values.energy_type,
@@ -1110,24 +1222,7 @@ export function RecordForm() {
               />
             )}
           </Card>
-          <AppButton
-            secondary={!values.is_full_tank}
-            label={r(
-              values.energy_type === "ELECTRIC"
-                ? values.is_full_tank
-                  ? "fullCharge"
-                  : "partialCharge"
-                : values.is_full_tank
-                  ? "full"
-                  : "partial",
-            )}
-            onPress={() =>
-              form.setValue("is_full_tank", !values.is_full_tank, {
-                shouldDirty: true,
-              })
-            }
-          />
-          <AppText muted>{t("fuelAnyTwo")}</AppText>
+          <AppText muted>{t("fuelQuickHelp")}</AppText>
           {field("amount", r("amount"), true)}
           {field(
             "quantity",
@@ -1140,35 +1235,30 @@ export function RecordForm() {
             ),
             true,
           )}
-          {field(
-            "unit_price",
-            t(
-              values.unit === "KWH"
-                ? "chargePrice"
-                : values.unit === "KG"
-                  ? "massPrice"
-                  : "volumePrice",
-            ),
-            true,
-          )}
-          {!!derived && (
-            <Card>
-              <AppText>{derived}</AppText>
-            </Card>
-          )}
+          {!!derived && <AppText muted>{derived}</AppText>}
         </>
       )}
       {kind === "expenses" && (
         <>
           {field("amount", r("amount"), true)}
           {field("title", r("title"))}
-          <AppText>{r("category")} *</AppText>
-          {choose("category", [
-            ...expenseCategories,
-            ...(categories.data ?? []),
-          ])}
+          <DropdownField
+            label={r("category")}
+            value={values.category}
+            disabled={busy}
+            options={[
+              ...new Set([...expenseCategories, ...(categories.data ?? [])]),
+            ].map((category) => ({
+              value: category,
+              label: r(category as keyof typeof recordCopy) ?? category,
+            }))}
+            onChange={(category) =>
+              form.setValue("category", category, { shouldDirty: true })
+            }
+          />
         </>
       )}
+      {["fuel", "expenses"].includes(kind) && field("event_at", r("event"))}
       {kind === "documents" &&
         choose("category", [
           "RC",
@@ -1196,10 +1286,51 @@ export function RecordForm() {
         <AppText muted>{r("pendingReading")}</AppText>
       )}
       <AdditionalOptions
+        compact={["fuel", "expenses"].includes(kind)}
         open={additionalOpen}
         onToggle={() => setAdditionalOpen((value) => !value)}
       >
-        {kind === "fuel" && field("station_name", r("station"))}
+        {kind === "fuel" && (
+          <>
+            <FilterChips
+              items={[
+                {
+                  id: "partial",
+                  label: r(
+                    values.energy_type === "ELECTRIC"
+                      ? "partialCharge"
+                      : "partial",
+                  ),
+                },
+                {
+                  id: "full",
+                  label: r(
+                    values.energy_type === "ELECTRIC" ? "fullCharge" : "full",
+                  ),
+                },
+              ]}
+              value={values.is_full_tank ? "full" : "partial"}
+              onChange={(value) => {
+                if (!busy)
+                  form.setValue("is_full_tank", value === "full", {
+                    shouldDirty: true,
+                  });
+              }}
+            />
+            {field(
+              "unit_price",
+              t(
+                values.unit === "KWH"
+                  ? "chargePrice"
+                  : values.unit === "KG"
+                    ? "massPrice"
+                    : "volumePrice",
+              ),
+              true,
+            )}
+            {field("station_name", r("station"))}
+          </>
+        )}
         {kind === "expenses" && (
           <>
             {owner && (
@@ -1421,18 +1552,6 @@ export function RecordForm() {
             !definition.km_required &&
             !definition.hours_required)) &&
           readingEditor}
-        {kind === "meters" && owner && (
-          <View style={{ gap: 8 }}>
-            <AppText>{r("reset")}</AppText>
-            <Switch
-              accessibilityLabel={r("reset")}
-              value={values.is_reset}
-              onValueChange={(value) =>
-                form.setValue("is_reset", value, { shouldDirty: true })
-              }
-            />
-          </View>
-        )}
         {(kind !== "progress" ||
           (definition.notes_visible && !definition.notes_required)) &&
           field("notes", r("notes"))}
@@ -1472,22 +1591,41 @@ export function RecordForm() {
         />
       )}
       {error && <ErrorState message={error} retry={() => void submit()} />}
-      <AppButton
-        secondary
-        label={r("sync")}
-        onPress={() => router.push("/settings/sync")}
-      />
-      <AppButton
-        secondary
-        label={r("back")}
-        disabled={busy}
-        onPress={() => router.back()}
-      />
     </Screen>
   );
 }
-export function RecordDetail() {
-  const { kind, id, vehicle } = useRouteKind();
+function DetailContainer({
+  children,
+  embedded,
+  title,
+  loading,
+}: {
+  children: ReactNode;
+  embedded: boolean;
+  title: string;
+  loading: boolean;
+}) {
+  return embedded ? (
+    <View style={{ gap: 12 }}>
+      <AppText large>{title}</AppText>
+      {loading && <Skeleton />}
+      {children}
+    </View>
+  ) : (
+    <Screen compact title={title} loading={loading}>
+      {children}
+    </Screen>
+  );
+}
+export function RecordDetail({
+  context,
+  onClose,
+}: {
+  context?: { kind: Kind; id: string; vehicle: string };
+  onClose?: () => void;
+} = {}) {
+  const route = useRouteKind();
+  const { kind, id, vehicle } = context ?? route;
   const user = useAccountId();
   const { development } = useSession();
   const query = useRecords(kind, vehicle);
@@ -1500,6 +1638,7 @@ export function RecordDetail() {
   const qc = useQueryClient();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [mutationOperation, setMutationOperation] = useState(() =>
     Crypto.randomUUID(),
   );
@@ -1539,7 +1678,11 @@ export function RecordDetail() {
       );
       setMutationOperation(Crypto.randomUUID());
       await qc.invalidateQueries();
-      toast(r("saved"), "success");
+      toast(status === "ARCHIVED" ? r("recordDeleted") : r("saved"), "success");
+      if (status === "ARCHIVED") {
+        if (onClose) onClose();
+        else router.back();
+      }
     } catch (e) {
       setError(String(e));
     } finally {
@@ -1567,13 +1710,45 @@ export function RecordDetail() {
     }
   };
   const editAllowed =
-    owner ||
-    (row?.created_by === user &&
-      permissions.data?.[`${kind}.edit_own`] &&
-      !(kind === "progress" && row?.status === "APPROVED"));
+    row?.status !== "ARCHIVED" &&
+    (owner ||
+      (row?.created_by === user &&
+        permissions.data?.[`${kind}.edit_own`] &&
+        !(kind === "progress" && row?.status === "APPROVED")));
+  // Confirm inside the existing popup: a second native Modal can sit behind it.
+  if (confirmDelete) {
+    return (
+      <DetailContainer
+        embedded={!!context}
+        title={r("deleteRecord")}
+        loading={busy}
+      >
+        <AppText>{r("deleteRecordBody")}</AppText>
+        {row && <RecordCard row={row} kind={kind} timezone={timezone} />}
+        {error && (
+          <ErrorState message={error} retry={() => void mutate("ARCHIVED")} />
+        )}
+        <AppButton
+          label={r("deleteRecord")}
+          disabled={busy || !owner || !row || row.status === "ARCHIVED"}
+          onPress={() => void mutate("ARCHIVED")}
+        />
+        <AppButton
+          secondary
+          label={t("cancel")}
+          disabled={busy}
+          onPress={() => {
+            setConfirmDelete(false);
+            setError("");
+            onClose?.();
+          }}
+        />
+      </DetailContainer>
+    );
+  }
   return (
-    <Screen
-      compact
+    <DetailContainer
+      embedded={!!context}
       title={`${r(kind)} · ${r("detail")}`}
       loading={query.isPending || busy}
     >
@@ -1584,12 +1759,47 @@ export function RecordDetail() {
         />
       ) : row ? (
         <>
-          <VehicleHeader vehicleId={row.vehicle_id} allowSwitch={false} />
+          {!context && (
+            <VehicleHeader vehicleId={row.vehicle_id} allowSwitch={false} />
+          )}
           <RecordCard row={row} kind={kind} timezone={timezone} />
           <Card style={{ padding: 16, gap: 8 }}>
             <SectionHeading title={t("uiRecordInfo")} />
             <InfoRows
               items={[
+                ...(kind === "fuel"
+                  ? [
+                      {
+                        label: r("energy_type"),
+                        value:
+                          r(
+                            String(
+                              row.payload.energy_type,
+                            ) as keyof typeof recordCopy,
+                          ) ?? String(row.payload.energy_type),
+                      },
+                      {
+                        label: r("fuel"),
+                        value: r(
+                          row.payload.energy_type === "ELECTRIC"
+                            ? row.payload.is_full_tank
+                              ? "fullCharge"
+                              : "partialCharge"
+                            : row.payload.is_full_tank
+                              ? "full"
+                              : "partial",
+                        ),
+                      },
+                      ...(row.payload.unit_price_paise != null
+                        ? [
+                            {
+                              label: r("unit_price"),
+                              value: `${money(Number(row.payload.unit_price_paise))}/${row.payload.unit === "KWH" ? "kWh" : row.payload.unit === "KG" ? "kg" : "L"}`,
+                            },
+                          ]
+                        : []),
+                    ]
+                  : []),
                 { label: r("author"), value: row.created_by },
                 ...(row.payload.reading_at
                   ? [
@@ -1729,9 +1939,11 @@ export function RecordDetail() {
             </>
           )}
           {editAllowed && (
-            <AppButton
+            <TextAction
+              icon="create-outline"
               label={r("edit")}
-              onPress={() =>
+              onPress={() => {
+                onClose?.();
                 router.push({
                   pathname: "/records/[kind]/[action]",
                   params: {
@@ -1740,28 +1952,21 @@ export function RecordDetail() {
                     id: row.id,
                     vehicle: row.vehicle_id,
                   },
-                })
-              }
+                });
+              }}
             />
           )}
-          {(owner || (["fuel", "expenses"].includes(kind) && editAllowed)) &&
-            kind !== "progress" && (
-              <AppButton
-                secondary
-                disabled={busy}
-                label={r(row.status === "ARCHIVED" ? "restore" : "archive")}
-                onPress={() =>
-                  ConfirmDialog(
-                    r("archive"),
-                    r("archiveBody"),
-                    () =>
-                      void mutate(
-                        row.status === "ARCHIVED" ? "ACTIVE" : "ARCHIVED",
-                      ),
-                  )
-                }
-              />
-            )}
+          {owner && row.status !== "ARCHIVED" && kind !== "progress" && (
+            <TextAction
+              icon="trash-outline"
+              disabled={busy}
+              label={r("deleteRecord")}
+              onPress={() => {
+                setError("");
+                setConfirmDelete(true);
+              }}
+            />
+          )}
           {releaseFeatures.advancedTools &&
             kind === "expenses" &&
             ["SERVICE", "REPAIR", "INSURANCE", "EMI"].includes(
@@ -1893,7 +2098,7 @@ export function RecordDetail() {
         !query.isPending && <AppText>{r("permission")}</AppText>
       )}
       {error && <ErrorState message={error} retry={() => setError("")} />}
-    </Screen>
+    </DetailContainer>
   );
 }
 export function RecordAnalytics() {

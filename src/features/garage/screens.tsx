@@ -115,86 +115,109 @@ export function Garage() {
             }}
           >
             {vehicles.map((v) => (
-              <MotionPress
+              <View
                 key={v.id}
-                label={`${t("details")}: ${v.nickname || v.registration_number || v.model || subtypeLabel(v.subtype)}`}
-                onPress={() =>
-                  router.push({
-                    pathname: "/garage/[id]",
-                    params: { id: v.id },
-                  })
-                }
-                style={{ width: cardWidth, minWidth: 0 }}
+                style={{ width: cardWidth, minWidth: 0, gap: 6 }}
               >
-                <View
-                  style={{
-                    overflow: "hidden",
-                    borderRadius: 20,
-                    backgroundColor: colors.surface,
-                    gap: 8,
-                    borderWidth: 1,
-                    borderColor: colors.line,
-                    shadowColor: "#163B46",
-                    shadowOpacity: 0.05,
-                    shadowOffset: { width: 0, height: 3 },
-                    shadowRadius: 8,
-                    elevation: 1,
-                  }}
+                <MotionPress
+                  label={`${t("details")}: ${v.nickname || v.registration_number || v.model || subtypeLabel(v.subtype)}`}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/garage/[id]",
+                      params: { id: v.id },
+                    })
+                  }
                 >
-                  <SquareArtwork
-                    source={vehicleArt(v.category, v.subtype)}
-                    radius={0}
-                  />
                   <View
-                    style={{ paddingHorizontal: 10, gap: 5, paddingBottom: 10 }}
+                    style={{
+                      overflow: "hidden",
+                      borderRadius: 20,
+                      backgroundColor: colors.surface,
+                      gap: 8,
+                      borderWidth: 1,
+                      borderColor: colors.line,
+                      shadowColor: "#163B46",
+                      shadowOpacity: 0.05,
+                      shadowOffset: { width: 0, height: 3 },
+                      shadowRadius: 8,
+                      elevation: 1,
+                    }}
                   >
-                    <Text
-                      style={{
-                        fontSize: 15,
-                        fontWeight: "700",
-                        color: colors.ink,
-                      }}
-                    >
-                      {v.nickname ||
-                        v.registration_number ||
-                        v.model ||
-                        subtypeLabel(v.subtype)}
-                    </Text>
-                    <Text style={{ fontSize: 12, color: colors.muted }}>
-                      {subtypeLabel(v.subtype)}
-                    </Text>
+                    <SquareArtwork
+                      source={vehicleArt(v.category, v.subtype)}
+                      radius={0}
+                    />
                     <View
-                      style={{ flexDirection: "row", flexWrap: "wrap", gap: 4 }}
+                      style={{
+                        paddingHorizontal: 10,
+                        gap: 5,
+                        paddingBottom: 10,
+                      }}
                     >
                       <Text
                         style={{
-                          fontSize: 11,
-                          fontWeight: "600",
-                          color: colors.primary,
-                          backgroundColor: colors.background,
-                          paddingHorizontal: 7,
-                          paddingVertical: 4,
-                          borderRadius: 8,
+                          fontSize: 15,
+                          fontWeight: "700",
+                          color: colors.ink,
                         }}
                       >
-                        {t(v.role === "OWNER" ? "owner" : "pilot")} ·{" "}
-                        {t(v.meter_mode)}
+                        {v.nickname ||
+                          v.registration_number ||
+                          v.model ||
+                          subtypeLabel(v.subtype)}
                       </Text>
-                      {v.archived_at && (
+                      <Text style={{ fontSize: 12, color: colors.muted }}>
+                        {subtypeLabel(v.subtype)}
+                      </Text>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          flexWrap: "wrap",
+                          gap: 4,
+                        }}
+                      >
                         <Text
                           style={{
                             fontSize: 11,
-                            color: colors.muted,
+                            fontWeight: "600",
+                            color: colors.primary,
+                            backgroundColor: colors.background,
+                            paddingHorizontal: 7,
                             paddingVertical: 4,
+                            borderRadius: 8,
                           }}
                         >
-                          {t("archived")}
+                          {t(v.role === "OWNER" ? "owner" : "pilot")} ·{" "}
+                          {t(v.meter_mode)}
                         </Text>
-                      )}
+                        {v.archived_at && (
+                          <Text
+                            style={{
+                              fontSize: 11,
+                              color: colors.muted,
+                              paddingVertical: 4,
+                            }}
+                          >
+                            {t("archived")}
+                          </Text>
+                        )}
+                      </View>
                     </View>
                   </View>
-                </View>
-              </MotionPress>
+                </MotionPress>
+                {v.role === "OWNER" && (
+                  <AppButton
+                    secondary
+                    label={t("edit")}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/garage/edit",
+                        params: { id: v.id },
+                      })
+                    }
+                  />
+                )}
+              </View>
             ))}
           </View>
         </>

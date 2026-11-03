@@ -172,12 +172,6 @@ export function MoreMenu({ navigate }: { navigate: (href: Href) => void }) {
           href: "/settings",
         },
         {
-          label: t("sync"),
-          icon: "cloud-upload",
-          tone: "cyan",
-          href: "/settings/sync",
-        },
-        {
           label: r("security"),
           icon: "shield-checkmark",
           tone: "mint",

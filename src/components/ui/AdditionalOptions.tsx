@@ -8,10 +8,12 @@ export function AdditionalOptions({
   open,
   onToggle,
   children,
+  compact = false,
 }: {
   open: boolean;
   onToggle: () => void;
   children: ReactNode;
+  compact?: boolean;
 }) {
   const c = useTheme();
   return (
@@ -33,7 +35,7 @@ export function AdditionalOptions({
           flexDirection: "row",
           alignItems: "center",
           gap: 10,
-          minHeight: 52,
+          minHeight: 48,
           paddingHorizontal: 14,
           paddingVertical: 10,
           opacity: pressed ? 0.65 : 1,
@@ -44,9 +46,11 @@ export function AdditionalOptions({
           <Text style={{ fontSize: 14, fontWeight: "700", color: c.ink }}>
             {t("additionalOptions")}
           </Text>
-          <Text style={{ fontSize: 11, color: c.muted }}>
-            {t("additionalOptionsHint")}
-          </Text>
+          {!compact && (
+            <Text style={{ fontSize: 11, color: c.muted }}>
+              {t("additionalOptionsHint")}
+            </Text>
+          )}
         </View>
         <Ionicons
           name={open ? "chevron-up" : "chevron-down"}

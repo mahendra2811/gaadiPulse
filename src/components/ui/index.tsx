@@ -1,7 +1,10 @@
-import { isNumericDraft, type NumericInputOptions } from "@/src/utils/formInput";
+import { Popup } from "./Popup";
+import {
+  isNumericDraft,
+  type NumericInputOptions,
+} from "@/src/utils/formInput";
 import { ToastHost } from "./ToastHost";
 import { showToast, type ToastType } from "@/src/lib/toast";
-export type { ToastType } from "@/src/lib/toast";
 import { usePathname } from "expo-router";
 import {
   FloatingNavigation,
@@ -9,7 +12,12 @@ import {
 } from "@/src/components/navigation/FloatingNavigation";
 import { PageHeader } from "@/src/components/navigation/PageHeader";
 import { readableError } from "@/src/lib/errors";
-import React, { createContext, useContext, useState, type ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   AccessibilityInfo,
   Animated,
@@ -17,7 +25,6 @@ import {
   ActivityIndicator,
   Image,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -29,11 +36,15 @@ import {
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import { addEventListener } from "@react-native-community/netinfo";
 import { useTheme } from "@/src/lib/theme";
 import { t, type TranslationKey } from "@/src/lib/i18n";
 import { artwork } from "@/src/lib/assets";
+export type { ToastType } from "@/src/lib/toast";
 export function AppText({
   children,
   large = false,
@@ -137,7 +148,9 @@ export function InputField({
         {required ? (
           <Text style={{ color: c.danger, fontSize: 12 }}>*</Text>
         ) : optional ? (
-          <Text style={{ color: c.muted, fontSize: 11 }}>{t("optionalField")}</Text>
+          <Text style={{ color: c.muted, fontSize: 11 }}>
+            {t("optionalField")}
+          </Text>
         ) : null}
       </View>
       <TextInput
@@ -171,7 +184,13 @@ export function InputField({
     </View>
   );
 }
-export function Card({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
+export function Card({
+  children,
+  style,
+}: {
+  children: ReactNode;
+  style?: StyleProp<ViewStyle>;
+}) {
   const c = useTheme();
   return (
     <View
@@ -191,14 +210,23 @@ export function Card({ children, style }: { children: ReactNode; style?: StylePr
     </View>
   );
 }
-export function LoadingLine({ loading, progress }: { loading: boolean; progress?: number }) {
+export function LoadingLine({
+  loading,
+  progress,
+}: {
+  loading: boolean;
+  progress?: number;
+}) {
   const c = useTheme();
   const [reduced, setReduced] = useState(true);
   const [width, setWidth] = useState(0);
   const [position] = useState(() => new Animated.Value(0));
   React.useEffect(() => {
     void AccessibilityInfo.isReduceMotionEnabled().then(setReduced);
-    const sub = AccessibilityInfo.addEventListener("reduceMotionChanged", setReduced);
+    const sub = AccessibilityInfo.addEventListener(
+      "reduceMotionChanged",
+      setReduced,
+    );
     return () => sub.remove();
   }, []);
   React.useEffect(() => {
@@ -210,7 +238,7 @@ export function LoadingLine({ loading, progress }: { loading: boolean; progress?
         duration: 1100,
         easing: Easing.linear,
         useNativeDriver: true,
-      })
+      }),
     );
     animation.start();
     return () => animation.stop();
@@ -278,7 +306,10 @@ export function Screen({
   const { fontScale } = useWindowDimensions();
   const showNavigation = !action && hasBrowseNavigation(path);
   const [offline, setOffline] = useState(false);
-  React.useEffect(() => addEventListener((s) => setOffline(s.isConnected === false)), []);
+  React.useEffect(
+    () => addEventListener((s) => setOffline(s.isConnected === false)),
+    [],
+  );
   return (
     <SafeAreaView
       edges={["top", "left", "right"]}
@@ -302,7 +333,9 @@ export function Screen({
           contentContainerStyle={{
             padding: compact ? 16 : 20,
             gap: compact ? 12 : 18,
-            paddingBottom: action ? 24 : Math.max(140, inset.bottom + 104 * fontScale),
+            paddingBottom: action
+              ? 24
+              : Math.max(140, inset.bottom + 104 * fontScale),
           }}
         >
           {children}
@@ -350,7 +383,13 @@ export function EmptyState({
     </Card>
   );
 }
-export function ErrorState({ message, retry }: { message: string; retry: () => void }) {
+export function ErrorState({
+  message,
+  retry,
+}: {
+  message: string;
+  retry: () => void;
+}) {
   return (
     <Card>
       <AppText>{t("error")}</AppText>
@@ -368,35 +407,16 @@ export function Sheet({
   onClose: () => void;
   children: ReactNode;
 }) {
-  const c = useTheme();
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "flex-end",
-          backgroundColor: "#0008",
-        }}
-      >
-        <SafeAreaView
-          style={{
-            maxHeight: "85%",
-            backgroundColor: c.background,
-            borderTopLeftRadius: 28,
-            borderTopRightRadius: 28,
-            padding: 20,
-            gap: 12,
-          }}
-        >
-          <ScrollView contentContainerStyle={{ gap: 12 }}>{children}</ScrollView>
-          <AppButton label={t("cancel")} onPress={onClose} />
-        </SafeAreaView>
-      </View>
-    </Modal>
+    <Popup visible={visible} onClose={onClose}>
+      {children}
+    </Popup>
   );
 }
+
 export { requestConfirmation as ConfirmDialog } from "@/src/lib/confirmation";
-const ToastContext = createContext<(message: string, type?: ToastType) => void>(showToast);
+const ToastContext =
+  createContext<(message: string, type?: ToastType) => void>(showToast);
 export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={showToast}>

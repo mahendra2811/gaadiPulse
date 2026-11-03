@@ -51,3 +51,12 @@ export async function archiveVehicle(
   });
   if (error) throw new Error(error.message);
 }
+
+export async function deleteVehicle(id: string, confirmation: string) {
+  const { data, error } = await client().rpc("delete_vehicle", {
+    p_vehicle: id,
+    p_confirmation: confirmation,
+  });
+  if (error) throw new Error(error.message);
+  if (data !== id) throw new Error("SAVE_NOT_CONFIRMED");
+}

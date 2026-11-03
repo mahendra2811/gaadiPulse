@@ -145,3 +145,13 @@ Replaced the large ConfirmationHost panel with a shorter icon-led dialog, center
 notifications.ts now tags reminders by account and presentation version and uses compact reminder toasts in the foreground. Matching foreground notifications suppress the duplicate system banner/list presentation. Background reminders retain OS notification styling, support system dismissal, and preserve scheduling. New presentation metadata is reconciled for existing active reminders on their next refresh; no notification permission prompt is added by the listener. Account changes unregister the listener.
 
 Validation: targeted source formatting and `npm run typecheck` passed. Test suites, device/browser visual checks, OS notification delivery and native builds were not run. Background OS notifications cannot use the app's custom width/alignment or three-second toast timer.
+
+## 2026-11-03 — Add Vehicle responsive refinement
+
+Added `src/features/garage/VehicleChoiceGrid.tsx`; updated `VehicleForm.tsx` and `VehicleSubtypeSelector.tsx`. All six sections have a centered 640dp content limit. Category/subtype cards use measured responsive columns, square contained images and wrapping label space, without stretching the final card across the row. Catalog suggestions are collapsible; timezone and initial readings remain under Additional options. Review title falls back to subtype when optional identity fields are empty. No migrations or persistence changes.
+
+Executed checks for this change:
+- `npm run typecheck` — PASS.
+- `npx eslint src/features/garage/VehicleChoiceGrid.tsx src/features/garage/VehicleForm.tsx src/features/garage/VehicleSubtypeSelector.tsx --max-warnings=0` — PASS.
+- `npx prettier --write src/features/garage/VehicleChoiceGrid.tsx src/features/garage/VehicleForm.tsx src/features/garage/VehicleSubtypeSelector.tsx` — PASS.
+- Browser visual inspection — BLOCKED: in-app browser provider unavailable in this session. Mobile/web visual QA and Android build smoke test were not run. No SQL changes; SQL tests not run for this presentation-only change.

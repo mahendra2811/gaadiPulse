@@ -2,7 +2,7 @@ import { AdditionalOptions } from "@/src/components/ui/AdditionalOptions";
 import { vehicleEnergyTypes } from "./energy";
 import { DateTimeInput } from "@/src/components/ui/fields";
 import { useEffect, useState } from "react";
-import { BackHandler, Image, Pressable, View, Text } from "react-native";
+import { BackHandler, Image, View, Text } from "react-native";
 import { router, useLocalSearchParams, usePreventRemove } from "expo-router";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -21,6 +21,7 @@ import { useSession, useAccountId } from "@/src/features/auth/session";
 import { loadDraft, saveDraft, clearDraft } from "@/src/lib/db";
 import { VehicleSubtypeSelector } from "./VehicleSubtypeSelector";
 import { subtypeOptions, subtypeLabel } from "./subtypes";
+import { VehicleChoiceGrid } from "./VehicleChoiceGrid";
 import { WizardSteps } from "./WizardSteps";
 import {
   GradientButton,
@@ -301,268 +302,236 @@ export default function VehicleForm() {
         </View>
       }
     >
-      <WizardSteps
-        step={step}
-        titles={titles}
-        disabled={busy || !ready}
-        onStep={(value) => {
-          setError("");
-          setStep(value);
-        }}
-      />
-      <SectionHeading title={titles[step]} />
-      {step === 0 && <AppText muted>{t("uiCategoryHint")}</AppText>}
-      {step === 0 && (
-        <View
-          accessibilityRole="radiogroup"
-          style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}
-        >
-          {categories.map((category) => (
-            <Pressable
-              key={category}
-              accessibilityRole="radio"
-              accessibilityLabel={t(category)}
-              accessibilityState={{
-                checked: values.category === category,
-                disabled: !ready || busy,
-              }}
-              disabled={!ready || busy}
-              onPress={() => {
-                form.setValue("category", category, { shouldDirty: true });
-                if (
-                  category !== values.category &&
-                  !subtypeOptions(category).some(
-                    (option) => option.id === values.subtype,
-                  )
-                ) {
-                  form.setValue("subtype", "", { shouldDirty: true });
-                  form.setValue("meter_mode", defaultMeter(category, ""));
-                }
-              }}
-              style={({ pressed }) => ({
-                width: category === "heavy_machinery" ? "100%" : "47%",
-                flexGrow: 1,
-                maxWidth: category === "heavy_machinery" ? "100%" : "49%",
-                flexDirection:
-                  category === "heavy_machinery" ? "row" : "column",
-                alignItems:
-                  category === "heavy_machinery" ? "center" : "stretch",
-                borderRadius: 20,
-                padding: 8,
-                gap: 8,
-                backgroundColor: colors.surface,
-                borderWidth: 2,
-                borderColor:
-                  values.category === category ? colors.accent : colors.line,
-                opacity: pressed ? 0.8 : 1,
-              })}
-            >
-              <Image
-                source={vehicleArt(category, categoryArt[category])}
-                style={{
-                  width: category === "heavy_machinery" ? 88 : "100%",
-                  aspectRatio: 1,
-                  borderRadius: 13,
-                  backgroundColor: "#F1F9F6",
-                }}
-                resizeMode="contain"
-                accessible={false}
-              />
-              <Text
-                style={{
-                  color: colors.ink,
-                  fontSize: 14,
-                  fontWeight: "600",
-                  textAlign: category === "heavy_machinery" ? "left" : "center",
-                  flex: category === "heavy_machinery" ? 1 : undefined,
-                  paddingHorizontal: 2,
-                  paddingBottom: 5,
-                }}
-              >
-                {values.category === category ? "✓ " : ""}
-                {t(category)}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      )}
-      {step === 1 && (
-        <VehicleSubtypeSelector
-          key={values.category}
-          category={values.category}
+      <View
+        style={{ width: "100%", maxWidth: 640, alignSelf: "center", gap: 12 }}
+      >
+        <WizardSteps
+          step={step}
+          titles={titles}
           disabled={busy || !ready}
-          value={values.subtype}
-          onChange={(v) => {
-            form.setValue("subtype", v, { shouldDirty: true });
-            form.setValue("meter_mode", defaultMeter(values.category, v));
+          onStep={(value) => {
+            setError("");
+            setStep(value);
           }}
         />
-      )}
-      {step === 2 && (
-        <>
-          <AppText muted>{t("uiModelHint")}</AppText>
-          {field("brand", t("brand"))}
-          {field("model", t("model"))}
-          <AppText muted>{t("catalog")}</AppText>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            {catalog.categories
-              .filter((category) => category.id === values.category)
-              .flatMap((category) => category.makes)
-              .filter(
-                (make) =>
-                  !values.brand ||
-                  make.name.toLowerCase().includes(values.brand.toLowerCase()),
-              )
-              .slice(0, 6)
-              .map((make) => (
-                <ChoiceChip
-                  key={make.name}
-                  label={make.name}
-                  selected={make.name === values.brand}
-                  onPress={() =>
-                    form.setValue("brand", make.name, { shouldDirty: true })
-                  }
-                />
-              ))}
-          </View>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            {catalog.categories
-              .filter((category) => category.id === values.category)
-              .flatMap((category) => category.makes)
-              .find((make) => make.name === values.brand)
-              ?.models.map((model) => (
-                <ChoiceChip
-                  key={model}
-                  label={model}
-                  selected={values.model === model}
-                  onPress={() =>
-                    form.setValue("model", model, { shouldDirty: true })
-                  }
-                />
-              ))}
-          </View>
-        </>
-      )}
-      {step === 3 && (
-        <>
-          <AppText muted>{t("uiDetailsHint")}</AppText>
-          <AppText muted>{t("vehicleIdentityHelp")}</AppText>
-          {field("nickname", t("nickname"))}
-          {field("registration_number", t("registration"))}
-          <Choice
-            compact
-            values={vehicleEnergyTypes}
-            value={values.energy_type}
-            onChange={(v) =>
-              form.setValue("energy_type", v, { shouldDirty: true })
-            }
+        <SectionHeading title={titles[step]} />
+        {step === 0 && <AppText muted>{t("uiCategoryHint")}</AppText>}
+        {step === 0 && (
+          <VehicleChoiceGrid
+            options={categories.map((category) => ({
+              id: category,
+              label: t(category),
+              image: vehicleArt(category, categoryArt[category]),
+            }))}
+            value={values.category}
+            disabled={!ready || busy}
+            onChange={(selected) => {
+              const category = categories.find((item) => item === selected);
+              if (!category) return;
+              form.setValue("category", category, { shouldDirty: true });
+              if (
+                category !== values.category &&
+                !subtypeOptions(category).some(
+                  (option) => option.id === values.subtype,
+                )
+              ) {
+                form.setValue("subtype", "", { shouldDirty: true });
+                form.setValue("meter_mode", defaultMeter(category, ""));
+              }
+            }}
           />
-          <AdditionalOptions
-            open={additionalStep === step}
-            onToggle={() =>
-              setAdditionalStep((value) => (value === step ? null : step))
-            }
-          >
-            {field("timezone", t("timezone"))}
-          </AdditionalOptions>
-        </>
-      )}
-      {step === 4 && (
-        <>
-          <AppText muted>{t("uiMeterHint")}</AppText>
-          <Choice
-            compact
-            values={meterModes}
-            value={values.meter_mode}
-            onChange={(v) =>
-              form.setValue("meter_mode", v, { shouldDirty: true })
-            }
+        )}
+        {step === 1 && (
+          <VehicleSubtypeSelector
+            key={values.category}
+            category={values.category}
+            disabled={busy || !ready}
+            value={values.subtype}
+            onChange={(v) => {
+              form.setValue("subtype", v, { shouldDirty: true });
+              form.setValue("meter_mode", defaultMeter(values.category, v));
+            }}
           />
-          {!id && (
+        )}
+        {step === 2 && (
+          <>
+            <AppText muted>{t("uiModelHint")}</AppText>
+            {field("brand", t("brand"))}
+            {field("model", t("model"))}
             <AdditionalOptions
               open={additionalStep === step}
               onToggle={() =>
                 setAdditionalStep((value) => (value === step ? null : step))
               }
             >
-              {values.meter_mode !== "HOURS" && field("km", t("km"), true)}
-              {values.meter_mode !== "KM" && field("hours", t("hours"), true)}
-              {values.km || values.hours ? (
-                field("observed_at", t("observed"))
-              ) : (
-                <AppText muted>{t("optionalObservation")}</AppText>
-              )}
-            </AdditionalOptions>
-          )}
-        </>
-      )}
-      {step === 5 && (
-        <>
-          <AppText muted>{t("uiReviewHint")}</AppText>
-          <Card style={{ padding: 16, gap: 14 }}>
-            <View
-              style={{ flexDirection: "row", alignItems: "center", gap: 14 }}
-            >
-              <Image
-                source={vehicleArt(values.category, values.subtype)}
-                style={{
-                  width: 96,
-                  aspectRatio: 1,
-                  borderRadius: 16,
-                  backgroundColor: "#F1F9F6",
-                }}
-                resizeMode="contain"
-                accessible={false}
-              />
-              <View style={{ flex: 1, gap: 6 }}>
-                <AppText large>
-                  {values.nickname ||
-                    values.model ||
-                    values.registration_number}
-                </AppText>
-                <AppText muted>{subtypeLabel(values.subtype)}</AppText>
+              <AppText muted>{t("catalog")}</AppText>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                {catalog.categories
+                  .filter((category) => category.id === values.category)
+                  .flatMap((category) => category.makes)
+                  .filter(
+                    (make) =>
+                      !values.brand ||
+                      make.name
+                        .toLowerCase()
+                        .includes(values.brand.toLowerCase()),
+                  )
+                  .slice(0, 6)
+                  .map((make) => (
+                    <ChoiceChip
+                      key={make.name}
+                      label={make.name}
+                      selected={make.name === values.brand}
+                      onPress={() =>
+                        form.setValue("brand", make.name, { shouldDirty: true })
+                      }
+                    />
+                  ))}
               </View>
-            </View>
-            {[
-              [t("categoryStep"), t(values.category)],
-              [t("registration"), values.registration_number || "—"],
-              [t("modelStep"), `${values.brand} ${values.model}`.trim() || "—"],
-              [t("uiEnergyType"), t(values.energy_type)],
-              [t("meters"), t(values.meter_mode)],
-              [t("timezone"), values.timezone],
-            ].map(([label, value]) => (
-              <View
-                key={label}
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  gap: 12,
-                  paddingVertical: 7,
-                  borderTopWidth: 1,
-                  borderTopColor: colors.line,
-                }}
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                {catalog.categories
+                  .filter((category) => category.id === values.category)
+                  .flatMap((category) => category.makes)
+                  .find((make) => make.name === values.brand)
+                  ?.models.map((model) => (
+                    <ChoiceChip
+                      key={model}
+                      label={model}
+                      selected={values.model === model}
+                      onPress={() =>
+                        form.setValue("model", model, { shouldDirty: true })
+                      }
+                    />
+                  ))}
+              </View>
+            </AdditionalOptions>
+          </>
+        )}
+        {step === 3 && (
+          <>
+            <AppText muted>{t("uiDetailsHint")}</AppText>
+            <AppText muted>{t("vehicleIdentityHelp")}</AppText>
+            {field("nickname", t("nickname"))}
+            {field("registration_number", t("registration"))}
+            <Choice
+              compact
+              values={vehicleEnergyTypes}
+              value={values.energy_type}
+              onChange={(v) =>
+                form.setValue("energy_type", v, { shouldDirty: true })
+              }
+            />
+            <AdditionalOptions
+              open={additionalStep === step}
+              onToggle={() =>
+                setAdditionalStep((value) => (value === step ? null : step))
+              }
+            >
+              {field("timezone", t("timezone"))}
+            </AdditionalOptions>
+          </>
+        )}
+        {step === 4 && (
+          <>
+            <AppText muted>{t("uiMeterHint")}</AppText>
+            <Choice
+              compact
+              values={meterModes}
+              value={values.meter_mode}
+              onChange={(v) =>
+                form.setValue("meter_mode", v, { shouldDirty: true })
+              }
+            />
+            {!id && (
+              <AdditionalOptions
+                open={additionalStep === step}
+                onToggle={() =>
+                  setAdditionalStep((value) => (value === step ? null : step))
+                }
               >
-                <Text style={{ color: colors.muted, fontSize: 13, flex: 1 }}>
-                  {label}
-                </Text>
-                <Text
+                {values.meter_mode !== "HOURS" && field("km", t("km"), true)}
+                {values.meter_mode !== "KM" && field("hours", t("hours"), true)}
+                {values.km || values.hours ? (
+                  field("observed_at", t("observed"))
+                ) : (
+                  <AppText muted>{t("optionalObservation")}</AppText>
+                )}
+              </AdditionalOptions>
+            )}
+          </>
+        )}
+        {step === 5 && (
+          <>
+            <AppText muted>{t("uiReviewHint")}</AppText>
+            <Card style={{ padding: 16, gap: 14 }}>
+              <View
+                style={{ flexDirection: "row", alignItems: "center", gap: 14 }}
+              >
+                <Image
+                  source={vehicleArt(values.category, values.subtype)}
                   style={{
-                    color: colors.ink,
-                    fontSize: 14,
-                    fontWeight: "600",
-                    flex: 1,
-                    textAlign: "right",
+                    width: 96,
+                    aspectRatio: 1,
+                    borderRadius: 16,
+                    backgroundColor: "#F1F9F6",
+                  }}
+                  resizeMode="contain"
+                  accessible={false}
+                />
+                <View style={{ flex: 1, gap: 6 }}>
+                  <AppText large>
+                    {values.nickname ||
+                      values.model ||
+                      values.registration_number ||
+                      subtypeLabel(values.subtype)}
+                  </AppText>
+                  <AppText muted>{subtypeLabel(values.subtype)}</AppText>
+                </View>
+              </View>
+              {[
+                [t("categoryStep"), t(values.category)],
+                [t("registration"), values.registration_number || "—"],
+                [
+                  t("modelStep"),
+                  `${values.brand} ${values.model}`.trim() || "—",
+                ],
+                [t("uiEnergyType"), t(values.energy_type)],
+                [t("meters"), t(values.meter_mode)],
+                [t("timezone"), values.timezone],
+              ].map(([label, value]) => (
+                <View
+                  key={label}
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    paddingVertical: 7,
+                    borderTopWidth: 1,
+                    borderTopColor: colors.line,
                   }}
                 >
-                  {value}
-                </Text>
-              </View>
-            ))}
-          </Card>
-        </>
-      )}
-      <AppText muted>{draftError ? t("draftError") : t("draft")}</AppText>
-      {!!error && <ErrorState message={error} retry={() => setError("")} />}
+                  <Text style={{ color: colors.muted, fontSize: 13, flex: 1 }}>
+                    {label}
+                  </Text>
+                  <Text
+                    style={{
+                      color: colors.ink,
+                      fontSize: 14,
+                      fontWeight: "600",
+                      flex: 1,
+                      textAlign: "right",
+                    }}
+                  >
+                    {value}
+                  </Text>
+                </View>
+              ))}
+            </Card>
+          </>
+        )}
+        <AppText muted>{draftError ? t("draftError") : t("draft")}</AppText>
+        {!!error && <ErrorState message={error} retry={() => setError("")} />}
+      </View>
     </Screen>
   );
 }

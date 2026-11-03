@@ -49,3 +49,7 @@ Use the user's `my docs/assets/` as canonical artwork. Replace obsolete root sub
 Separate vehicle powertrain profiles from actual purchased fuels. Fixed profiles show one fuel; dual profiles offer only their configured fuels; units follow the physical fuel. Treat conventional hybrids as engine-fuel-only and use a separate plug-in hybrid option for external charging. Preserve historical fuel types during vehicle configuration changes; enforce new writes in an additive SQL trigger and local development repository.
 
 Use one in-app confirmation host rather than browser confirm dialogs. Flush supported form drafts before leaving. Format timestamps for UI only; keep ISO values in persistence/exports. Compact toasts auto-dismiss three seconds after each message and retain an accessible close target.
+
+## 2026-11-03 — Add Vehicle responsive layout
+
+All six wizard sections share a centered 640dp maximum content width, matching the action footer. Category and subtype choices use one measured grid: two columns on phones, three at 540dp available width, and one on very narrow layouts or very large text. Images keep a square contain frame; labels have a separate minimum 44dp area and may wrap for accessibility. The final category uses the same card dimensions instead of spanning a row. Optional catalog suggestions join timezone and initial observations under Additional options. Existing entry fields, drafts, validation and save services are preserved.

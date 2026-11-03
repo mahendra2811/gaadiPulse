@@ -1,9 +1,9 @@
 import { SearchField } from "@/src/components/ui/SearchField";
 import { useState } from "react";
-import { Image, Pressable, View, Text } from "react-native";
+import { View } from "react-native";
 import { AppText, AppButton, InputField } from "@/src/components/ui";
 import { getVehicleSubtypeImage } from "@/assets/vehicle-subtypes";
-import { useTheme } from "@/src/lib/theme";
+import { VehicleChoiceGrid } from "./VehicleChoiceGrid";
 import { t } from "@/src/lib/i18n";
 import { subtypeOptions, subtypeLabel } from "./subtypes";
 
@@ -18,7 +18,6 @@ export function VehicleSubtypeSelector({
   onChange: (id: string) => void;
   disabled?: boolean;
 }) {
-  const colors = useTheme();
   const [search, setSearch] = useState("");
   const [showAll, setShowAll] = useState(false);
   const options = subtypeOptions(category);
@@ -38,55 +37,16 @@ export function VehicleSubtypeSelector({
         value={search}
         onChange={setSearch}
       />
-      <View
-        accessibilityRole="radiogroup"
-        style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}
-      >
-        {visible.map((item) => {
-          const selected = item.id === value || (item.id === "other" && manual);
-          return (
-            <Pressable
-              key={item.id}
-              disabled={disabled}
-              accessibilityRole="radio"
-              accessibilityLabel={subtypeLabel(item.id)}
-              accessibilityState={{ checked: selected, disabled }}
-              onPress={() => onChange(item.id)}
-              style={({ pressed }) => ({
-                width: "47%",
-                flexGrow: 1,
-                maxWidth: "49%",
-                padding: 8,
-                borderRadius: 20,
-                borderWidth: 2,
-                borderColor: selected ? colors.accent : colors.line,
-                backgroundColor: colors.surface,
-                opacity: pressed ? 0.75 : 1,
-                gap: 6,
-              })}
-            >
-              <Image
-                source={getVehicleSubtypeImage(item.id)}
-                style={{ width: "100%", aspectRatio: 1 }}
-                resizeMode="contain"
-                accessible={false}
-              />
-              <Text
-                style={{
-                  fontSize: 14,
-                  fontWeight: "600",
-                  color: colors.ink,
-                  textAlign: "center",
-                  paddingBottom: 4,
-                }}
-              >
-                {selected ? "✓ " : ""}
-                {subtypeLabel(item.id)}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <VehicleChoiceGrid
+        options={visible.map((item) => ({
+          id: item.id,
+          label: subtypeLabel(item.id),
+          image: getVehicleSubtypeImage(item.id),
+        }))}
+        value={manual ? "other" : value}
+        disabled={disabled}
+        onChange={onChange}
+      />
       {!visible.length && <AppText>{t("subtypeNoMatch")}</AppText>}
       {!term && (
         <AppButton

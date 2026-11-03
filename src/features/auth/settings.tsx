@@ -1,3 +1,4 @@
+import { AuthLayout } from "./AuthLayout";
 import { releaseFeatures } from "@/src/features/release/scope";
 import { AdditionalOptions } from "@/src/components/ui/AdditionalOptions";
 import { errorMessage } from "@/src/lib/errors";
@@ -30,7 +31,6 @@ import { t } from "@/src/lib/i18n";
 import type { ThemeMode } from "@/src/lib/theme";
 export { MoreDrawerRoute as More } from "@/src/components/navigation/MoreDrawer";
 export function Settings() {
-  const auth = useSession();
   const toast = useToast();
   const [error, setError] = useState("");
   return (
@@ -98,15 +98,6 @@ export function Settings() {
           onPress={() => router.push("/settings/about")}
         />
       </Card>
-      {__DEV__ && !auth.development && (
-        <AppButton
-          secondary
-          label={t("developmentContinue")}
-          onPress={() =>
-            void auth.startDevelopment().catch((e) => setError(String(e)))
-          }
-        />
-      )}
       <SignOutButton />
       {error && <ErrorState message={error} retry={() => setError("")} />}
     </Screen>
@@ -175,7 +166,8 @@ export function Profile() {
       toast(t("saved"));
       setLeaving(true);
       disablePrevention();
-      if (router.canGoBack()) router.back();
+      if (!query.data?.display_name) router.replace("/(tabs)");
+      else if (router.canGoBack()) router.back();
       else router.replace("/(tabs)");
     } catch (e) {
       setError(errorMessage(e));
@@ -184,19 +176,18 @@ export function Profile() {
       setBusy(false);
     }
   };
-  return (
-    <Screen
-      compact
-      title={t("profile")}
-      loading={query.isPending || busy}
-      action={
-        <AppButton
-          label={t("save")}
-          disabled={busy || query.isPending}
-          onPress={() => void save()}
-        />
+  const firstSetup = !query.data?.display_name;
+  const saveAction = (
+    <AppButton
+      label={t(firstSetup ? "continue" : "save")}
+      disabled={
+        busy || !initialized || query.isPending || !!query.error || !name.trim()
       }
-    >
+      onPress={() => void save()}
+    />
+  );
+  const content = (
+    <>
       <InputField
         label={t("name")}
         required
@@ -230,6 +221,26 @@ export function Profile() {
         />
       )}
       {error && <ErrorState message={error} retry={() => setError("")} />}
+    </>
+  );
+  return firstSetup ? (
+    <AuthLayout
+      title={t("authProfileTitle")}
+      subtitle={t("authProfileHint")}
+      loading={query.isPending || busy}
+    >
+      {content}
+      {saveAction}
+      <SignOutButton />
+    </AuthLayout>
+  ) : (
+    <Screen
+      compact
+      title={t("profile")}
+      loading={query.isPending || busy}
+      action={saveAction}
+    >
+      {content}
     </Screen>
   );
 }

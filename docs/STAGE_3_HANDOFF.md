@@ -260,3 +260,23 @@ Latest user instruction supersedes earlier offline-first requirements and histor
 ### Next owner/developer actions
 
 Continue frontend flow work in the clearly labeled ephemeral preview. Follow every OPEN item in ONLINE_ONLY_PLAN.md before release: repair/apply migrations in a disposable environment; test actual sign-in, per-vehicle authorization and confirmed writes; exercise Android disconnect/uncertain commit/explicit retry, two-device conflicts and account changes. Verify no automatic replay with legacy device queues present, and test Back/discard, process restart and 320/360dp accessibility. Recheck retained advanced server workflows before enabling those modules. These are remarks/TODOs, not completed integration claims.
+
+## 2026-11-04 — Authentication flow and UI replacement
+
+Added `src/features/auth/AuthLayout.tsx`. Updated `screens.tsx`, `PasswordScreen.tsx`, `routing.ts`, `settings.tsx`, `SignOutButton.tsx`, `app/_layout.tsx`, `src/lib/i18n.ts`, `tests/auth.test.ts` and `docs/DECISIONS.md`. Signed-out entry/logout now open the redesigned login directly. Welcome is a compatibility redirect, with no onboarding carousel. Signup steps: email → password/confirmation → email verification → profile → Home. Established signed-in accounts skip auth through the existing session guard. Google is offered on login/signup and uses the existing real Supabase OAuth exchange. Optional OTP login, resend cooldown, password reset and retained-input errors remain. First profile setup and session-restoration screens share the new auth shell. Removed development entry buttons from login, welcome, session error and settings. No SQL/migration changes.
+
+Commands executed:
+- `npm run typecheck` — PASS following implementation (final startup-shell refinement rechecked).
+- Targeted ESLint on AuthLayout/screens/PasswordScreen/settings/SignOutButton/routing/i18n/root layout/auth test with `--max-warnings=0` — PASS after combining duplicate React imports; initial run failed on two duplicate-import warnings.
+- Targeted Prettier write/check on the same changed files — PASS (final root/i18n changes formatted with Prettier).
+- `npx vitest run tests/auth.test.ts tests/password.test.ts` — PASS for 4 auth tests; `password.test.ts` was an incorrect filename and did not run password coverage.
+- Corrected `npx vitest run tests/auth.test.ts tests/passwordAuth.test.ts tests/navigation.test.ts` — PASS, 15 tests.
+- `npm test` — FAIL: 8 files passed, 1 failed; 51 tests passed, 1 failed. Existing full-migration PostgreSQL compilation failure remains: `syntax error at end of input` in `tests/migrations.test.ts`. No migrations modified.
+- `npx expo export --platform android --output-dir /tmp/gaadipulse-auth-android` — PASS; Android Hermes bundle and 85 assets exported. This was before the final session-restoration shell-only refinement; this is not a native APK/AAB build.
+- `npx expo config --type public --json > /tmp/gaadipulse-auth-config.json` — PASS.
+
+Browser QA: inspected live localhost preview in Brave, login and signup layout at roughly 502–518dp, absence of the development button, and email → password/confirmation transition using `flow-check@example.com` without submitting to Supabase. Screenshot inspected. The attempted 360dp viewport adjustment did not hold; no 320/360dp pass claimed. Browser showed existing console warnings; no clean-console claim. No real account created and no Google authorization completed. Native Android build/device, large text, keyboard/back, Google return, real verification/recovery/profile writes and authenticated session restoration remain manual verification gates. User has reported Google provider enabled and custom callback allowlisted in Supabase; that configuration was not independently changed or verified here.
+
+## 2026-11-04 — Simple password visibility controls
+
+Added `src/features/auth/PasswordField.tsx` and updated `PasswordScreen.tsx`. Each password/confirmation input has its own accessible 52dp eye toggle, masked by default, with independent visibility. Shared by signup, login and password recovery. Removed the previous shared text toggle. No credential storage, validation, API or SQL changes. Targeted Prettier write, `npm run typecheck` and targeted ESLint with zero warnings — PASS. Browser/device visual interaction and native builds not run for this small control change.

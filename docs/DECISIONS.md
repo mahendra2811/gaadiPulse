@@ -109,3 +109,7 @@ User corrected the Digital Asset Links statement: package `com.pooniya.gaadipuls
 ]
 ```
 
+
+## 2026-11-04 — Replace initial authentication UI
+
+User requested removal of the earlier onboarding/auth design and development entry flow. Signed-out launch and logout now target `/auth/login`; `/auth/welcome` remains a redirect for compatible links. Email/password login is the primary form with Google and optional email-code sign-in. Account creation progresses through email, password/confirmation and email verification; the existing authenticated profile write collects display name before first Home access. Established accounts retain the session/profile routing to Home. Password recovery remains on its route after verification establishes a session. Auth uses the shared palette, gradient, bundled brand art, safe areas, scrollable keyboard avoidance, accessible controls and English translation keys. Development entry buttons were removed from auth/session-error/settings UI; retained domain preview internals remain inaccessible from these entry points. No migrations, server data or credentials changed.

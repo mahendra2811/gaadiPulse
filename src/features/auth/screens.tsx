@@ -1,159 +1,26 @@
 import { errorMessage } from "@/src/lib/errors";
-import { useSession } from "./session";
-import { useEffect, useState } from "react";
-import { Image } from "react-native";
-import { router, useLocalSearchParams } from "expo-router";
+import { PasswordScreen } from "./PasswordScreen";
+import { useEffect, useRef, useState } from "react";
+
+import { Redirect, router, useLocalSearchParams } from "expo-router";
 import { accountEmail, emailCode } from "./passwordSchema";
-import { useRef } from "react";
 import {
   Screen,
   AppText,
   AppButton,
   InputField,
   ErrorState,
-  Card,
 } from "@/src/components/ui";
-import { artwork } from "@/src/lib/assets";
+
 import { t } from "@/src/lib/i18n";
-import { env } from "@/src/lib/env";
-import { googleSignIn, sendOtp, verifyOtp } from "./api";
+import { AuthLayout } from "./AuthLayout";
+
+import { sendOtp, verifyOtp } from "./api";
 export function Welcome() {
-  const auth = useSession();
-  const [devError, setDevError] = useState("");
-  const [page, setPage] = useState(0);
-  const titles = [t("intro1"), t("intro2"), t("intro3")];
-  const bodies = [t("introBody1"), t("introBody2"), t("introBody3")];
-  return (
-    <Screen
-      title={t("app")}
-      action={
-        <AppButton
-          label={page === 2 ? t("skip") : t("continue")}
-          onPress={() =>
-            page < 2 ? setPage(page + 1) : router.push("/auth/login")
-          }
-        />
-      }
-    >
-      <Image
-        source={artwork.onboarding[page]}
-        style={{ width: "100%", height: 260, resizeMode: "contain" }}
-      />
-      <AppText large>{titles[page]}</AppText>
-      <AppText muted>{bodies[page]}</AppText>
-      <AppText>{`${page + 1} / 3`}</AppText>
-      {__DEV__ && (
-        <AppButton
-          secondary
-          label={t("developmentContinue")}
-          onPress={() =>
-            void auth.startDevelopment().catch((e) => setDevError(String(e)))
-          }
-        />
-      )}
-      {!!devError && <AppText>{devError}</AppText>}
-      <AppButton
-        secondary
-        label={t("login")}
-        onPress={() => router.push("/auth/login")}
-      />
-      <AppButton
-        secondary
-        label={t("legal")}
-        onPress={() => router.push("/auth/legal")}
-      />
-    </Screen>
-  );
+  return <Redirect href="/auth/login" />;
 }
 export function Login() {
-  const auth = useSession();
-  const [email, setEmail] = useState("");
-  const [busy, setBusy] = useState(false);
-  const running = useRef(false);
-  const [error, setError] = useState("");
-  const run = async (action: () => Promise<void>) => {
-    if (running.current) return;
-    running.current = true;
-    setBusy(true);
-    setError("");
-    try {
-      await action();
-    } catch (e) {
-      setError(errorMessage(e));
-    } finally {
-      running.current = false;
-      setBusy(false);
-    }
-  };
-  return (
-    <Screen title={t("login")} loading={busy}>
-      {__DEV__ && (
-        <AppButton
-          secondary
-          label={t("developmentContinue")}
-          disabled={busy}
-          onPress={() => void run(auth.startDevelopment)}
-        />
-      )}
-      {!env ? (
-        <Card>
-          <AppText large>{t("configTitle")}</AppText>
-          <AppText>{t("configBody")}</AppText>
-        </Card>
-      ) : (
-        <>
-          <AppButton
-            label={t("google")}
-            disabled={busy}
-            onPress={() => void run(googleSignIn)}
-          />
-          <AppButton
-            secondary
-            label={t("passwordLogin")}
-            disabled={busy}
-            onPress={() => router.push("/auth/password")}
-          />
-          <AppButton
-            secondary
-            label={t("createAccount")}
-            disabled={busy}
-            onPress={() => router.push("/auth/signup")}
-          />
-          <AppButton
-            secondary
-            label={t("forgotPassword")}
-            disabled={busy}
-            onPress={() => router.push("/auth/reset-password")}
-          />
-          <InputField
-            label={t("email")}
-            required
-            maxLength={254}
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoComplete="email"
-          />
-          <AppButton
-            label={t("send")}
-            disabled={busy || !accountEmail.safeParse(email.trim()).success}
-            onPress={() =>
-              void run(async () => {
-                await sendOtp(email.trim());
-                router.push({
-                  pathname: "/auth/verify",
-                  params: { email: email.trim() },
-                });
-              })
-            }
-          />
-        </>
-      )}
-      {!!error && <ErrorState message={error} retry={() => setError("")} />}
-      <AppButton secondary label={t("back")} onPress={() => router.back()} />
-    </Screen>
-  );
+  return <PasswordScreen mode="login" />;
 }
 export function Verify() {
   const { email } = useLocalSearchParams<{ email: string }>();
@@ -182,7 +49,11 @@ export function Verify() {
     }
   };
   return (
-    <Screen title={t("verify")} loading={busy}>
+    <AuthLayout
+      title={t("verify")}
+      subtitle={t("authVerifyHint")}
+      loading={busy}
+    >
       <AppText>{email}</AppText>
       <InputField
         label={t("code")}
@@ -219,7 +90,7 @@ export function Verify() {
         onPress={() => router.back()}
       />
       {!!error && <ErrorState message={error} retry={() => setError("")} />}
-    </Screen>
+    </AuthLayout>
   );
 }
 export function Legal() {

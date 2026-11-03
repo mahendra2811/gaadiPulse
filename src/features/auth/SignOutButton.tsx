@@ -14,7 +14,7 @@ export function SignOutButton() {
     setError("");
     try {
       await auth.signOut();
-      router.replace("/auth/welcome");
+      router.replace("/auth/login");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {

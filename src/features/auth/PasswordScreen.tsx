@@ -6,9 +6,12 @@ import {
   AppText,
   ErrorState,
   InputField,
-  Screen,
 } from "@/src/components/ui";
 import { t } from "@/src/lib/i18n";
+import { PasswordField } from "./PasswordField";
+import { AuthLayout, AuthDivider, AuthLink } from "./AuthLayout";
+import { googleSignIn, sendOtp } from "./api";
+import { env } from "@/src/lib/env";
 import { useSession } from "./session";
 import { useProfile } from "./profile";
 import { accountEmail, emailCode, passwordPair } from "./passwordSchema";
@@ -28,10 +31,11 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
   const [email, setEmail] = useState(
     mode === "recovery" ? (auth.session?.user.email ?? "") : "",
   );
+  const [emailStep, setEmailStep] = useState(mode === "signup");
+  const [useCode, setUseCode] = useState(false);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [code, setCode] = useState("");
-  const [visible, setVisible] = useState(false);
   const [stage, setStage] = useState<
     "details" | "verify" | "password" | "complete"
   >("details");
@@ -90,7 +94,17 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
       return;
     }
     accountEmail.parse(email.trim());
-    if (mode === "login") {
+    if (mode === "signup" && emailStep) {
+      setEmailStep(false);
+      return;
+    }
+    if (mode === "login" && useCode) {
+      await sendOtp(email.trim());
+      router.push({
+        pathname: "/auth/verify",
+        params: { email: email.trim() },
+      });
+    } else if (mode === "login") {
       await passwordLogin(email, password);
       setPassword("");
     } else if (mode === "signup") {
@@ -111,9 +125,45 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
         ? t("createAccount")
         : t("resetPassword");
   const editingPassword =
-    stage === "password" || (stage === "details" && mode !== "recovery");
+    stage === "password" ||
+    (stage === "details" && mode !== "recovery" && !emailStep && !useCode);
   return (
-    <Screen title={title} loading={busy}>
+    <AuthLayout
+      title={mode === "login" ? t("authLoginTitle") : title}
+      subtitle={
+        mode === "login"
+          ? t("authLoginHint")
+          : mode === "signup"
+            ? t(
+                emailStep
+                  ? "authEmailStep"
+                  : stage === "verify"
+                    ? "authVerifyStep"
+                    : "authPasswordStep",
+              )
+            : t("authRecoveryHint")
+      }
+      loading={busy}
+      onBack={
+        mode === "signup" && !emailStep && stage === "details"
+          ? () => setEmailStep(true)
+          : mode !== "login"
+            ? () => router.replace("/auth/login")
+            : undefined
+      }
+    >
+      {!env && <AppText>{t("configBody")}</AppText>}
+      {mode !== "recovery" && stage === "details" && (
+        <>
+          <AppButton
+            secondary
+            label={t("google")}
+            disabled={busy || !env}
+            onPress={() => void run(googleSignIn)}
+          />
+          <AuthDivider />
+        </>
+      )}
       {stage === "complete" ? (
         <>
           <AppText>{t("passwordUpdated")}</AppText>
@@ -128,7 +178,7 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
         </>
       ) : (
         <>
-          {stage === "details" ? (
+          {stage === "details" && (mode !== "signup" || emailStep) ? (
             <InputField
               label={t("email")}
               required
@@ -144,7 +194,7 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
           ) : (
             <AppText>{email}</AppText>
           )}
-          {mode === "signup" && stage === "details" && (
+          {mode === "signup" && stage === "details" && emailStep && (
             <AppText muted>{t("accountNameHelp")}</AppText>
           )}
           {stage === "verify" && (
@@ -166,14 +216,13 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
           )}
           {editingPassword && (
             <>
-              <InputField
+              <PasswordField
                 label={t(stage === "password" ? "newPassword" : "password")}
                 required
                 maxLength={128}
                 value={password}
                 onChangeText={setPassword}
                 editable={!busy}
-                secureTextEntry={!visible}
                 autoCapitalize="none"
                 autoCorrect={false}
                 autoComplete={
@@ -183,25 +232,19 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
               {(mode === "signup" || stage === "password") && (
                 <>
                   <AppText muted>{t("passwordRules")}</AppText>
-                  <InputField
+                  <PasswordField
                     label={t("confirmPassword")}
                     required
                     maxLength={128}
                     value={confirm}
                     onChangeText={setConfirm}
                     editable={!busy}
-                    secureTextEntry={!visible}
                     autoCapitalize="none"
                     autoCorrect={false}
                     autoComplete="new-password"
                   />
                 </>
               )}
-              <AppButton
-                secondary
-                label={t(visible ? "hidePassword" : "showPassword")}
-                onPress={() => setVisible(!visible)}
-              />
             </>
           )}
           <AppButton
@@ -212,15 +255,20 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
                   ? t("save")
                   : mode === "recovery"
                     ? t("sendReset")
-                    : title
+                    : mode === "signup" && emailStep
+                      ? t("continue")
+                      : mode === "login"
+                        ? t(useCode ? "send" : "authEmailLogin")
+                        : title
             }
             disabled={
               busy ||
+              !env ||
               (stage === "verify"
                 ? !emailCode.safeParse(code.trim()).success
                 : stage === "details"
                   ? !accountEmail.safeParse(email.trim()).success ||
-                    (mode === "login" && !password)
+                    (mode === "login" && !useCode && !password)
                   : false)
             }
             onPress={() => void run(submit)}
@@ -245,6 +293,7 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
                 disabled={busy}
                 onPress={() => {
                   setStage("details");
+                  setEmailStep(mode === "signup");
                   setCode("");
                   setError("");
                 }}
@@ -253,30 +302,36 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
           )}
           {mode === "login" && (
             <>
-              <AppButton
-                secondary
-                label={t("createAccount")}
+              <AuthLink
+                label={t(useCode ? "authUsePassword" : "authUseCode")}
                 disabled={busy}
-                onPress={() => router.push("/auth/signup")}
+                onPress={() => {
+                  setUseCode(!useCode);
+                  setError("");
+                }}
               />
-              <AppButton
-                secondary
+              <AuthLink
                 label={t("forgotPassword")}
                 disabled={busy}
                 onPress={() => router.push("/auth/reset-password")}
               />
-              <AppButton
-                secondary
-                label={t("useOtp")}
+              <AuthLink
+                label={t("authNeedAccount")}
                 disabled={busy}
-                onPress={() => router.replace("/auth/login")}
+                onPress={() => router.replace("/auth/signup")}
               />
-              <AppText muted>{t("forgotEmailHelp")}</AppText>
             </>
+          )}
+          {mode === "signup" && (
+            <AuthLink
+              label={t("authHaveAccount")}
+              disabled={busy}
+              onPress={() => router.replace("/auth/login")}
+            />
           )}
         </>
       )}
-      {!!error && <ErrorState message={error} retry={() => void run(submit)} />}
-    </Screen>
+      {!!error && <ErrorState message={error} retry={() => setError("")} />}
+    </AuthLayout>
   );
 }

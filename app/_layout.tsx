@@ -10,8 +10,8 @@ import {
   authDestination,
   keepsAuthenticatedAuthScreen,
 } from "@/src/features/auth/routing";
-import { Image, View, Appearance, Platform } from "react-native";
-import { artwork } from "@/src/lib/assets";
+import { View, Appearance, Platform } from "react-native";
+import { AuthLayout } from "@/src/features/auth/AuthLayout";
 import { useConnectivity } from "@/src/lib/connectivity";
 import { ErrorBoundary } from "@/src/components/ui/ErrorBoundary";
 import "react-native-gesture-handler";
@@ -91,7 +91,7 @@ function Routes() {
       return;
     const path = segments[0];
     if (!auth.session && !auth.development && path !== "auth")
-      router.replace("/auth/welcome");
+      router.replace("/auth/login");
     if (
       (auth.session || auth.development) &&
       path === "auth" &&
@@ -115,25 +115,19 @@ function Routes() {
   if (auth.loading && !auth.session && !auth.development)
     return (
       <ThemeContext.Provider value="dark">
-        <Screen title={t("app")} loading>
-          <Image
-            source={artwork.logo}
-            style={{ width: "100%", height: 200, resizeMode: "contain" }}
-          />
+        <AuthLayout
+          title={t("authRestoreTitle")}
+          subtitle={t("authRestoreHint")}
+          loading
+        >
           <Skeleton />
-        </Screen>
+        </AuthLayout>
       </ThemeContext.Provider>
     );
   if (auth.error && !auth.session && !auth.development)
     return (
       <Screen title={t("sessionError")}>
         <ErrorState message={auth.error} retry={auth.retry} />
-        {__DEV__ && (
-          <AppButton
-            label={t("developmentContinue")}
-            onPress={() => void auth.startDevelopment().catch(auth.retry)}
-          />
-        )}
         <AppButton
           secondary
           label={t("logout")}

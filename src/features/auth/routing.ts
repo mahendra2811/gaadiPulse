@@ -4,7 +4,7 @@ export function authDestination(
   hasDisplayName: boolean,
 ) {
   return !authenticated
-    ? "/auth/welcome"
+    ? "/auth/login"
     : !profileReady
       ? null
       : hasDisplayName

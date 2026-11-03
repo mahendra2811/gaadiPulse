@@ -1,4 +1,26 @@
 export const en = {
+  authRestoreTitle: "Opening your garage",
+  authRestoreHint: "Checking your saved sign-in securely.",
+  authProfileTitle: "Make it yours",
+  authProfileHint:
+    "What should we call you? Finish your profile to open your garage.",
+  authTagline: "Every Vehicle. Every Detail.",
+  authBrandHint: "Your vehicles. One clear picture.",
+  authOrEmail: "or use email",
+  authLoginTitle: "Welcome back",
+  authLoginHint: "Log in to pick up where you left off.",
+  authSignupHint: "Create your account, then add your vehicle details.",
+  authEmailStep: "Step 1 of 3 · Your email",
+  authPasswordStep: "Step 2 of 3 · Secure your account",
+  authVerifyStep: "Step 3 of 3 · Verify your email",
+  authVerifyHint: "Enter the code sent to your email to continue.",
+  authRecoveryHint: "Verify your email and choose a new password.",
+  authHaveAccount: "Already have an account? Log in",
+  authNeedAccount: "New to GaadiPulse? Create an account",
+  authEmailLogin: "Log in with email",
+  authUseCode: "Use an email code instead",
+  authUsePassword: "Use a password instead",
+
   categoryChanges:
     "Changing category clears its optional category details and linked schedule. The payment amount, title and line items stay unchanged.",
 

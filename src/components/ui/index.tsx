@@ -1,18 +1,20 @@
+import { isNumericDraft, type NumericInputOptions } from "@/src/utils/formInput";
+import { ToastHost } from "./ToastHost";
+import { showToast, type ToastType } from "@/src/lib/toast";
+export type { ToastType } from "@/src/lib/toast";
+import { usePathname } from "expo-router";
+import {
+  FloatingNavigation,
+  hasBrowseNavigation,
+} from "@/src/components/navigation/FloatingNavigation";
 import { PageHeader } from "@/src/components/navigation/PageHeader";
 import { readableError } from "@/src/lib/errors";
-import { successFeedback } from "@/src/lib/feedback";
-import React, {
-  createContext,
-  useContext,
-  useState,
-  type ReactNode,
-} from "react";
+import React, { createContext, useContext, useState, type ReactNode } from "react";
 import {
   AccessibilityInfo,
   Animated,
   Easing,
   ActivityIndicator,
-  Alert,
   Image,
   KeyboardAvoidingView,
   Modal,
@@ -22,11 +24,12 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
   type TextInputProps,
   type StyleProp,
   type ViewStyle,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { addEventListener } from "@react-native-community/netinfo";
 import { useTheme } from "@/src/lib/theme";
 import { t, type TranslationKey } from "@/src/lib/i18n";
@@ -101,20 +104,58 @@ export function AppButton({
 export function InputField({
   label,
   error,
+  required,
+  optional,
+  numeric,
   ...props
-}: TextInputProps & { label: string; error?: string }) {
+}: TextInputProps & {
+  label: string;
+  error?: string;
+  required?: boolean;
+  optional?: boolean;
+  numeric?: NumericInputOptions;
+}) {
   const c = useTheme();
+  const [inputError, setInputError] = useState(false);
+  const numericOptions =
+    numeric ??
+    (["number-pad", "numeric", "decimal-pad"].includes(props.keyboardType ?? "")
+      ? { scale: props.keyboardType === "number-pad" ? 0 : 3 }
+      : undefined);
+  const validationError = error || (inputError ? t("numericOnly") : undefined);
   return (
     <View style={{ gap: 6 }}>
-      <AppText>{label}</AppText>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 6,
+        }}
+      >
+        <AppText>{label}</AppText>
+        {required ? (
+          <Text style={{ color: c.danger, fontSize: 12 }}>*</Text>
+        ) : optional ? (
+          <Text style={{ color: c.muted, fontSize: 11 }}>{t("optionalField")}</Text>
+        ) : null}
+      </View>
       <TextInput
-        accessibilityLabel={label}
+        accessibilityLabel={`${label}${required ? `, ${t("requiredField")}` : optional ? `, ${t("optionalField")}` : ""}`}
         placeholderTextColor={c.muted}
         {...props}
+        onChangeText={(value) => {
+          if (numericOptions && !isNumericDraft(value, numericOptions)) {
+            setInputError(true);
+            return;
+          }
+          setInputError(false);
+          props.onChangeText?.(value);
+        }}
         style={{
           minHeight: 52,
           borderWidth: 1,
-          borderColor: error ? c.danger : c.line,
+          borderColor: validationError ? c.danger : c.line,
           borderRadius: 14,
           padding: 14,
           fontSize: 16,
@@ -122,21 +163,15 @@ export function InputField({
           backgroundColor: c.surface,
         }}
       />
-      {error && (
+      {validationError && (
         <Text accessibilityRole="alert" style={{ color: c.danger }}>
-          {error}
+          {validationError}
         </Text>
       )}
     </View>
   );
 }
-export function Card({
-  children,
-  style,
-}: {
-  children: ReactNode;
-  style?: StyleProp<ViewStyle>;
-}) {
+export function Card({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
   const c = useTheme();
   return (
     <View
@@ -156,23 +191,14 @@ export function Card({
     </View>
   );
 }
-export function LoadingLine({
-  loading,
-  progress,
-}: {
-  loading: boolean;
-  progress?: number;
-}) {
+export function LoadingLine({ loading, progress }: { loading: boolean; progress?: number }) {
   const c = useTheme();
   const [reduced, setReduced] = useState(true);
   const [width, setWidth] = useState(0);
   const [position] = useState(() => new Animated.Value(0));
   React.useEffect(() => {
     void AccessibilityInfo.isReduceMotionEnabled().then(setReduced);
-    const sub = AccessibilityInfo.addEventListener(
-      "reduceMotionChanged",
-      setReduced,
-    );
+    const sub = AccessibilityInfo.addEventListener("reduceMotionChanged", setReduced);
     return () => sub.remove();
   }, []);
   React.useEffect(() => {
@@ -184,7 +210,7 @@ export function LoadingLine({
         duration: 1100,
         easing: Easing.linear,
         useNativeDriver: true,
-      }),
+      })
     );
     animation.start();
     return () => animation.stop();
@@ -235,19 +261,24 @@ export function Screen({
   loading = false,
   action,
   onBack,
+  compact = false,
+  contentKey,
 }: {
   title: string;
   children: ReactNode;
   loading?: boolean;
   action?: ReactNode;
   onBack?: () => void;
+  compact?: boolean;
+  contentKey?: string | number;
 }) {
   const c = useTheme();
+  const path = usePathname();
+  const inset = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
+  const showNavigation = !action && hasBrowseNavigation(path);
   const [offline, setOffline] = useState(false);
-  React.useEffect(
-    () => addEventListener((s) => setOffline(s.isConnected === false)),
-    [],
-  );
+  React.useEffect(() => addEventListener((s) => setOffline(s.isConnected === false)), []);
   return (
     <SafeAreaView
       edges={["top", "left", "right"]}
@@ -265,9 +296,14 @@ export function Screen({
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView
+          key={contentKey}
           style={{ flex: 1, minHeight: 0 }}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ padding: 20, gap: 18, paddingBottom: 140 }}
+          contentContainerStyle={{
+            padding: compact ? 16 : 20,
+            gap: compact ? 12 : 18,
+            paddingBottom: action ? 24 : Math.max(140, inset.bottom + 104 * fontScale),
+          }}
         >
           {children}
         </ScrollView>
@@ -286,6 +322,7 @@ export function Screen({
           </SafeAreaView>
         )}
       </KeyboardAvoidingView>
+      {showNavigation && <FloatingNavigation />}
     </SafeAreaView>
   );
 }
@@ -313,13 +350,7 @@ export function EmptyState({
     </Card>
   );
 }
-export function ErrorState({
-  message,
-  retry,
-}: {
-  message: string;
-  retry: () => void;
-}) {
+export function ErrorState({ message, retry }: { message: string; retry: () => void }) {
   return (
     <Card>
       <AppText>{t("error")}</AppText>
@@ -339,12 +370,7 @@ export function Sheet({
 }) {
   const c = useTheme();
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="none"
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
       <View
         style={{
           flex: 1,
@@ -362,71 +388,20 @@ export function Sheet({
             gap: 12,
           }}
         >
-          <ScrollView contentContainerStyle={{ gap: 12 }}>
-            {children}
-          </ScrollView>
+          <ScrollView contentContainerStyle={{ gap: 12 }}>{children}</ScrollView>
           <AppButton label={t("cancel")} onPress={onClose} />
         </SafeAreaView>
       </View>
     </Modal>
   );
 }
-export function ConfirmDialog(title: string, body: string, action: () => void) {
-  if (Platform.OS === "web") {
-    if (window.confirm(`${title}\n\n${body}`)) action();
-    return;
-  }
-  Alert.alert(title, body, [
-    { text: t("cancel"), style: "cancel" },
-    { text: t("continue"), onPress: action },
-  ]);
-}
-export type ToastType = "success" | "error" | "warning" | "info";
-const ToastContext = createContext<(message: string, type?: ToastType) => void>(
-  () => {},
-);
+export { requestConfirmation as ConfirmDialog } from "@/src/lib/confirmation";
+const ToastContext = createContext<(message: string, type?: ToastType) => void>(showToast);
 export function ToastProvider({ children }: { children: ReactNode }) {
-  const [message, setMessage] = useState("");
-  const [type, setType] = useState<ToastType>("info");
   return (
-    <ToastContext.Provider
-      value={(m, type = "info") => {
-        setType(type);
-        if (type === "success") void successFeedback();
-        setMessage(m);
-        AccessibilityInfo.announceForAccessibility(m);
-      }}
-    >
+    <ToastContext.Provider value={showToast}>
       {children}
-      {message && (
-        <View
-          style={{
-            position: "absolute",
-            top: 60,
-            left: 16,
-            right: 16,
-            backgroundColor:
-              type === "error"
-                ? "#6E2431"
-                : type === "warning"
-                  ? "#6A4A10"
-                  : "#122C2A",
-            padding: 16,
-            borderRadius: 16,
-          }}
-        >
-          <Text style={{ color: "#fff" }} accessibilityRole="alert">
-            {message}
-          </Text>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => setMessage("")}
-            style={{ minHeight: 44, justifyContent: "center" }}
-          >
-            <Text style={{ color: "#8CE2BF" }}>{t("dismiss")}</Text>
-          </Pressable>
-        </View>
-      )}
+      <ToastHost />
     </ToastContext.Provider>
   );
 }
@@ -435,11 +410,50 @@ export function Choice<T extends string>({
   values,
   value,
   onChange,
+  compact = false,
 }: {
   values: readonly T[];
   value: T;
   onChange: (v: T) => void;
+  compact?: boolean;
 }) {
+  const c = useTheme();
+  if (compact)
+    return (
+      <View
+        accessibilityRole="radiogroup"
+        style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}
+      >
+        {values.map((v) => (
+          <Pressable
+            key={v}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: v === value }}
+            onPress={() => onChange(v)}
+            style={({ pressed }) => ({
+              minHeight: 46,
+              paddingHorizontal: 15,
+              paddingVertical: 12,
+              borderRadius: 14,
+              borderWidth: 1,
+              borderColor: v === value ? c.primary : c.line,
+              backgroundColor: v === value ? c.primary : c.surface,
+              opacity: pressed ? 0.7 : 1,
+            })}
+          >
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: "600",
+                color: v === value ? c.background : c.ink,
+              }}
+            >
+              {t(v as TranslationKey) ?? v}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+    );
   return (
     <View style={{ gap: 8 }}>
       {values.map((v) => (

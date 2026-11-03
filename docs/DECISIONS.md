@@ -38,3 +38,14 @@ Any new implementation decision should be appended by Codex with date, context, 
 Secondary pages use the shared PageHeader through Screen, with an accessible top Back action and localized section/title context. URLs, UUIDs and route-group names are not shown as page labels. Primary tabs remain navigation roots. Back follows actual stack history, preserving the originating tab; explicit parent fallbacks cover direct links without history. Vehicle wizard step Back changes the step before leaving the route. Successful vehicle/profile saves return to their caller when history exists.
 
 More exposes sign-out/exit-development at the top, plus Add vehicle, permission-gated Add meter reading and Add maintenance. Vehicle details exposes vehicle-scoped meter and maintenance entry links. Maintenance launches expense entry with SERVICE as its default category; existing drafts take precedence. Confirmation uses browser confirmation on web and native Alert on Android/iOS so sign-out and draft guards have a working confirmation path on both platforms.
+
+
+## Updated asset pack — 2026-10-24
+
+Use the user's `my docs/assets/` as canonical artwork. Replace obsolete root subtype SVGs with the supplied 43-image v2 PNG/static registry pack. Adapt the supplied combined agriculture/heavy catalog to the five existing persisted categories rather than rewriting saved category IDs. Add Other in every category and retain custom/unknown subtype values with safe illustration fallback. Import scripts copy approved PNGs unchanged instead of regenerating earlier art. Testing remains deferred under the user's explicit instruction.
+
+## Vehicle-specific fuels and compact feedback — 2026-10-24
+
+Separate vehicle powertrain profiles from actual purchased fuels. Fixed profiles show one fuel; dual profiles offer only their configured fuels; units follow the physical fuel. Treat conventional hybrids as engine-fuel-only and use a separate plug-in hybrid option for external charging. Preserve historical fuel types during vehicle configuration changes; enforce new writes in an additive SQL trigger and local development repository.
+
+Use one in-app confirmation host rather than browser confirm dialogs. Flush supported form drafts before leaving. Format timestamps for UI only; keep ISO values in persistence/exports. Compact toasts auto-dismiss three seconds after each message and retain an accessible close target.

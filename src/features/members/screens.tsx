@@ -1,3 +1,12 @@
+import { Timestamp } from "@/src/components/ui/Timestamp";
+import {
+  MenuRow,
+  ColorIcon,
+  Expandable,
+  SectionHeading,
+  TextAction,
+} from "@/src/components/ui/premium";
+import { FilterChips } from "@/src/components/ui/FilterChips";
 import { permissionLabel } from "@/src/features/records/categories";
 import { useState } from "react";
 import { Switch, View } from "react-native";
@@ -81,6 +90,9 @@ export default function Members() {
   const [selected, setSelected] = useState<Member | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showGrant, setShowGrant] = useState(false);
+  const [showOverrides, setShowOverrides] = useState(false);
+  const [showDefaults, setShowDefaults] = useState(false);
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
     setError("");
@@ -106,6 +118,7 @@ export default function Members() {
     );
   return (
     <Screen
+      compact
       title={r("members")}
       loading={(query.isPending && !!access.data?.owner) || busy}
     >
@@ -114,48 +127,74 @@ export default function Members() {
         <AppText>{r("permission")}</AppText>
       ) : (
         <>
-          <Card>
-            <AppText large>{r("grant")}</AppText>
-            <AppText>{r("grantHelp")}</AppText>
-            {development && <AppText muted>{r("development")}</AppText>}
-            <InputField
-              label={r("email")}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            {(["OWNER", "PILOT"] as const).map((rle) => (
+          <SectionHeading
+            title={r("members")}
+            action={r("grant")}
+            onAction={() => setShowGrant((value) => !value)}
+          />
+          <Expandable expanded={showGrant}>
+            <Card style={{ padding: 16, gap: 10 }}>
+              <ColorIcon name="people" tone="violet" />
+              <AppText large>{r("grant")}</AppText>
+              <AppText>{r("grantHelp")}</AppText>
+              {development && <AppText muted>{r("development")}</AppText>}
+              <InputField
+                label={r("email")}
+                required
+                maxLength={254}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+              <FilterChips
+                items={[
+                  { id: "OWNER", label: r("OWNER") },
+                  { id: "PILOT", label: r("PILOT") },
+                ]}
+                value={role}
+                onChange={(value) => setRole(value as "OWNER" | "PILOT")}
+              />
+              {role === "PILOT" && (
+                <TextAction
+                  label={r("permissions")}
+                  icon="options-outline"
+                  onPress={() => setShowOverrides((value) => !value)}
+                />
+              )}
+              {role === "PILOT" && (
+                <Expandable expanded={showOverrides}>
+                  <PermissionEditor
+                    value={
+                      Object.keys(overrides).length
+                        ? overrides
+                        : (query.data?.defaults ?? {})
+                    }
+                    onChange={setOverrides}
+                  />
+                </Expandable>
+              )}
               <AppButton
-                key={rle}
-                secondary={role !== rle}
-                label={r(rle)}
-                onPress={() => setRole(rle)}
-              />
-            ))}
-            {role === "PILOT" && (
-              <PermissionEditor
-                value={
-                  Object.keys(overrides).length
-                    ? overrides
-                    : (query.data?.defaults ?? {})
+                disabled={
+                  busy || !v || !z.email().safeParse(email.trim()).success
                 }
-                onChange={setOverrides}
+                label={r("grant")}
+                onPress={() =>
+                  void run(async () => {
+                    await grantAccess(
+                      v!.id,
+                      email,
+                      role,
+                      overrides,
+                      development,
+                    );
+                    setEmail("");
+                    setShowGrant(false);
+                  })
+                }
               />
-            )}
-            <AppButton
-              disabled={
-                busy || !v || !z.email().safeParse(email.trim()).success
-              }
-              label={r("grant")}
-              onPress={() =>
-                void run(async () => {
-                  await grantAccess(v!.id, email, role, overrides, development);
-                  setEmail("");
-                })
-              }
-            />
-          </Card>
+            </Card>
+          </Expandable>
           {query.error && (
             <ErrorState
               message={query.error.message}
@@ -163,15 +202,12 @@ export default function Members() {
             />
           )}
           {query.data?.members.map((member) => (
-            <Card key={member.user_id}>
-              <AppText>{member.display_name || member.user_id}</AppText>
-              <AppText>
-                {r(member.role)} · {member.status}
-              </AppText>
-              {member.is_primary_admin && <AppText>{r("primary")}</AppText>}
-              <AppButton
-                secondary
-                label={r("permissions")}
+            <Card key={member.user_id} style={{ padding: 14 }}>
+              <MenuRow
+                label={member.display_name || member.user_id}
+                subtitle={`${r(member.role)} · ${member.status}${member.is_primary_admin ? ` · ${r("primary")}` : ""}`}
+                icon="person-circle"
+                tone={member.role === "OWNER" ? "violet" : "blue"}
                 onPress={() =>
                   setSelected({
                     ...member,
@@ -192,7 +228,7 @@ export default function Members() {
                 <AppText>
                   {r(grant.desired_role)} · {grant.status}
                 </AppText>
-                <AppText muted>{grant.created_at}</AppText>
+                <Timestamp value={grant.created_at} timezone={v?.timezone} />
                 <AppButton
                   secondary
                   disabled={busy}
@@ -211,27 +247,36 @@ export default function Members() {
               </Card>
             ))}
           {query.data && (
-            <Card>
-              <AppText large>{r("defaults")}</AppText>
-              <AppText muted>{r("permissionHelp")}</AppText>
-              <PermissionEditor
-                value={defaults ?? query.data.defaults}
-                onChange={setDefaults}
+            <>
+              <TextAction
+                label={r("defaults")}
+                icon="options-outline"
+                onPress={() => setShowDefaults((value) => !value)}
               />
-              <AppButton
-                label={r("saveDefaults")}
-                disabled={busy}
-                onPress={() =>
-                  void run(() =>
-                    saveDefaults(
-                      v!.id,
-                      defaults ?? query.data!.defaults,
-                      development,
-                    ),
-                  )
-                }
-              />
-            </Card>
+              <Expandable expanded={showDefaults}>
+                <Card style={{ padding: 16 }}>
+                  <AppText large>{r("defaults")}</AppText>
+                  <AppText muted>{r("permissionHelp")}</AppText>
+                  <PermissionEditor
+                    value={defaults ?? query.data.defaults}
+                    onChange={setDefaults}
+                  />
+                  <AppButton
+                    label={r("saveDefaults")}
+                    disabled={busy}
+                    onPress={() =>
+                      void run(() =>
+                        saveDefaults(
+                          v!.id,
+                          defaults ?? query.data!.defaults,
+                          development,
+                        ),
+                      )
+                    }
+                  />
+                </Card>
+              </Expandable>
+            </>
           )}
         </>
       )}

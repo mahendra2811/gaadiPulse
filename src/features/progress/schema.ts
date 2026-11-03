@@ -1,3 +1,6 @@
+import { isCalendarDate, isDecimal } from "@/src/utils/formInput";
+import { t } from "@/src/lib/i18n";
+import { domainCopy as c } from "@/src/lib/domainCopy";
 import { z } from "zod";
 export const fieldTypes = [
   "text",
@@ -41,11 +44,11 @@ export const fieldSchema = z
     aggregation: z.enum(["SUM", "AVG", "LAST"]),
   })
   .refine((f) => f.min === null || f.max === null || f.min <= f.max, {
-    message: "Minimum exceeds maximum.",
+    message: c.minimum,
   })
   .refine(
     (f) => !["select", "multiselect"].includes(f.type) || f.options.length > 0,
-    { message: "Add at least one choice." },
+    { message: c.options },
   );
 export type ProgressField = z.infer<typeof fieldSchema>;
 export const progressDefinitionSchema = z.object({
@@ -57,6 +60,45 @@ export const progressDefinitionSchema = z.object({
   notes_required: z.boolean(),
   notes_visible: z.boolean().default(true),
 });
+export const publishDefinitionSchema = progressDefinitionSchema.superRefine(
+  (definition, ctx) => {
+    const ids = new Set<string>();
+    definition.fields.forEach((field, index) => {
+      if (ids.has(field.id))
+        ctx.addIssue({
+          code: "custom",
+          path: ["fields", index, "id"],
+          message: t("fieldIdsUnique"),
+        });
+      ids.add(field.id);
+      if (
+        new Set(field.options.map((option) => option.trim())).size !==
+          field.options.length ||
+        field.options.some((option) => !option.trim())
+      )
+        ctx.addIssue({
+          code: "custom",
+          path: ["fields", index, "options"],
+          message: t("fieldOptionsUnique"),
+        });
+      if (
+        field.reportable &&
+        !["integer", "decimal", "currency", "trip_count"].includes(field.type)
+      )
+        ctx.addIssue({
+          code: "custom",
+          path: ["fields", index, "reportable"],
+          message: t("fieldReportingNumeric"),
+        });
+      if (!definition.notes_visible && definition.notes_required)
+        ctx.addIssue({
+          code: "custom",
+          path: ["notes_required"],
+          message: t("requiredValue"),
+        });
+    });
+  },
+);
 export type ProgressDefinition = z.infer<typeof progressDefinitionSchema>;
 export type FormVersion = {
   id: string;
@@ -96,34 +138,43 @@ export function validateAnswers(
       value === "" ||
       (Array.isArray(value) && value.length === 0)
     ) {
-      if (f.required) throw new Error(`${f.label}: required`);
+      if (f.required) throw new Error(`${f.label}: ${c.required}`);
       continue;
     }
     if (["integer", "decimal", "currency", "trip_count"].includes(f.type)) {
       const n = Number(value);
       if (
+        !isDecimal(value, {
+          scale: ["integer", "trip_count"].includes(f.type)
+            ? 0
+            : f.type === "currency"
+              ? 2
+              : 6,
+          signed: f.type !== "trip_count",
+        }) ||
         !Number.isFinite(n) ||
         (["integer", "trip_count"].includes(f.type) && !Number.isInteger(n)) ||
         (f.min !== null && n < f.min) ||
         (f.max !== null && n > f.max) ||
         (f.type === "trip_count" && n < 0)
       )
-        throw new Error(`${f.label}: invalid number`);
+        throw new Error(`${f.label}: ${c.number}`);
       result[f.id] = n;
     } else if (["boolean", "checkbox"].includes(f.type)) {
       if (typeof value !== "boolean")
-        throw new Error(`${f.label}: choose yes or no`);
+        throw new Error(`${f.label}: ${c.boolean}`);
       result[f.id] = value;
     } else if (f.type === "select") {
       if (!f.options.includes(String(value)))
-        throw new Error(`${f.label}: invalid choice`);
+        throw new Error(`${f.label}: ${c.choice}`);
       result[f.id] = value;
     } else if (f.type === "multiselect") {
       if (
         !Array.isArray(value) ||
-        value.some((v) => typeof v !== "string" || !f.options.includes(v))
+        value.some((v) => typeof v !== "string" || !f.options.includes(v)) ||
+        new Set(value).size !== value.length
       )
-        throw new Error(`${f.label}: invalid choices`);
+        throw new Error(`${f.label}: ${c.choices}`);
       result[f.id] = value;
     } else {
       if (
@@ -132,12 +183,16 @@ export function validateAnswers(
         (f.min !== null && value.length < f.min) ||
         (f.max !== null && value.length > f.max)
       )
-        throw new Error(`${f.label}: invalid text`);
-      if (f.type === "date" && !/^\d{4}-\d{2}-\d{2}$/.test(value))
-        throw new Error(`${f.label}: use YYYY-MM-DD`);
+        throw new Error(`${f.label}: ${c.text}`);
+      if (f.type === "date" && !isCalendarDate(value))
+        throw new Error(`${f.label}: ${t("invalidCalendarDate")}`);
       if (f.type === "time" && !/^([01]\d|2[0-3]):[0-5]\d$/.test(value))
-        throw new Error(`${f.label}: use HH:MM`);
-      result[f.id] = value;
+        throw new Error(`${f.label}: ${c.time}`);
+      if (!value.trim()) {
+        if (f.required) throw new Error(`${f.label}: ${c.required}`);
+        continue;
+      }
+      result[f.id] = value.trim();
     }
   }
   return result;
@@ -164,7 +219,7 @@ export function validateProgressDate(
 ) {
   const today = dateInZone(now, zone);
   if (
-    !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+    !isCalendarDate(date) ||
     date > today ||
     date < shiftDay(today, -past) ||
     new Date(`${date}T12:00:00Z`).toISOString().slice(0, 10) !== date

@@ -1,3 +1,12 @@
+import { TimestampRange } from "@/src/components/ui/Timestamp";
+import { FilterChips } from "@/src/components/ui/FilterChips";
+import { RecordCard, RecordSummary } from "@/src/features/records/RecordCard";
+import {
+  InfoRows,
+  SectionHeading,
+  TextAction,
+} from "@/src/components/ui/premium";
+import { t } from "@/src/lib/i18n";
 import { client } from "@/src/lib/supabase";
 import { observations as loadObservations } from "@/src/features/meters/api";
 import { useState } from "react";
@@ -269,11 +278,11 @@ export function Reports() {
           message={access.error.message}
           retry={() => void access.refetch()}
         />
-        <AppButton secondary label={r("back")} onPress={() => router.back()} />
       </Screen>
     );
   return (
     <Screen
+      compact
       title={r("reports")}
       loading={
         loading ||
@@ -288,14 +297,14 @@ export function Reports() {
         <AppText>{r("permission")}</AppText>
       ) : (
         <>
-          {(["week", "month", "year", "all"] as const).map((p) => (
-            <AppButton
-              key={p}
-              secondary={period !== p}
-              label={r(p)}
-              onPress={() => setPeriod(p)}
-            />
-          ))}
+          <FilterChips
+            items={(["week", "month", "year", "all"] as const).map((id) => ({
+              id,
+              label: r(id),
+            }))}
+            value={period}
+            onChange={setPeriod}
+          />
           {queryError ? (
             <ErrorState
               message={queryError.message}
@@ -313,33 +322,47 @@ export function Reports() {
             />
           ) : (
             <>
-              <Card>
-                <AppText muted>{r("authorizedScope")}</AppText>
-                <AppText>
-                  {r("cash")}: {money(cash)}
-                </AppText>
-                <AppText>
-                  {r("operating")}: {money(operating)}
-                </AppText>
-                <AppText>
-                  {r("financing")}:{" "}
-                  {money(accounting.reduce((s, a) => s + a.financing, 0))}
-                </AppText>
-                <AppText>
-                  {r("unclassified")}:{" "}
-                  {money(accounting.reduce((s, a) => s + a.unclassified, 0))}
-                </AppText>
-                <AppText>
-                  {r("confirmed")}: {rows.length}
-                </AppText>
+              <RecordSummary
+                kind="expenses"
+                value={loading ? "—" : money(cash)}
+                subtitle={`${r("cash")} · ${r(period as "week" | "month" | "year" | "all")}`}
+              />
+              <Card style={{ padding: 16 }}>
+                <SectionHeading title={t("uiSummary")} />
+                <InfoRows
+                  items={[
+                    { label: r("operating"), value: money(operating) },
+                    {
+                      label: r("financing"),
+                      value: money(
+                        accounting.reduce(
+                          (sum, item) => sum + item.financing,
+                          0,
+                        ),
+                      ),
+                    },
+                    {
+                      label: r("unclassified"),
+                      value: money(
+                        accounting.reduce(
+                          (sum, item) => sum + item.unclassified,
+                          0,
+                        ),
+                      ),
+                    },
+                    { label: r("confirmed"), value: String(rows.length) },
+                  ]}
+                />
               </Card>
               <AppText large>{r("efficiency")}</AppText>
               {intervals.length ? (
                 intervals.map((interval, index) => (
                   <Card key={index}>
-                    <AppText>
-                      {interval.from} → {interval.to}
-                    </AppText>
+                    <TimestampRange
+                      from={interval.from}
+                      to={interval.to}
+                      timezone={v?.timezone}
+                    />
                     <AppText>
                       {interval.kmPerUnit === null
                         ? r("unknown")
@@ -359,9 +382,11 @@ export function Reports() {
               {measured.length ? (
                 measured.map((interval, index) => (
                   <Card key={index}>
-                    <AppText>
-                      {interval.from} → {interval.to}
-                    </AppText>
+                    <TimestampRange
+                      from={interval.from}
+                      to={interval.to}
+                      timezone={v?.timezone}
+                    />
                     <AppText>
                       {interval.anomaly
                         ? r("conflict")
@@ -434,35 +459,45 @@ export function Reports() {
                     </Card>
                   )),
               )}
-              <AppButton
-                label={r("exportJson")}
-                disabled={busy || loading}
-                onPress={() => void exportData("json")}
-              />
-              <AppButton
-                secondary
-                label={r("exportCsv")}
-                disabled={busy || loading}
-                onPress={() => void exportData("csv")}
-              />
-              <AppButton
-                secondary
-                label="PDF"
-                disabled={busy || loading}
-                onPress={() => void exportData("pdf")}
-              />
+              <Card style={{ padding: 16 }}>
+                <SectionHeading title={r("reports")} />
+                <TextAction
+                  label={r("exportJson")}
+                  disabled={busy || loading}
+                  icon="code-download-outline"
+                  onPress={() => {
+                    if (!busy && !loading) void exportData("json");
+                  }}
+                />
+                <TextAction
+                  label={r("exportCsv")}
+                  disabled={busy || loading}
+                  icon="grid-outline"
+                  onPress={() => {
+                    if (!busy && !loading) void exportData("csv");
+                  }}
+                />
+                <TextAction
+                  label="PDF"
+                  disabled={busy || loading}
+                  icon="document-text-outline"
+                  onPress={() => {
+                    if (!busy && !loading) void exportData("pdf");
+                  }}
+                />
+              </Card>
             </>
           )}
         </>
       )}
       {error && <ErrorState message={error} retry={() => setError("")} />}
-      <AppButton secondary label={r("back")} onPress={() => router.back()} />
     </Screen>
   );
 }
 export function Maintenance() {
   const active = useActiveVehicle();
   const query = useRecords("expenses");
+  const access = usePermissions(active.vehicle?.id);
   const rows =
     query.data?.filter(
       (row) =>
@@ -472,16 +507,25 @@ export function Maintenance() {
     ) ?? [];
   return (
     <Screen
+      compact
       title={r("maintenance")}
       loading={query.isPending && !!active.vehicle}
     >
       <VehicleHeader />
-      <AppButton
-        label={r("addMaintenance")}
-        onPress={() =>
+      <SectionHeading
+        title={r("maintenance")}
+        action={
+          access.data?.["expenses.create"] ? r("addMaintenance") : undefined
+        }
+        onAction={() =>
           router.push({
             pathname: "/records/[kind]/[action]",
-            params: { kind: "expenses", action: "add", category: "SERVICE" },
+            params: {
+              kind: "expenses",
+              action: "add",
+              category: "SERVICE",
+              vehicle: active.vehicle?.id,
+            },
           })
         }
       />
@@ -492,26 +536,22 @@ export function Maintenance() {
         />
       ) : rows.length ? (
         rows.map((row) => (
-          <Card key={row.id}>
-            <AppText>{String(row.payload.title)}</AppText>
-            <AppText>{String(row.payload.event_at)}</AppText>
-            <AppText>{money(Number(row.payload.amount_paise))}</AppText>
-            <AppText>{JSON.stringify(row.payload.metadata ?? {})}</AppText>
-            <AppButton
-              secondary
-              label={r("detail")}
-              onPress={() =>
-                router.push({
-                  pathname: "/records/[kind]/[action]",
-                  params: {
-                    kind: "expenses",
-                    action: row.id,
-                    vehicle: row.vehicle_id,
-                  },
-                })
-              }
-            />
-          </Card>
+          <RecordCard
+            key={row.id}
+            row={row}
+            kind="expenses"
+            timezone={active.vehicle?.timezone}
+            onPress={() =>
+              router.push({
+                pathname: "/records/[kind]/[action]",
+                params: {
+                  kind: "expenses",
+                  action: row.id,
+                  vehicle: row.vehicle_id,
+                },
+              })
+            }
+          />
         ))
       ) : (
         <AppText>{r("noData")}</AppText>

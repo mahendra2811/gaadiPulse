@@ -1,3 +1,6 @@
+import { startReminderFeedback } from "@/src/features/reminders/notifications";
+import { ConfirmationHost } from "@/src/components/ui/ConfirmationHost";
+import { MoreDrawerProvider } from "@/src/components/navigation/MoreDrawer";
 import { useMembershipUpdates } from "@/src/hooks/useMembershipUpdates";
 import { useOutboxSync } from "@/src/lib/sync/hooks";
 import {
@@ -14,7 +17,11 @@ import { Stack, useRouter, useSegments, usePathname } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { SessionProvider, useSession } from "@/src/features/auth/session";
+import {
+  SessionProvider,
+  useSession,
+  useAccountId,
+} from "@/src/features/auth/session";
 import { useProfile } from "@/src/features/auth/profile";
 import { ThemeContext } from "@/src/lib/theme";
 import {
@@ -29,6 +36,13 @@ import { t } from "@/src/lib/i18n";
 const query = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 15000 } },
 });
+function ReminderFeedback() {
+  const user = useAccountId();
+  useEffect(() => {
+    if (user) return startReminderFeedback(user);
+  }, [user]);
+  return null;
+}
 function Routes() {
   useConnectivity();
   useMembershipUpdates();
@@ -105,6 +119,7 @@ function Routes() {
     <ThemeContext.Provider value={profile.data?.theme ?? "system"}>
       <StatusBar style="auto" />
       <ToastProvider>
+        <ReminderFeedback />
         {auth.development && (
           <View style={{ backgroundColor: "#122C2A", padding: 8 }}>
             <Text style={{ color: "#BDF5DC", textAlign: "center" }}>
@@ -127,7 +142,10 @@ function Routes() {
             />
           </View>
         )}
-        <Stack screenOptions={{ headerShown: false }} />
+        <MoreDrawerProvider>
+          <Stack screenOptions={{ headerShown: false }} />
+        </MoreDrawerProvider>
+        <ConfirmationHost />
       </ToastProvider>
     </ThemeContext.Provider>
   );

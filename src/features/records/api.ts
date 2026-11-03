@@ -1,3 +1,7 @@
+import * as Crypto from "expo-crypto";
+import { linkedReminder } from "./linkedReminder";
+import { listDevelopmentVehicles } from "@/src/features/development/repository";
+import { permittedFuel, fuelUnit } from "@/src/features/garage/energy";
 import { validatePayload } from "./payloadSchemas";
 import { client } from "@/src/lib/supabase";
 import {
@@ -184,6 +188,21 @@ async function saveLocal(
     const receipt = await readDevelopment(`recordOperation.${operation}`);
     if (receipt) return String(receipt);
     const old = rows.find((r) => r.id === id);
+    if (kind === "fuel") {
+      const configuration = (await listDevelopmentVehicles()).find(
+        (item) => item.id === vehicle,
+      );
+      if (
+        !configuration ||
+        !permittedFuel(
+          configuration.energy_type,
+          String(payload.energy_type),
+          old?.payload,
+        ) ||
+        payload.unit !== fuelUnit(String(payload.energy_type))
+      )
+        throw new Error("VEHICLE_FUEL_MISMATCH");
+    }
     if (id && (!old || old.revision !== expected)) throw new Error("CONFLICT");
     const target = id ?? operation;
     const now = new Date().toISOString();
@@ -201,6 +220,74 @@ async function saveLocal(
       record,
       ...rows.filter((r) => r.id !== target),
     ]);
+    if (kind === "expenses" || kind === "documents") {
+      const vehicleRow = (await listDevelopmentVehicles()).find(
+        (item) => item.id === vehicle,
+      );
+      const schedule = linkedReminder(
+        kind,
+        payload,
+        target,
+        status,
+        vehicleRow?.timezone ?? "Asia/Kolkata",
+      );
+      const reminders = await listRecords(
+        DEVELOPMENT_USER,
+        vehicle,
+        "reminders",
+        true,
+      );
+      const key = kind === "documents" ? "document_id" : "expense_id";
+      const related = reminders.filter(
+        (row) =>
+          ["DOCUMENT", "EMI", "MAINTENANCE"].includes(
+            String(row.payload.origin),
+          ) && (row.payload.metadata as Payload)?.[key] === target,
+      );
+      const previous = related.find(
+        (row) => row.payload.origin === schedule?.origin,
+      );
+      const next = reminders.map((row) =>
+        related.some((item) => item.id === row.id) &&
+        (!schedule || row.id !== previous?.id)
+          ? {
+              ...row,
+              status: "ARCHIVED",
+              revision: row.revision + 1,
+              updated_at: now,
+            }
+          : row,
+      );
+      if (schedule) {
+        const merged = {
+          ...schedule,
+          pilot_visible: previous?.payload.pilot_visible ?? false,
+        };
+        if (previous) {
+          const changed =
+            JSON.stringify(merged) !== JSON.stringify(previous.payload);
+          const index = next.findIndex((row) => row.id === previous.id);
+          next[index] = {
+            ...previous,
+            payload: merged,
+            status: changed ? "ACTIVE" : previous.status,
+            revision: previous.revision + (changed ? 1 : 0),
+            updated_at: changed ? now : previous.updated_at,
+          };
+        } else
+          next.unshift({
+            id: Crypto.randomUUID(),
+            vehicle_id: vehicle,
+            created_by: DEVELOPMENT_USER,
+            revision: 1,
+            status: "ACTIVE",
+            created_at: now,
+            updated_at: now,
+            payload: merged,
+          });
+      }
+      await writeDevelopment(`records.${vehicle}.reminders`, next);
+    }
     await writeDevelopment(`recordOperation.${operation}`, target);
     return target;
   };

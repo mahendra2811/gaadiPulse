@@ -1,5 +1,17 @@
+import { isReading } from "@/src/utils/formInput";
+import { ReadingCard } from "./ReadingCard";
+import { TimestampRange } from "@/src/components/ui/Timestamp";
+import { FilterChips } from "@/src/components/ui/FilterChips";
+import { t } from "@/src/lib/i18n";
+import { measuredIntervals } from "@/src/utils/meter";
+import {
+  SectionHeading,
+  Expandable,
+  TextAction,
+} from "@/src/components/ui/premium";
 import { observations as loadObservations } from "./api";
 import { useState } from "react";
+import { View } from "react-native";
 import { router } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import * as Crypto from "expo-crypto";
@@ -49,6 +61,9 @@ export default function MeterHistory() {
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [type, setType] = useState("ALL");
+  const [limit, setLimit] = useState(12);
+  const [showMeasured, setShowMeasured] = useState(false);
   const query = useQuery({
     queryKey: [user, vehicle?.id, "meter-history"],
     enabled: !!vehicle,
@@ -59,11 +74,7 @@ export default function MeterHistory() {
     setBusy(true);
     try {
       const replacement = retract ? null : Number(value);
-      if (
-        (!retract &&
-          (!Number.isFinite(replacement) || Number(replacement) < 0)) ||
-        !reason.trim()
-      )
+      if ((!retract && !isReading(value)) || !reason.trim())
         throw new Error(r("correctionReason"));
       if (development) {
         const corrections =
@@ -95,77 +106,115 @@ export default function MeterHistory() {
       setBusy(false);
     }
   };
-  const measured = measuredIntervals(query.data ?? []);
+  const measured = measuredIntervals(
+    (query.data ?? []).filter((row) => !row.status || row.status === "ACTIVE"),
+  );
   return (
-    <Screen title={r("meters")} loading={query.isPending || busy}>
+    <Screen compact title={r("meters")} loading={query.isPending || busy}>
       <VehicleHeader />
-      {permissions.data?.["meters.create"] && (
-        <AppButton
-          label={r("addMeter")}
-          onPress={() =>
-            router.push({
-              pathname: "/records/[kind]/[action]",
-              params: { kind: "meters", action: "add" },
-            })
-          }
-        />
-      )}
+      <SectionHeading
+        title={t("meterHistory")}
+        action={permissions.data?.["meters.create"] ? r("addMeter") : undefined}
+        onAction={() =>
+          router.push({
+            pathname: "/records/[kind]/[action]",
+            params: { kind: "meters", action: "add", vehicle: vehicle?.id },
+          })
+        }
+      />
+      <AppText muted>
+        {t("meterTimeZone")}: {vehicle?.timezone ?? "Asia/Kolkata"}
+      </AppText>
+      <FilterChips
+        items={[
+          { id: "ALL", label: r("ALL") },
+          { id: "KM", label: "KM" },
+          { id: "HOURS", label: r("hours") },
+        ]}
+        value={type}
+        onChange={(value) => {
+          setType(value);
+          setLimit(12);
+        }}
+      />
       {query.error ? (
         <ErrorState
           message={query.error.message}
           retry={() => void query.refetch()}
         />
       ) : (
-        query.data?.map((row) => (
-          <Card key={row.id}>
-            <AppText large>
-              {row.value} {row.reading_type}
-            </AppText>
-            <AppText>
-              {r("observed")}: {row.observed_at}
-            </AppText>
-            <AppText muted>
-              {row.entered_at ?? ""} · {row.source ?? r("development")} ·{" "}
-              {row.status ?? "ACTIVE"}
-            </AppText>
-            {row.is_reset && <AppText>{r("reset")}</AppText>}
-            {permissions.data?.owner && row.status !== "CORRECTED" && (
-              <AppButton
-                secondary
-                label={r("correction")}
-                onPress={() => {
-                  setSelected(row);
-                  setValue(String(row.value));
-                  setReason("");
-                }}
-              />
-            )}
-          </Card>
-        ))
+        query.data
+          ?.filter((row) => type === "ALL" || row.reading_type === type)
+          .slice(0, limit)
+          .map((row) => (
+            <ReadingCard
+              key={row.id}
+              reading={row}
+              timezone={vehicle?.timezone}
+              onCorrect={
+                permissions.data?.owner && row.status !== "CORRECTED"
+                  ? () => {
+                      setSelected(row);
+                      setValue(String(row.value));
+                      setReason("");
+                    }
+                  : undefined
+              }
+            />
+          ))
       )}
-      <AppText large>{r("measured")}</AppText>
-      {measured.map((interval, index) => (
-        <Card key={index}>
-          <AppText>
-            {interval.from} → {interval.to}
-          </AppText>
-          <AppText>
-            {interval.anomaly
-              ? r("conflict")
-              : `${interval.delta} ${interval.type}`}
-          </AppText>
-        </Card>
-      ))}
+      {!query.isPending && !query.error && !query.data?.length && (
+        <AppText muted>{r("noData")}</AppText>
+      )}
+      {(query.data?.filter((row) => type === "ALL" || row.reading_type === type)
+        .length ?? 0) > limit && (
+        <TextAction
+          label={r("more")}
+          icon="chevron-down"
+          onPress={() => setLimit((value) => value + 12)}
+        />
+      )}
+      <SectionHeading
+        title={t("meterMeasured")}
+        action={showMeasured ? t("uiFewerActions") : t("uiViewAll")}
+        onAction={() => setShowMeasured((value) => !value)}
+      />
+      <Expandable expanded={showMeasured}>
+        <View style={{ gap: 10 }}>
+          {measured
+            .filter((interval) => type === "ALL" || interval.type === type)
+            .map((interval, index) => (
+              <Card key={index} style={{ padding: 14, gap: 10 }}>
+                <AppText large>
+                  {interval.anomaly
+                    ? r("conflict")
+                    : `${interval.delta.toLocaleString("en-IN", { maximumFractionDigits: 3 })} ${interval.type}`}
+                </AppText>
+                <TimestampRange
+                  from={interval.from}
+                  to={interval.to}
+                  timezone={vehicle?.timezone}
+                />
+              </Card>
+            ))}
+        </View>
+      </Expandable>
       <Sheet visible={!!selected} onClose={() => setSelected(null)}>
         <AppText>{r("correctionHelp")}</AppText>
         <InputField
-          label={r("distance")}
+          label={
+            selected?.reading_type === "HOURS" ? r("hours") : r("distance")
+          }
+          required
+          numeric={{ scale: 3 }}
           value={value}
           onChangeText={setValue}
           keyboardType="decimal-pad"
         />
         <InputField
           label={r("correctionReason")}
+          required
+          maxLength={3000}
           value={reason}
           onChangeText={setReason}
         />

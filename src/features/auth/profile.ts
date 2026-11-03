@@ -1,3 +1,4 @@
+import { t } from "@/src/lib/i18n";
 import { readLocal, writeLocal } from "@/src/lib/localStore";
 import {
   developmentProfile,
@@ -52,15 +53,31 @@ export function useProfile() {
     },
   });
 }
+export const profileInputSchema = z.object({
+  display_name: z.string().trim().min(1, t("requiredValue")).max(120),
+  theme: z.enum(["light", "dark", "system"]),
+  timezone: z
+    .string()
+    .trim()
+    .refine((value) => {
+      try {
+        new Intl.DateTimeFormat("en", { timeZone: value });
+        return true;
+      } catch {
+        return false;
+      }
+    }, t("invalidTimeZone")),
+});
 export async function updateProfile(
   user: string,
   values: Pick<Profile, "display_name" | "theme" | "timezone">,
   development = false,
 ) {
-  if (development) return saveDevelopmentProfile(values);
+  const parsed = profileInputSchema.parse(values);
+  if (development) return saveDevelopmentProfile(parsed);
   const { error } = await client()
     .from("profiles")
-    .update(values)
+    .update(parsed)
     .eq("id", user);
   if (error) throw new Error(error.message);
 }

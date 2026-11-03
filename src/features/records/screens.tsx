@@ -1,3 +1,27 @@
+import { AdditionalOptions } from "@/src/components/ui/AdditionalOptions";
+import { ZodError } from "zod";
+import { errorMessage } from "@/src/lib/errors";
+import { Timestamp, TimestampRange } from "@/src/components/ui/Timestamp";
+import { readableDateTime } from "@/src/utils/dateDisplay";
+import {
+  allowedFuelTypes,
+  defaultFuel,
+  fuelUnit,
+  permittedFuel,
+} from "@/src/features/garage/energy";
+import { RecordCard, RecordSummary, recordVisuals } from "./RecordCard";
+import { SearchField } from "@/src/components/ui/SearchField";
+import { FilterChips } from "@/src/components/ui/FilterChips";
+import {
+  SectionHeading,
+  TextAction,
+  Expandable,
+  ChoiceChip,
+  InfoRows,
+  ColorIcon,
+  GradientButton,
+} from "@/src/components/ui/premium";
+import { t } from "@/src/lib/i18n";
 import { DateTimeInput } from "@/src/components/ui/fields";
 import { observations as loadObservations } from "@/src/features/meters/api";
 import { useEffect, useState } from "react";
@@ -57,6 +81,14 @@ import {
   reconcileReminders,
   nextRecurrence,
 } from "@/src/features/reminders/notifications";
+const metadataLabels: Record<string, string> = {
+  start_date: "startDate",
+  expiry_date: "expiryDate",
+  next_date: "nextService",
+  next_km: "thresholdKm",
+  next_hours: "thresholdHours",
+  size: "tyreSize",
+};
 export function useRouteKind(fixed?: Kind) {
   const params = useLocalSearchParams<{
     kind: string;
@@ -146,6 +178,7 @@ export function RecordsList({
   );
   const [limit, setLimit] = useState(30);
   const [showArchived, setShowArchived] = useState(false);
+  const [showFilters, setShowFilters] = useState(!!initialStatus);
   const canCreate =
     permissions.data?.[
       kind === "progress" ? "progress.submit" : `${kind}.create`
@@ -163,92 +196,128 @@ export function RecordsList({
         .toLowerCase()
         .includes(search.toLowerCase()),
   );
+  const confirmed = rows.filter(
+    (row) => !row.localStatus && row.status !== "ARCHIVED",
+  );
   return (
     <Screen
       title={r(kind)}
+      compact
       loading={
         active.isPending || (!!v && (permissions.isPending || query.isPending))
       }
     >
       <VehicleHeader vehicleId={v?.id} allowSwitch={!contextVehicle} />
+      {active.error && (
+        <ErrorState
+          message={active.error.message}
+          retry={() => void active.refetch()}
+        />
+      )}
+      {permissions.error && (
+        <ErrorState
+          message={permissions.error.message}
+          retry={() => void permissions.refetch()}
+        />
+      )}
       {!v ? (
         <EmptyState title={r("noVehicle")} />
       ) : (
         <>
-          {canCreate && !v.archived_at && (
-            <AppButton label={r("add")} onPress={() => go(kind, "add")} />
-          )}
-          {kind === "progress" && (
-            <View style={{ gap: 8 }}>
-              {[
-                "ALL",
-                "PENDING_REVIEW",
-                "APPROVED",
-                "REJECTED",
-                "CORRECTION_REQUESTED",
-              ].map((status) => (
-                <AppButton
-                  key={status}
-                  secondary={statusFilter !== status}
-                  label={r(status as keyof typeof recordCopy) ?? status}
-                  onPress={() => setStatusFilter(status)}
-                />
-              ))}
-            </View>
-          )}
+          <SectionHeading
+            title={t("uiRecords")}
+            action={canCreate && !v.archived_at ? r("add") : undefined}
+            onAction={() => go(kind, "add", v.id)}
+          />
           {["fuel", "expenses"].includes(kind) &&
             permissions.data?.[`${kind}.read`] && (
-              <Card>
-                <AppText>{r("cash")}</AppText>
-                <AppText large>
-                  {money(
-                    rows
-                      .filter(
-                        (row) => !row.localStatus && row.status !== "ARCHIVED",
+              <RecordSummary
+                kind={kind}
+                value={
+                  query.isPending || query.error
+                    ? "—"
+                    : money(
+                        confirmed.reduce(
+                          (sum, row) =>
+                            sum + Number(row.payload.amount_paise ?? 0),
+                          0,
+                        ),
                       )
-                      .reduce(
-                        (sum, row) =>
-                          sum + Number(row.payload.amount_paise ?? 0),
-                        0,
-                      ),
-                  )}
-                </AppText>
-                <AppText muted>
-                  {r("confirmed")}:{" "}
-                  {rows.filter((row) => !row.localStatus).length}
-                </AppText>
-              </Card>
-            )}
-          {permissions.data?.["reports.read"] && (
-            <AppButton
-              secondary
-              label={r("analytics")}
-              onPress={() => go(kind, "analytics", v.id)}
-            />
-          )}
-          <View style={{ gap: 8 }}>
-            {(["week", "month", "year", "all"] as const).map((p) => (
-              <AppButton
-                key={p}
-                secondary={period !== p}
-                label={r(p)}
-                onPress={() => {
-                  setPeriod(p);
-                  setLimit(30);
-                }}
+                }
+                subtitle={`${r("cash")} · ${r(period as keyof typeof recordCopy)} · ${confirmed.length} ${r("confirmed")}`}
               />
-            ))}
-          </View>
-          <AppButton
-            secondary
-            label={r(showArchived ? "hideArchived" : "showArchived")}
-            onPress={() => setShowArchived((v) => !v)}
-          />
-          <InputField
+            )}
+          <SearchField
             label={r("search")}
             value={search}
-            onChangeText={setSearch}
+            onChange={(value) => {
+              setSearch(value);
+              setLimit(30);
+            }}
           />
+          <FilterChips
+            items={["week", "month", "year", "all"].map((id) => ({
+              id,
+              label: r(id as keyof typeof recordCopy),
+            }))}
+            value={period}
+            onChange={(value) => {
+              setPeriod(value);
+              setLimit(30);
+            }}
+          />
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 10,
+            }}
+          >
+            <AppText muted>
+              {rows.length} {t("uiRecords")}
+            </AppText>
+            <TextAction
+              label={t("uiFilters")}
+              icon={showFilters ? "chevron-up" : "options-outline"}
+              onPress={() => setShowFilters((value) => !value)}
+            />
+          </View>
+          <Expandable expanded={showFilters}>
+            <View style={{ gap: 10 }}>
+              {kind === "progress" && (
+                <FilterChips
+                  items={[
+                    "ALL",
+                    "PENDING_REVIEW",
+                    "APPROVED",
+                    "REJECTED",
+                    "CORRECTION_REQUESTED",
+                  ].map((id) => ({
+                    id,
+                    label: r(id as keyof typeof recordCopy) ?? id,
+                  }))}
+                  value={statusFilter}
+                  onChange={(value) => {
+                    setStatusFilter(value);
+                    setLimit(30);
+                  }}
+                />
+              )}
+              <ChoiceChip
+                label={r(showArchived ? "hideArchived" : "showArchived")}
+                selected={showArchived}
+                onPress={() => setShowArchived((value) => !value)}
+              />
+              {permissions.data?.["reports.read"] && (
+                <TextAction
+                  label={r("analytics")}
+                  icon="stats-chart"
+                  onPress={() => go(kind, "analytics", v.id)}
+                />
+              )}
+            </View>
+          </Expandable>
           {query.error ? (
             <ErrorState
               message={query.error.message}
@@ -266,45 +335,23 @@ export function RecordsList({
               title={r("noData")}
             />
           ) : (
-            rows.slice(0, limit).map((row) => (
-              <Card key={row.id}>
-                <AppText>
-                  {String(
-                    row.payload.title || row.payload.progress_date || r(kind),
-                  )}
-                </AppText>
-                {row.payload.amount_paise !== undefined && (
-                  <AppText large>
-                    {money(Number(row.payload.amount_paise))}
-                  </AppText>
-                )}
-                <AppText muted>
-                  {String(row.payload.event_at ?? row.created_at)}
-                </AppText>
-                <AppText>
-                  {row.localStatus
-                    ? r("pending")
-                    : (r(row.status as keyof typeof recordCopy) ?? row.status)}
-                </AppText>
-                {kind === "fuel" && (
-                  <AppText>
-                    {r(row.payload.is_full_tank ? "full" : "partial")} ·{" "}
-                    {row.payload.reading_at ? "" : r("pendingReading")}
-                  </AppText>
-                )}
-                <AppButton
-                  secondary
-                  label={r("detail")}
+            rows
+              .slice(0, limit)
+              .map((row) => (
+                <RecordCard
+                  key={row.id}
+                  row={row}
+                  kind={kind}
+                  timezone={v.timezone}
                   onPress={() => go(kind, row.id, v.id)}
                 />
-              </Card>
-            ))
+              ))
           )}
           {rows.length > limit && (
-            <AppButton
-              secondary
+            <TextAction
               label={r("more")}
-              onPress={() => setLimit((n) => n + 30)}
+              icon="chevron-down"
+              onPress={() => setLimit((value) => value + 30)}
             />
           )}
         </>
@@ -341,6 +388,7 @@ export function RecordForm() {
   const toast = useToast();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [additionalOpen, setAdditionalOpen] = useState(false);
   const [ready, setReady] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [operation, setOperation] = useState(() => Crypto.randomUUID());
@@ -380,7 +428,7 @@ export function RecordForm() {
         if (draft?.values) {
           form.reset({ ...defaultEntry(), ...draft.values });
           if (draft.operation) setOperation(draft.operation);
-        } else if (existing) form.reset(formFromRecord(existing));
+        } else if (existing) form.reset(formFromRecord(existing, v.timezone));
         else
           form.reset({
             ...defaultEntry(),
@@ -390,13 +438,7 @@ export function RecordForm() {
                 ? "SERVICE"
                 : "OTHER",
             metadata: source ? JSON.stringify({ expense_id: source }) : "{}",
-            energy_type: v.energy_type,
-            unit:
-              v.energy_type === "ELECTRIC"
-                ? "KWH"
-                : v.energy_type === "CNG"
-                  ? "KG"
-                  : "L",
+            ...defaultFuel(v.energy_type),
             progress_date: dateInZone(new Date(), v.timezone),
           });
         setBoundVehicle(v.id);
@@ -435,53 +477,141 @@ export function RecordForm() {
   const disablePrevention = usePreventRemove(
     form.formState.isDirty && !leaving,
     ({ repeat }) =>
-      ConfirmDialog(r("back"), r("offline"), () => {
-        setLeaving(true);
-        repeat();
-      }),
+      ConfirmDialog(
+        t("unsaved"),
+        t("unsavedBody"),
+        () => {
+          if (!user || !v) return;
+          setBusy(true);
+          void saveDraft(user, key, {
+            values: form.getValues(),
+            operation,
+            vehicle_id: v.id,
+          })
+            .then(() => {
+              setLeaving(true);
+              repeat();
+            })
+            .catch((e) => setError(String(e)))
+            .finally(() => setBusy(false));
+        },
+        { cancelLabel: t("keepEditing"), confirmLabel: t("leaveForm") },
+      ),
   );
-  const field = (name: keyof EntryForm, label: string, numeric = false) => (
-    <Controller
-      key={name}
-      control={form.control}
-      name={name}
-      render={({ field: { value, onChange } }) =>
-        ["event_at", "observed_at", "due_at"].includes(name) ? (
-          <DateTimeInput
-            label={label}
-            value={String(value ?? "")}
-            onChange={onChange}
-            allowFuture={name === "due_at"}
-          />
-        ) : (
-          <InputField
-            label={label}
-            value={String(value ?? "")}
-            onChangeText={onChange}
-            keyboardType={numeric ? "decimal-pad" : "default"}
-          />
-        )
-      }
-    />
-  );
+  const field = (name: keyof EntryForm, label: string, numeric = false) => {
+    const required =
+      (name === "title" &&
+        ["expenses", "documents", "reminders"].includes(kind)) ||
+      (["fuel", "expenses"].includes(kind) && name === "event_at") ||
+      (kind === "progress" && name === "progress_date") ||
+      (name === "notes" && kind === "progress" && definition.notes_required) ||
+      (name === "km" && kind === "progress" && definition.km_required) ||
+      (name === "hours" && kind === "progress" && definition.hours_required) ||
+      (name === "km" && kind === "meters" && v?.meter_mode === "KM") ||
+      (name === "hours" && kind === "meters" && v?.meter_mode === "HOURS") ||
+      (name === "due_at" &&
+        kind === "documents" &&
+        metadata.create_reminder === true) ||
+      (name === "observed_at" && (values.km !== "" || values.hours !== ""));
+    const triple =
+      kind === "fuel" && ["amount", "quantity", "unit_price"].includes(name);
+    const money = ["amount", "unit_price", "principal", "interest"].includes(
+      name,
+    );
+    return (
+      <Controller
+        key={name}
+        control={form.control}
+        name={name}
+        render={({ field: { value, onChange } }) =>
+          ["event_at", "observed_at", "due_at", "progress_date"].includes(
+            name,
+          ) ? (
+            <DateTimeInput
+              label={label}
+              value={String(value ?? "")}
+              onChange={onChange}
+              allowFuture={name === "due_at"}
+              mode={name === "progress_date" ? "date" : "datetime"}
+              required={required}
+              optional={!required && !triple}
+              error={
+                typeof form.formState.errors[name]?.message === "string"
+                  ? String(form.formState.errors[name]?.message)
+                  : undefined
+              }
+            />
+          ) : (
+            <InputField
+              label={label}
+              required={required || (kind === "expenses" && name === "amount")}
+              optional={
+                !required &&
+                !triple &&
+                !(kind === "expenses" && name === "amount") &&
+                !(kind === "meters" && ["km", "hours"].includes(name))
+              }
+              value={String(value ?? "")}
+              onChangeText={onChange}
+              keyboardType={numeric ? "decimal-pad" : "default"}
+              numeric={
+                numeric
+                  ? { scale: money ? 2 : 3, wholeDigits: money ? 15 : 12 }
+                  : undefined
+              }
+              maxLength={
+                name === "notes"
+                  ? 3000
+                  : ["title", "vendor", "station_name", "reference"].includes(
+                        name,
+                      )
+                    ? 160
+                    : undefined
+              }
+              error={
+                typeof form.formState.errors[name]?.message === "string"
+                  ? String(form.formState.errors[name]?.message)
+                  : undefined
+              }
+            />
+          )
+        }
+      />
+    );
+  };
   const choose = (
     name: "category" | "unit" | "payment_method" | "recurrence" | "energy_type",
     options: readonly string[],
   ) => (
-    <View style={{ gap: 8 }}>
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
       {options.map((option) => (
-        <AppButton
+        <ChoiceChip
           key={option}
-          secondary={values[name] !== option}
           label={r(option as keyof typeof recordCopy) ?? option}
-          onPress={() =>
-            form.setValue(name, option as never, { shouldDirty: true })
-          }
+          selected={values[name] === option}
+          onPress={() => {
+            const apply = () => {
+              form.setValue(name, option as never, { shouldDirty: true });
+              if (name === "category" && kind === "expenses") {
+                form.setValue("metadata", "{}", { shouldDirty: true });
+                form.setValue("principal", "", { shouldDirty: true });
+                form.setValue("interest", "", { shouldDirty: true });
+              }
+            };
+            if (
+              name === "category" &&
+              kind === "expenses" &&
+              values.category !== option &&
+              (values.metadata !== "{}" || values.principal || values.interest)
+            )
+              ConfirmDialog(r("category"), t("categoryChanges"), apply);
+            else if (values[name] !== option) apply();
+          }}
         />
       ))}
     </View>
   );
-  const updateMeta = (name: string, value: string) => {
+  const updateMeta = (name: string, value: string | boolean) => {
     let meta: Record<string, unknown> = {};
     try {
       meta = JSON.parse(values.metadata) as Record<string, unknown>;
@@ -495,10 +625,39 @@ export function RecordForm() {
     try {
       meta = JSON.parse(values.metadata) as Record<string, unknown>;
     } catch {}
+    if (
+      ["start_date", "expiry_date", "next_date", "reminder_due_at"].includes(
+        name,
+      )
+    )
+      return (
+        <DateTimeInput
+          key={name}
+          label={label}
+          value={String(meta[name] ?? "")}
+          mode={
+            ["next_date", "reminder_due_at"].includes(name)
+              ? "datetime"
+              : "date"
+          }
+          allowFuture
+          required={name === "reminder_due_at"}
+          optional={name !== "reminder_due_at"}
+          onChange={(value) => updateMeta(name, value)}
+        />
+      );
     return (
       <InputField
         key={name}
         label={label}
+        optional
+        keyboardType={
+          ["next_km", "next_hours"].includes(name) ? "decimal-pad" : "default"
+        }
+        numeric={
+          ["next_km", "next_hours"].includes(name) ? { scale: 3 } : undefined
+        }
+        maxLength={160}
         value={String(meta[name] ?? "")}
         onChangeText={(value) => updateMeta(name, value)}
       />
@@ -515,13 +674,10 @@ export function RecordForm() {
             ...values,
             km: next.meter_mode === "HOURS" ? "" : values.km,
             hours: next.meter_mode === "KM" ? "" : values.hours,
-            energy_type: next.energy_type,
-            unit:
-              next.energy_type === "ELECTRIC"
-                ? "KWH"
-                : next.energy_type === "CNG"
-                  ? "KG"
-                  : "L",
+            ...defaultFuel(next.energy_type),
+            ...(kind === "fuel"
+              ? { quantity: "", unit_price: "", is_full_tank: false }
+              : {}),
             answers: kind === "progress" ? {} : values.answers,
             form_version_id: "",
           });
@@ -538,9 +694,20 @@ export function RecordForm() {
     setBusy(true);
     setError("");
     try {
-      const payload = entryPayload(kind, values);
-      if (v.meter_mode === "HOURS") payload.km = null;
-      if (v.meter_mode === "KM") payload.hours = null;
+      if (
+        kind === "fuel" &&
+        (!permittedFuel(v.energy_type, values.energy_type, existing?.payload) ||
+          values.unit !== fuelUnit(values.energy_type))
+      )
+        throw new Error(t("fuelMismatch"));
+      form.clearErrors();
+      const payload = entryPayload(kind, form.getValues(), {
+        meterMode: v.meter_mode,
+        original: existing?.payload,
+        kmRequired: kind === "progress" && definition.km_required,
+        hoursRequired: kind === "progress" && definition.hours_required,
+        notesRequired: kind === "progress" && definition.notes_required,
+      });
       if (kind === "progress") {
         const version = forms.data?.find(
           (f) =>
@@ -602,13 +769,7 @@ export function RecordForm() {
       if (another) {
         form.reset({
           ...defaultEntry(),
-          energy_type: v.energy_type,
-          unit:
-            v.energy_type === "ELECTRIC"
-              ? "KWH"
-              : v.energy_type === "CNG"
-                ? "KG"
-                : "L",
+          ...defaultFuel(v.energy_type),
         });
         setOperation(Crypto.randomUUID());
       } else {
@@ -617,7 +778,41 @@ export function RecordForm() {
         router.back();
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      if (
+        e instanceof ZodError &&
+        e.issues.some((issue) =>
+          [
+            "metadata",
+            "items",
+            "vendor",
+            "station_name",
+            "principal",
+            "interest",
+            "due_at",
+            "reference",
+            "threshold_km",
+            "threshold_hours",
+            "recurrence",
+            "notes",
+            "km",
+            "hours",
+            "observed_at",
+          ].includes(String(issue.path[0])),
+        )
+      )
+        setAdditionalOpen(true);
+      if (kind === "progress" && !(e instanceof ZodError))
+        setAdditionalOpen(true);
+      if (e instanceof ZodError)
+        for (const issue of e.issues) {
+          const name = issue.path[0];
+          if (typeof name === "string")
+            form.setError(name as keyof EntryForm, {
+              type: "validate",
+              message: issue.message,
+            });
+        }
+      setError(errorMessage(e));
     } finally {
       setBusy(false);
     }
@@ -670,12 +865,64 @@ export function RecordForm() {
       derived = `${money(solved.amount_paise)} · ${solved.quantity} ${values.unit} · ${money(solved.unit_price_paise)}/${values.unit}`;
     } catch {}
   }
+  let metadata: Record<string, unknown> = {};
+  try {
+    metadata = JSON.parse(values.metadata);
+  } catch {}
   let items: { title: string; amount_paise: number }[] = [];
   try {
     items = JSON.parse(values.items) as typeof items;
   } catch {}
+  const readingEditor = (
+    <>
+      {" "}
+      {["fuel", "expenses", "meters", "progress"].includes(kind) && (
+        <Card style={{ padding: 16, gap: 12 }}>
+          <SectionHeading title={r("meters")} />
+          <AppText muted>
+            {t(
+              kind === "meters"
+                ? "meterOnlyTime"
+                : kind === "progress" &&
+                    (definition.km_required || definition.hours_required)
+                  ? "progressMeterPolicy"
+                  : "optionalMeters",
+            )}
+          </AppText>
+          {existing &&
+            ((v.meter_mode === "HOURS" && values.km !== "") ||
+              (v.meter_mode === "KM" && values.hours !== "")) && (
+              <AppText muted>{t("legacyReading")}</AppText>
+            )}
+          {v.meter_mode !== "HOURS" && field("km", r("distance"), true)}
+          {v.meter_mode !== "KM" && field("hours", r("hours"), true)}
+          {values.km !== "" || values.hours !== "" ? (
+            field("observed_at", r("observed"))
+          ) : (
+            <AppText muted>{t("optionalObservation")}</AppText>
+          )}
+          <AppText muted>{r("readingHelp")}</AppText>
+        </Card>
+      )}
+      {kind === "fuel" && (values.km !== "" || values.hours !== "") && (
+        <View style={{ gap: 8 }}>
+          <AppText>{r("fillConfirmation")}</AppText>
+          <Switch
+            accessibilityLabel={r("fillConfirmation")}
+            value={values.confirmed_observation}
+            onValueChange={(value) =>
+              form.setValue("confirmed_observation", value, {
+                shouldDirty: true,
+              })
+            }
+          />
+        </View>
+      )}
+    </>
+  );
   return (
     <Screen
+      compact
       title={`${r(id ? "edit" : "add")} · ${r(kind)}`}
       loading={
         !ready ||
@@ -684,22 +931,32 @@ export function RecordForm() {
         (kind === "progress" && forms.isPending)
       }
       action={
-        <View style={{ gap: 8 }}>
-          <AppButton
-            label={r(kind === "progress" ? "submit" : "save")}
-            disabled={
-              busy ||
-              !ready ||
-              (kind === "progress" &&
-                (forms.isPending || !values.form_version_id))
-            }
-            onPress={() => void submit()}
-          />
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 12,
+            paddingBottom: 8,
+            flexWrap: "wrap",
+          }}
+        >
+          <View style={{ flex: 1, minWidth: 130 }}>
+            <GradientButton
+              label={r(kind === "progress" ? "submit" : "save")}
+              disabled={
+                busy ||
+                !ready ||
+                (kind === "progress" &&
+                  (forms.isPending || !values.form_version_id))
+              }
+              onPress={() => void submit()}
+            />
+          </View>
           {!id && kind === "fuel" && (
-            <AppButton
-              secondary
+            <TextAction
               label={r("saveAnother")}
-              disabled={busy}
+              icon="add-circle-outline"
+              disabled={busy || !ready}
               onPress={() => void submit(true)}
             />
           )}
@@ -707,9 +964,7 @@ export function RecordForm() {
       }
     >
       {id ? (
-        <Card>
-          <AppText>{v.nickname || v.model}</AppText>
-        </Card>
+        <VehicleHeader vehicleId={v.id} allowSwitch={false} />
       ) : (
         <VehicleHeader
           vehicleId={v.id}
@@ -717,6 +972,13 @@ export function RecordForm() {
           onSelect={selectVehicle}
         />
       )}
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+        <ColorIcon
+          name={recordVisuals[kind].icon}
+          tone={recordVisuals[kind].tone}
+        />
+        <AppText large>{r(kind)}</AppText>
+      </View>
       {kind === "progress" &&
         !id &&
         values.form_version_id &&
@@ -781,7 +1043,7 @@ export function RecordForm() {
             />
           )}
           <DynamicFields
-            fields={definition.fields}
+            fields={definition.fields.filter((field) => field.required)}
             answers={values.answers}
             owner={owner}
             onChange={(field, value) =>
@@ -793,29 +1055,113 @@ export function RecordForm() {
             }
           />
         </>
-      ) : (
+      ) : ["fuel", "expenses"].includes(kind) ? (
         field("event_at", r("event"))
-      )}
+      ) : null}
       {kind === "fuel" && (
         <>
-          {choose("energy_type", [
-            "PETROL",
-            "DIESEL",
-            "ELECTRIC",
-            "CNG",
-            "HYBRID",
-            "OTHER",
-          ])}
-          {choose("unit", ["L", "KG", "KWH"])}
+          <Card style={{ padding: 16, gap: 10 }}>
+            <AppText muted>{t("fuelProfile")}</AppText>
+            <AppText large>{t(v.energy_type)}</AppText>
+            <AppText muted>{t("fuelFixed")}</AppText>
+            {["HYBRID", "DIESEL_HYBRID"].includes(v.energy_type) && (
+              <AppText muted>{t("fuelHybridHelp")}</AppText>
+            )}
+            {allowedFuelTypes(v.energy_type).length > 1 && (
+              <FilterChips
+                items={allowedFuelTypes(v.energy_type).map((id) => ({
+                  id,
+                  label: r(id),
+                }))}
+                value={values.energy_type}
+                onChange={(type) => {
+                  if (
+                    type === values.energy_type ||
+                    !allowedFuelTypes(v.energy_type).some(
+                      (fuel) => fuel === type,
+                    )
+                  )
+                    return;
+                  const apply = () => {
+                    form.setValue("energy_type", type, { shouldDirty: true });
+                    form.setValue("unit", fuelUnit(type), {
+                      shouldDirty: true,
+                    });
+                    form.setValue("quantity", "", { shouldDirty: true });
+                    form.setValue("unit_price", "", { shouldDirty: true });
+                    form.setValue("is_full_tank", false, { shouldDirty: true });
+                  };
+                  if (values.quantity || values.unit_price)
+                    ConfirmDialog(
+                      t("uiEnergyType"),
+                      t("fuelSwitchAmounts"),
+                      apply,
+                    );
+                  else apply();
+                }}
+              />
+            )}
+            <InfoRows
+              items={[
+                {
+                  label: t("uiEnergyType"),
+                  value:
+                    r(values.energy_type as keyof typeof recordCopy) ??
+                    values.energy_type,
+                },
+                { label: r("quantity"), value: values.unit },
+              ]}
+            />
+            {(!permittedFuel(
+              v.energy_type,
+              values.energy_type,
+              existing?.payload,
+            ) ||
+              values.unit !== fuelUnit(values.energy_type)) && (
+              <AppText>{t("fuelChanged")}</AppText>
+            )}
+            {existing &&
+              !allowedFuelTypes(v.energy_type).some(
+                (fuel) => fuel === existing.payload.energy_type,
+              ) && <AppText muted>{t("fuelHistorical")}</AppText>}
+            {(!permittedFuel(
+              v.energy_type,
+              values.energy_type,
+              existing?.payload,
+            ) ||
+              values.unit !== fuelUnit(values.energy_type)) && (
+              <TextAction
+                label={r("edit")}
+                onPress={() => {
+                  const next = defaultFuel(v.energy_type);
+                  form.setValue("energy_type", next.energy_type, {
+                    shouldDirty: true,
+                  });
+                  form.setValue("unit", next.unit, { shouldDirty: true });
+                  form.setValue("quantity", "", { shouldDirty: true });
+                  form.setValue("unit_price", "", { shouldDirty: true });
+                }}
+              />
+            )}
+          </Card>
           <AppButton
             secondary={!values.is_full_tank}
-            label={r(values.is_full_tank ? "full" : "partial")}
+            label={r(
+              values.energy_type === "ELECTRIC"
+                ? values.is_full_tank
+                  ? "fullCharge"
+                  : "partialCharge"
+                : values.is_full_tank
+                  ? "full"
+                  : "partial",
+            )}
             onPress={() =>
               form.setValue("is_full_tank", !values.is_full_tank, {
                 shouldDirty: true,
               })
             }
           />
+          <AppText muted>{t("fuelAnyTwo")}</AppText>
           {field("amount", r("amount"), true)}
           {field("quantity", r("quantity"), true)}
           {field("unit_price", r("price"), true)}
@@ -824,142 +1170,17 @@ export function RecordForm() {
               <AppText>{derived}</AppText>
             </Card>
           )}
-          {field("station_name", r("station"))}
         </>
       )}
       {kind === "expenses" && (
         <>
           {field("amount", r("amount"), true)}
           {field("title", r("title"))}
+          <AppText>{r("category")} *</AppText>
           {choose("category", [
             ...expenseCategories,
             ...(categories.data ?? []),
           ])}
-          {owner && (
-            <Card>
-              <InputField
-                label={r("customCategory")}
-                value={customCategory}
-                onChangeText={setCustomCategory}
-              />
-              <AppButton
-                secondary
-                label={r("addCategory")}
-                disabled={!customCategory.trim()}
-                onPress={() => {
-                  void addExpenseCategory(v.id, customCategory, development)
-                    .then(() => {
-                      setCustomCategory("");
-                      void categories.refetch();
-                    })
-                    .catch((e) => setError(String(e)));
-                }}
-              />
-            </Card>
-          )}
-          {values.category === "EMI" && (
-            <>
-              {field("principal", r("principal"), true)}
-              {field("interest", r("interest"), true)}
-              {metaField("lender", r("lender"))}
-            </>
-          )}
-          {values.category === "INSURANCE" && (
-            <>
-              {metaField("provider", r("provider"))}
-              {metaField("policy", r("policy"))}
-              {metaField("start_date", r("startDate"))}
-              {metaField("expiry_date", r("expiryDate"))}
-            </>
-          )}
-          {values.category === "TYRES" && (
-            <>
-              {metaField("size", r("tyreSize"))}
-              {metaField("position", r("position"))}
-            </>
-          )}
-          {["SERVICE", "REPAIR", "BATTERY"].includes(values.category) && (
-            <>
-              {metaField("components", r("components"))}
-              {access.data?.["reminders.create"] && (
-                <>
-                  {metaField("next_date", r("nextService"))}
-                  {metaField("next_km", r("thresholdKm"))}
-                  {metaField("next_hours", r("thresholdHours"))}
-                </>
-              )}
-            </>
-          )}
-          <AppText>{r("items")}</AppText>
-          <AppText muted>{r("itemsHelp")}</AppText>
-          {items.map((item, index) => (
-            <Card key={index}>
-              <InputField
-                label={r("itemTitle")}
-                value={item.title}
-                onChangeText={(title) =>
-                  form.setValue(
-                    "items",
-                    JSON.stringify(
-                      items.map((v, i) => (i === index ? { ...v, title } : v)),
-                    ),
-                    { shouldDirty: true },
-                  )
-                }
-              />
-              <InputField
-                label={r("itemAmount")}
-                value={itemAmounts[index] ?? String(item.amount_paise / 100)}
-                keyboardType="decimal-pad"
-                onChangeText={(text) => {
-                  if (/^\d*(\.\d{0,2})?$/.test(text)) {
-                    setItemAmounts((amounts) => ({
-                      ...amounts,
-                      [index]: text,
-                    }));
-                    form.setValue(
-                      "items",
-                      JSON.stringify(
-                        items.map((v, i) =>
-                          i === index
-                            ? {
-                                ...v,
-                                amount_paise: Math.round(Number(text) * 100),
-                              }
-                            : v,
-                        ),
-                      ),
-                      { shouldDirty: true },
-                    );
-                  }
-                }}
-              />
-              <AppButton
-                secondary
-                label={r("remove")}
-                onPress={() => {
-                  setItemAmounts({});
-                  form.setValue(
-                    "items",
-                    JSON.stringify(items.filter((_, i) => i !== index)),
-                    { shouldDirty: true },
-                  );
-                }}
-              />
-            </Card>
-          ))}
-          <AppButton
-            secondary
-            label={r("addItem")}
-            onPress={() =>
-              form.setValue(
-                "items",
-                JSON.stringify([...items, { title: "", amount_paise: 0 }]),
-                { shouldDirty: true },
-              )
-            }
-          />
-          {field("vendor", r("vendor"))}
         </>
       )}
       {kind === "documents" &&
@@ -975,72 +1196,281 @@ export function RecordForm() {
         ])}
       {kind === "reminders" &&
         choose("category", ["SERVICE", "EMI", "INSURANCE", "OTHER"])}
-      {["documents", "reminders"].includes(kind) && (
-        <>
-          {field("title", r("title"))}
-          {field("reference", r("reference"))}
-          {field("due_at", r("due"))}
-        </>
-      )}
-      {kind === "reminders" && owner && (
-        <View style={{ gap: 8 }}>
-          <AppText>{r("sharePilot")}</AppText>
-          <Switch
-            accessibilityLabel={r("sharePilot")}
-            value={values.pilot_visible}
-            onValueChange={(value) =>
-              form.setValue("pilot_visible", value, { shouldDirty: true })
-            }
-          />
-        </View>
-      )}
-      {kind === "reminders" && (
-        <>
-          {field("threshold_km", r("thresholdKm"), true)}
-          {field("threshold_hours", r("thresholdHours"), true)}
-          {choose("recurrence", ["NONE", "MONTHLY", "YEARLY"])}
-        </>
-      )}
-      {["fuel", "expenses"].includes(kind) &&
-        choose("payment_method", ["CASH", "UPI", "CARD", "BANK", "OTHER"])}
-      {["fuel", "expenses", "meters", "progress"].includes(kind) && (
-        <>
-          {v.meter_mode !== "HOURS" && field("km", r("distance"), true)}
-          {v.meter_mode !== "KM" && field("hours", r("hours"), true)}
-          {field("observed_at", r("observed"))}
-          <AppText muted>{r("readingHelp")}</AppText>
-        </>
-      )}
-      {kind === "fuel" && (values.km !== "" || values.hours !== "") && (
-        <View style={{ gap: 8 }}>
-          <AppText>{r("fillConfirmation")}</AppText>
-          <Switch
-            accessibilityLabel={r("fillConfirmation")}
-            value={values.confirmed_observation}
-            onValueChange={(value) =>
-              form.setValue("confirmed_observation", value, {
-                shouldDirty: true,
-              })
-            }
-          />
-        </View>
-      )}
-      {kind === "meters" && owner && (
-        <View style={{ gap: 8 }}>
-          <AppText>{r("reset")}</AppText>
-          <Switch
-            accessibilityLabel={r("reset")}
-            value={values.is_reset}
-            onValueChange={(value) =>
-              form.setValue("is_reset", value, { shouldDirty: true })
-            }
-          />
-        </View>
-      )}
-      {(kind !== "progress" || definition.notes_visible) &&
+      {["documents", "reminders"].includes(kind) && field("title", r("title"))}
+      {kind === "reminders" && field("due_at", r("due"))}
+      {(kind === "meters" ||
+        (kind === "progress" &&
+          (definition.km_required || definition.hours_required))) &&
+        readingEditor}
+      {kind === "progress" &&
+        definition.notes_visible &&
+        definition.notes_required &&
         field("notes", r("notes"))}
-      <AppText muted>{r("photo")}</AppText>
-      {kind === "documents" && <AppText>{r("legal")}</AppText>}
+      {kind === "fuel" && !values.km && !values.hours && (
+        <AppText muted>{r("pendingReading")}</AppText>
+      )}
+      <AdditionalOptions
+        open={additionalOpen}
+        onToggle={() => setAdditionalOpen((value) => !value)}
+      >
+        {kind === "fuel" && field("station_name", r("station"))}
+        {kind === "expenses" && (
+          <>
+            {owner && (
+              <Card>
+                <InputField
+                  label={r("customCategory")}
+                  required
+                  maxLength={60}
+                  value={customCategory}
+                  onChangeText={setCustomCategory}
+                />
+                <AppButton
+                  secondary
+                  label={r("addCategory")}
+                  disabled={!customCategory.trim()}
+                  onPress={() => {
+                    void addExpenseCategory(v.id, customCategory, development)
+                      .then(() => {
+                        setCustomCategory("");
+                        void categories.refetch();
+                      })
+                      .catch((e) => setError(String(e)));
+                  }}
+                />
+              </Card>
+            )}
+            {values.category === "EMI" && (
+              <>
+                {field("principal", r("principal"), true)}
+                {field("interest", r("interest"), true)}
+                {metaField("lender", r("lender"))}
+              </>
+            )}
+            {values.category === "INSURANCE" && (
+              <>
+                {metaField("provider", r("provider"))}
+                {metaField("policy", r("policy"))}
+                {metaField("start_date", r("startDate"))}
+                {metaField("expiry_date", r("expiryDate"))}
+              </>
+            )}
+            {values.category === "TYRES" && (
+              <>
+                {metaField("size", r("tyreSize"))}
+                {metaField("position", r("position"))}
+              </>
+            )}
+            {["SERVICE", "REPAIR", "BATTERY"].includes(values.category) && (
+              <>
+                {metaField("components", r("components"))}
+                {access.data?.["reminders.create"] && (
+                  <>
+                    {metaField("next_date", r("nextService"))}
+                    {metaField("next_km", r("thresholdKm"))}
+                    {metaField("next_hours", r("thresholdHours"))}
+                  </>
+                )}
+              </>
+            )}
+            <AppText>{r("items")}</AppText>
+            <AppText muted>{r("itemsHelp")}</AppText>
+            {items.map((item, index) => (
+              <Card key={index}>
+                <InputField
+                  label={r("itemTitle")}
+                  required
+                  maxLength={160}
+                  value={item.title}
+                  onChangeText={(title) =>
+                    form.setValue(
+                      "items",
+                      JSON.stringify(
+                        items.map((v, i) =>
+                          i === index ? { ...v, title } : v,
+                        ),
+                      ),
+                      { shouldDirty: true },
+                    )
+                  }
+                />
+                <InputField
+                  label={r("itemAmount")}
+                  required
+                  numeric={{ scale: 2, wholeDigits: 15 }}
+                  value={itemAmounts[index] ?? String(item.amount_paise / 100)}
+                  keyboardType="decimal-pad"
+                  onChangeText={(text) => {
+                    if (/^\d*(\.\d{0,2})?$/.test(text)) {
+                      setItemAmounts((amounts) => ({
+                        ...amounts,
+                        [index]: text,
+                      }));
+                      form.setValue(
+                        "items",
+                        JSON.stringify(
+                          items.map((v, i) =>
+                            i === index
+                              ? {
+                                  ...v,
+                                  amount_paise: Math.round(Number(text) * 100),
+                                }
+                              : v,
+                          ),
+                        ),
+                        { shouldDirty: true },
+                      );
+                    }
+                  }}
+                />
+                <AppButton
+                  secondary
+                  label={r("remove")}
+                  onPress={() => {
+                    setItemAmounts({});
+                    form.setValue(
+                      "items",
+                      JSON.stringify(items.filter((_, i) => i !== index)),
+                      { shouldDirty: true },
+                    );
+                  }}
+                />
+              </Card>
+            ))}
+            <AppButton
+              secondary
+              label={r("addItem")}
+              onPress={() =>
+                form.setValue(
+                  "items",
+                  JSON.stringify([...items, { title: "", amount_paise: 0 }]),
+                  { shouldDirty: true },
+                )
+              }
+            />
+            {field("vendor", r("vendor"))}
+          </>
+        )}
+        {kind === "documents" && (
+          <>
+            {field("reference", r("reference"))}
+            {field("due_at", t("documentExpiry"))}
+          </>
+        )}
+        {(kind === "documents" ||
+          (kind === "expenses" && values.category === "EMI")) &&
+          access.data?.["reminders.create"] && (
+            <Card style={{ padding: 16, gap: 10 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 10,
+                }}
+              >
+                <View style={{ flex: 1 }}>
+                  <AppText>{t("linkedReminder")}</AppText>
+                </View>
+                <Switch
+                  accessibilityLabel={t("linkedReminder")}
+                  value={metadata.create_reminder === true}
+                  onValueChange={(value) =>
+                    updateMeta("create_reminder", value)
+                  }
+                />
+              </View>
+              {metadata.create_reminder === true && (
+                <>
+                  <AppText muted>{t("linkedReminderHelp")}</AppText>
+                  <AppText muted>{t("linkedOwnerOnly")}</AppText>
+                  {kind === "expenses" && (
+                    <>
+                      {metaField("reminder_due_at", t("nextEmiDue"))}
+                      <FilterChips
+                        items={(["NONE", "MONTHLY", "YEARLY"] as const).map(
+                          (id) => ({ id, label: r(id) }),
+                        )}
+                        value={String(
+                          metadata.reminder_recurrence ?? "MONTHLY",
+                        )}
+                        onChange={(value) =>
+                          updateMeta("reminder_recurrence", value)
+                        }
+                      />
+                    </>
+                  )}
+                </>
+              )}
+            </Card>
+          )}
+        {kind === "reminders" && owner && (
+          <View style={{ gap: 8 }}>
+            <AppText>{r("sharePilot")}</AppText>
+            <Switch
+              accessibilityLabel={r("sharePilot")}
+              value={values.pilot_visible}
+              onValueChange={(value) =>
+                form.setValue("pilot_visible", value, { shouldDirty: true })
+              }
+            />
+          </View>
+        )}
+        {kind === "reminders" && (
+          <>
+            {v.meter_mode !== "HOURS" &&
+              field("threshold_km", r("thresholdKm"), true)}
+            {v.meter_mode !== "KM" &&
+              field("threshold_hours", r("thresholdHours"), true)}
+            {choose("recurrence", ["NONE", "MONTHLY", "YEARLY"])}
+          </>
+        )}
+        {["fuel", "expenses"].includes(kind) &&
+          choose("payment_method", ["CASH", "UPI", "CARD", "BANK", "OTHER"])}
+        {(kind === "fuel" ||
+          kind === "expenses" ||
+          (kind === "progress" &&
+            !definition.km_required &&
+            !definition.hours_required)) &&
+          readingEditor}
+        {kind === "meters" && owner && (
+          <View style={{ gap: 8 }}>
+            <AppText>{r("reset")}</AppText>
+            <Switch
+              accessibilityLabel={r("reset")}
+              value={values.is_reset}
+              onValueChange={(value) =>
+                form.setValue("is_reset", value, { shouldDirty: true })
+              }
+            />
+          </View>
+        )}
+        {(kind !== "progress" ||
+          (definition.notes_visible && !definition.notes_required)) &&
+          field("notes", r("notes"))}
+        {kind === "progress" && (
+          <DynamicFields
+            fields={definition.fields.filter((field) => !field.required)}
+            answers={values.answers}
+            owner={owner}
+            onChange={(field, value) =>
+              form.setValue(
+                "answers",
+                { ...values.answers, [field]: value },
+                { shouldDirty: true },
+              )
+            }
+          />
+        )}
+        <AppText muted>{r("photo")}</AppText>
+        {kind === "documents" && (
+          <>
+            <AppText>{r("legal")}</AppText>
+            <AppText muted>{t("documentStorage")}</AppText>
+          </>
+        )}
+      </AdditionalOptions>
+      {kind === "documents" && <AppText muted>{r("noAttachment")}</AppText>}
       {kind === "progress" && forms.error && (
         <ErrorState
           message={forms.error.message}
@@ -1073,6 +1503,10 @@ export function RecordDetail() {
   const user = useAccountId();
   const { development } = useSession();
   const query = useRecords(kind, vehicle);
+  const vehicleQuery = useVehicles();
+  const timezone =
+    vehicleQuery.data?.find((item) => item.id === vehicle)?.timezone ??
+    "Asia/Kolkata";
   const row = query.data?.find((e) => e.id === id);
   const permissions = usePermissions(vehicle);
   const qc = useQueryClient();
@@ -1147,6 +1581,7 @@ export function RecordDetail() {
       !(kind === "progress" && row?.status === "APPROVED"));
   return (
     <Screen
+      compact
       title={`${r(kind)} · ${r("detail")}`}
       loading={query.isPending || busy}
     >
@@ -1157,50 +1592,105 @@ export function RecordDetail() {
         />
       ) : row ? (
         <>
-          <Card>
-            <AppText large>
-              {String(
-                row.payload.title || row.payload.progress_date || r(kind),
-              )}
-            </AppText>
-            <AppText>{row.status}</AppText>
-            <AppText muted>
-              {String(row.payload.event_at ?? row.created_at)}
-            </AppText>
-            {row.payload.amount_paise !== undefined && (
-              <AppText large>{money(Number(row.payload.amount_paise))}</AppText>
-            )}
-            {kind === "fuel" && (
-              <AppText>
-                {String(row.payload.quantity)} {String(row.payload.unit)} ·{" "}
-                {r(row.payload.is_full_tank ? "full" : "partial")}
-              </AppText>
-            )}
-            <AppText>{String(row.payload.notes ?? "")}</AppText>
-            <AppText>
-              {r("author")}: {row.created_by}
-            </AppText>
-            <AppText>
-              {r("observed")}: {String(row.payload.reading_at ?? "—")}
-            </AppText>
-            {row.payload.km !== null && row.payload.km !== undefined && (
-              <AppText>{row.payload.km as number} KM</AppText>
-            )}
-            {row.payload.hours !== null && row.payload.hours !== undefined && (
-              <AppText>{row.payload.hours as number} HOURS</AppText>
-            )}
-            {row.localStatus && (
-              <AppText>
-                {r(
-                  row.localStatus === "PENDING"
-                    ? "pending"
-                    : row.localStatus === "CONFLICT"
-                      ? "conflict"
-                      : "rejected",
-                )}
-              </AppText>
-            )}
+          <VehicleHeader vehicleId={row.vehicle_id} allowSwitch={false} />
+          <RecordCard row={row} kind={kind} timezone={timezone} />
+          <Card style={{ padding: 16, gap: 8 }}>
+            <SectionHeading title={t("uiRecordInfo")} />
+            <InfoRows
+              items={[
+                { label: r("author"), value: row.created_by },
+                ...(row.payload.reading_at
+                  ? [
+                      {
+                        label: r("observed"),
+                        value: readableDateTime(
+                          String(row.payload.reading_at),
+                          timezone,
+                        ),
+                      },
+                    ]
+                  : []),
+                ...(row.payload.km !== null && row.payload.km !== undefined
+                  ? [{ label: r("distance"), value: `${row.payload.km} KM` }]
+                  : []),
+                ...(row.payload.hours !== null &&
+                row.payload.hours !== undefined
+                  ? [{ label: r("hours"), value: `${row.payload.hours} HOURS` }]
+                  : []),
+                ...[
+                  "station_name",
+                  "vendor",
+                  "payment_method",
+                  "reference",
+                  "notes",
+                ]
+                  .filter((key) => row.payload[key])
+                  .map((key) => ({
+                    label:
+                      r(
+                        (key === "payment_method"
+                          ? "payment"
+                          : key) as keyof typeof recordCopy,
+                      ) ?? key,
+                    value: String(row.payload[key]),
+                  })),
+              ]}
+            />
           </Card>
+          {kind === "expenses" && (
+            <Card style={{ padding: 16 }}>
+              <SectionHeading title={r("expenses")} />
+              <InfoRows
+                items={[
+                  ...(row.payload.principal_paise !== null &&
+                  row.payload.principal_paise !== undefined
+                    ? [
+                        {
+                          label: r("principal"),
+                          value: money(Number(row.payload.principal_paise)),
+                        },
+                      ]
+                    : []),
+                  ...(row.payload.interest_paise !== null &&
+                  row.payload.interest_paise !== undefined
+                    ? [
+                        {
+                          label: r("interest"),
+                          value: money(Number(row.payload.interest_paise)),
+                        },
+                      ]
+                    : []),
+                  ...Object.entries(
+                    (row.payload.metadata as Record<string, unknown>) ?? {},
+                  )
+                    .filter(
+                      ([key, value]) =>
+                        key !== "expense_id" && value !== null && value !== "",
+                    )
+                    .map(([key, value]) => ({
+                      label:
+                        r(
+                          (metadataLabels[key] ??
+                            key) as keyof typeof recordCopy,
+                        ) ?? key.replaceAll("_", " "),
+                      value:
+                        typeof value === "string" &&
+                        /^\d{4}-\d{2}-\d{2}(T|$)/.test(value)
+                          ? readableDateTime(value, timezone)
+                          : String(value),
+                    })),
+                  ...(Array.isArray(row.payload.items)
+                    ? row.payload.items.map(
+                        (item: { title: string; amount_paise: number }) => ({
+                          label: item.title,
+                          value: money(item.amount_paise),
+                        }),
+                      )
+                    : []),
+                ]}
+              />
+            </Card>
+          )}
           {kind === "progress" && (
             <>
               <DynamicFields
@@ -1225,6 +1715,8 @@ export function RecordDetail() {
                   <>
                     <InputField
                       label={r("reviewNote")}
+                      maxLength={3000}
+                      optional
                       value={note}
                       onChangeText={setNote}
                     />
@@ -1369,10 +1861,19 @@ export function RecordDetail() {
                     <AppText>
                       {String(event.action).replaceAll("_", " ")}
                     </AppText>
-                    <AppText muted>
-                      {event.created_at} · {event.actor_id ?? "—"}
+                    <Timestamp value={event.created_at} timezone={timezone} />
+                    <AppText muted>{event.actor_id ?? "—"}</AppText>
+                    <AppText>
+                      {JSON.stringify(
+                        event.context,
+                        (_key, value) =>
+                          typeof value === "string" &&
+                          /^\d{4}-\d{2}-\d{2}(T|$)/.test(value)
+                            ? readableDateTime(value, timezone)
+                            : value,
+                        2,
+                      )}
                     </AppText>
-                    <AppText>{JSON.stringify(event.context)}</AppText>
                   </View>
                 ))
               ) : (
@@ -1400,7 +1901,6 @@ export function RecordDetail() {
         !query.isPending && <AppText>{r("permission")}</AppText>
       )}
       {error && <ErrorState message={error} retry={() => setError("")} />}
-      <AppButton secondary label={r("back")} onPress={() => router.back()} />
     </Screen>
   );
 }
@@ -1463,22 +1963,23 @@ export function RecordAnalytics() {
     );
   return (
     <Screen
+      compact
       title={`${r(kind)} · ${r("analytics")}`}
       loading={!!v && (query.isPending || permissions.isPending)}
     >
-      <VehicleHeader />
+      <VehicleHeader vehicleId={v?.id} allowSwitch={!vehicle} />
       {permissions.data && !permissions.data["reports.read"] ? (
         <AppText>{r("permission")}</AppText>
       ) : (
         <>
-          {(["week", "month", "year", "all"] as const).map((p) => (
-            <AppButton
-              key={p}
-              secondary={period !== p}
-              label={r(p)}
-              onPress={() => setPeriod(p)}
-            />
-          ))}
+          <FilterChips
+            items={(["week", "month", "year", "all"] as const).map((id) => ({
+              id,
+              label: r(id),
+            }))}
+            value={period}
+            onChange={setPeriod}
+          />
           {query.error ? (
             <ErrorState
               message={query.error.message}
@@ -1509,9 +2010,11 @@ export function RecordAnalytics() {
                   {intervals.length ? (
                     intervals.map((interval, index) => (
                       <Card key={index}>
-                        <AppText>
-                          {interval.from} → {interval.to}
-                        </AppText>
+                        <TimestampRange
+                          from={interval.from}
+                          to={interval.to}
+                          timezone={v?.timezone}
+                        />
                         <AppText>
                           {interval.distance === null
                             ? r("unknown")
@@ -1578,7 +2081,6 @@ export function RecordAnalytics() {
           )}
         </>
       )}
-      <AppButton secondary label={r("back")} onPress={() => router.back()} />
     </Screen>
   );
 }

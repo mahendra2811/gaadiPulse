@@ -1,5 +1,8 @@
+import { isReading } from "@/src/utils/formInput";
+import { vehicleEnergyTypes } from "./energy";
 import { t } from "../../lib/i18n";
 import { z } from "zod";
+import { suggestedSubtypeMeter } from "./subtypes";
 export const categories = [
   "two_wheeler",
   "four_wheeler",
@@ -12,6 +15,8 @@ export function normalizeRegistration(value: string) {
   return value.replace(/[^a-z0-9]/gi, "").toUpperCase();
 }
 export function defaultMeter(category: string, subtype: string) {
+  const suggestion = suggestedSubtypeMeter(subtype);
+  if (suggestion && subtype !== "other") return suggestion;
   return subtype === "excavator"
     ? "HOURS"
     : ["tractor", "tipper"].includes(subtype)
@@ -26,19 +31,12 @@ const reading = z
 export const vehicleSchema = z
   .object({
     nickname: z.string().trim().max(120),
-    registration_number: z.string().transform(normalizeRegistration),
+    registration_number: z.string().max(40).transform(normalizeRegistration),
     category: z.enum(categories),
     subtype: z.string().trim().min(1).max(80),
     brand: z.string().trim().max(80),
     model: z.string().trim().max(80),
-    energy_type: z.enum([
-      "PETROL",
-      "DIESEL",
-      "ELECTRIC",
-      "CNG",
-      "HYBRID",
-      "OTHER",
-    ]),
+    energy_type: z.enum(vehicleEnergyTypes),
     meter_mode: z.enum(meterModes),
     timezone: z.string().refine((v) => {
       try {
@@ -51,6 +49,21 @@ export const vehicleSchema = z
     km: reading,
     hours: reading,
     observed_at: z.iso.datetime({ offset: true }),
+  })
+  .superRefine((v, ctx) => {
+    for (const key of ["km", "hours"] as const)
+      if (v[key] && !isReading(v[key]!))
+        ctx.addIssue({
+          code: "custom",
+          path: [key],
+          message: t("invalidReading"),
+        });
+    if ((v.km || v.hours) && Date.parse(v.observed_at) > Date.now())
+      ctx.addIssue({
+        code: "custom",
+        path: ["observed_at"],
+        message: t("validPastTime"),
+      });
   })
   .refine((v) => v.nickname || v.registration_number || v.model, {
     message: t("identifyVehicle"),

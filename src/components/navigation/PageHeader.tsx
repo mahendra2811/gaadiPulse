@@ -32,8 +32,19 @@ export function PageHeader({
         )
     : undefined;
   return (
-    <View style={{ paddingHorizontal: 20, paddingVertical: 10, gap: 4 }}>
-      {(navigation.back || onBack) && (
+    <View
+      style={{
+        paddingHorizontal: 20,
+        paddingVertical: 12,
+        backgroundColor: path === "/" ? c.background : c.surface,
+        borderBottomWidth: path === "/" ? 0 : 1,
+        borderBottomColor: c.line,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+      }}
+    >
+      {navigation.back || onBack ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t("back")}
@@ -45,37 +56,47 @@ export function PageHeader({
             })
           }
           style={({ pressed }) => ({
-            minHeight: 48,
-            alignSelf: "flex-start",
-            flexDirection: "row",
+            width: 44,
+            height: 44,
+            borderRadius: 16,
             alignItems: "center",
-            gap: 8,
-            paddingRight: 16,
+            justifyContent: "center",
+            backgroundColor: c.surface,
             opacity: pressed ? 0.6 : 1,
           })}
         >
-          <Ionicons name="arrow-back" size={24} color={c.primary} />
-          <Text style={{ color: c.primary, fontSize: 16, fontWeight: "600" }}>
-            {t("back")}
-          </Text>
+          <Ionicons name="arrow-back" size={23} color={c.primary} />
         </Pressable>
+      ) : (
+        <View
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: 15,
+            backgroundColor: "#D9F5EB",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Ionicons name="pulse" size={25} color="#087565" />
+        </View>
       )}
-      {sectionLabel && sectionLabel !== title && (
-        <Text style={{ color: c.muted, fontSize: 14 }}>
-          {sectionLabel} › {title}
+      <View style={{ flex: 1, gap: 2 }}>
+        {sectionLabel && sectionLabel !== title && (
+          <Text style={{ color: c.muted, fontSize: 12 }}>{sectionLabel}</Text>
+        )}
+        <Text
+          accessibilityRole="header"
+          style={{
+            color: c.ink,
+            fontSize: 24,
+            lineHeight: 31,
+            fontWeight: "800",
+          }}
+        >
+          {title}
         </Text>
-      )}
-      <Text
-        accessibilityRole="header"
-        style={{
-          color: c.ink,
-          fontSize: 28,
-          lineHeight: 36,
-          fontWeight: "700",
-        }}
-      >
-        {title}
-      </Text>
+      </View>
     </View>
   );
 }

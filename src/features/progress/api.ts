@@ -1,3 +1,5 @@
+import { publishDefinitionSchema } from "./schema";
+import { t } from "@/src/lib/i18n";
 import { readLocal, writeLocal } from "@/src/lib/localStore";
 import * as Crypto from "expo-crypto";
 import { client } from "@/src/lib/supabase";
@@ -73,7 +75,7 @@ export async function publishForm(
   definition: ProgressDefinition,
   development: boolean,
 ) {
-  const value = progressDefinitionSchema.parse(definition);
+  const value = publishDefinitionSchema.parse(definition);
   if (!value.notes_visible && value.notes_required)
     throw new Error("INVALID_NOTES_POLICY");
   for (const field of value.fields)
@@ -114,6 +116,10 @@ export async function reviewProgress(
   note: string,
   development: boolean,
 ) {
+  if (!["APPROVED", "REJECTED", "CORRECTION_REQUESTED"].includes(decision))
+    throw new Error(t("invalidData"));
+  if (note.length > 3000 || (decision !== "APPROVED" && !note.trim()))
+    throw new Error(t("reviewReason"));
   if (development) {
     const rows = await listRecords(user, vehicle, "progress", true);
     const current = rows.find((r) => r.id === entry.id);

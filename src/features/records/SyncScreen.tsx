@@ -1,3 +1,4 @@
+import { Timestamp } from "@/src/components/ui/Timestamp";
 import { listDrafts, clearDraft } from "@/src/lib/db";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -63,9 +64,10 @@ export default function SyncScreen() {
     <Screen title={r("sync")} loading={query.isPending || busy}>
       {development && <AppText>{r("development")}</AppText>}
       <AppText>{r("offline")}</AppText>
-      <AppText>
-        {r("lastSync")}: {String(last.data ?? "—")}
-      </AppText>
+      <Timestamp
+        label={r("lastSync")}
+        value={typeof last.data === "string" ? last.data : undefined}
+      />
       <AppText>
         {r("pendingOps")}: {query.data?.length ?? 0}
       </AppText>
@@ -82,7 +84,7 @@ export default function SyncScreen() {
       {drafts.data?.map((draft) => (
         <Card key={draft.key}>
           <AppText>{draft.key}</AppText>
-          <AppText muted>{draft.updated_at}</AppText>
+          <Timestamp value={draft.updated_at} />
           <AppButton
             secondary
             label={r("exportDraft")}
@@ -114,7 +116,8 @@ export default function SyncScreen() {
           <AppText>
             {r(op.kind)} · {op.status}
           </AppText>
-          <AppText>{String(op.payload.title ?? op.created_at)}</AppText>
+          <AppText>{String(op.payload.title ?? r(op.kind))}</AppText>
+          <Timestamp value={op.created_at} />
           {op.error && <AppText>{op.error}</AppText>}
           {op.status === "CONFLICT" && <AppText>{r("conflict")}</AppText>}
           {op.kind === "progress" && op.status === "CONFLICT" && (

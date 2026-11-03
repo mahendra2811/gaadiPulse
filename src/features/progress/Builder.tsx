@@ -1,6 +1,15 @@
+import { NumericValueField } from "@/src/components/ui/NumericValueField";
+import { Timestamp } from "@/src/components/ui/Timestamp";
+import { t } from "@/src/lib/i18n";
+import {
+  Expandable,
+  SectionHeading,
+  MenuRow,
+} from "@/src/components/ui/premium";
+import { FilterChips } from "@/src/components/ui/FilterChips";
 import { useEffect, useState } from "react";
 import { View, Switch } from "react-native";
-import { router } from "expo-router";
+import { router, usePreventRemove } from "expo-router";
 import * as Crypto from "expo-crypto";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -11,6 +20,7 @@ import {
   InputField,
   ErrorState,
   useToast,
+  ConfirmDialog,
 } from "@/src/components/ui";
 import { VehicleHeader } from "@/src/components/navigation/VehicleHeader";
 import { useActiveVehicle } from "@/src/features/garage/hooks";
@@ -68,8 +78,10 @@ function BuilderEditor() {
   const [definition, setDefinition] =
     useState<ProgressDefinition>(defaultDefinition);
   const [ready, setReady] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [preview, setPreview] = useState(false);
+  const [expandedField, setExpandedField] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [optionDrafts, setOptionDrafts] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
@@ -77,6 +89,9 @@ function BuilderEditor() {
     "load",
   );
   const [busy, setBusy] = useState(false);
+  const [invalidNumbers, setInvalidNumbers] = useState<Record<string, boolean>>(
+    {},
+  );
   const qc = useQueryClient();
   const toast = useToast();
   const key = `builder.${vehicle?.id}`;
@@ -112,10 +127,58 @@ function BuilderEditor() {
     }, 300);
     return () => clearTimeout(timer);
   }, [definition, ready, user, key]);
+  const publishedDefinition =
+    query.data?.find((version) => version.published)?.definition ??
+    defaultDefinition;
+  usePreventRemove(
+    ready &&
+      !leaving &&
+      JSON.stringify(definition) !== JSON.stringify(publishedDefinition),
+    ({ repeat }) =>
+      ConfirmDialog(
+        t("unsaved"),
+        t("unsavedBody"),
+        () => {
+          if (!user) return;
+          void saveDraft(user, key, definition)
+            .then(() => {
+              setLeaving(true);
+              repeat();
+            })
+            .catch((e) => {
+              setRetryAction("draft");
+              setError(String(e));
+            });
+        },
+        { cancelLabel: t("keepEditing"), confirmLabel: t("leaveForm") },
+      ),
+  );
   const update = (id: string, changes: Partial<ProgressField>) =>
-    setDefinition((d) => ({
-      ...d,
-      fields: d.fields.map((f) => (f.id === id ? { ...f, ...changes } : f)),
+    setDefinition((current) => ({
+      ...current,
+      fields: current.fields.map((field) =>
+        field.id === id
+          ? {
+              ...field,
+              ...(changes.type && changes.type !== field.type
+                ? {
+                    min: null,
+                    max: null,
+                    default_value: null,
+                    ...(![
+                      "integer",
+                      "decimal",
+                      "currency",
+                      "trip_count",
+                    ].includes(changes.type)
+                      ? { reportable: false }
+                      : {}),
+                  }
+                : {}),
+              ...changes,
+            }
+          : field,
+      ),
     }));
   const move = (index: number, by: number) => {
     if (index + by < 0 || index + by >= definition.fields.length) return;
@@ -130,6 +193,14 @@ function BuilderEditor() {
     setBusy(true);
     setError("");
     try {
+      if (
+        definition.fields.some((field) =>
+          [`${field.id}.default`, `${field.id}.min`, `${field.id}.max`].some(
+            (key) => invalidNumbers[key],
+          ),
+        )
+      )
+        throw new Error(t("numericOnly"));
       await publishForm(vehicle.id, definition, development);
       await clearDraft(user, key);
       await qc.invalidateQueries({ queryKey: [user, vehicle.id, "forms"] });
@@ -186,6 +257,7 @@ function BuilderEditor() {
     );
   return (
     <Screen
+      compact
       title={r("builder")}
       loading={query.isPending || busy}
       action={
@@ -198,7 +270,29 @@ function BuilderEditor() {
         ) : undefined
       }
     >
-      <VehicleHeader />
+      <VehicleHeader
+        disabled={busy}
+        onSelect={(next) => {
+          const change = () => {
+            if (!user) return;
+            void saveDraft(user, key, definition)
+              .then(() => active.select(next))
+              .catch((e) => {
+                setRetryAction("draft");
+                setError(String(e));
+              });
+          };
+          if (
+            ready &&
+            JSON.stringify(definition) !== JSON.stringify(publishedDefinition)
+          )
+            ConfirmDialog(t("unsaved"), t("unsavedBody"), change, {
+              cancelLabel: t("keepEditing"),
+              confirmLabel: t("leaveForm"),
+            });
+          else active.select(next);
+        }}
+      />
       {permissions.data && !permissions.data.owner ? (
         <AppText>{r("permission")}</AppText>
       ) : (
@@ -285,184 +379,282 @@ function BuilderEditor() {
                 toggle("notes_required", r("notesRequired"))}
               <AppText muted>{r("photoDisabled")}</AppText>
               {definition.fields.map((field, index) => (
-                <Card key={field.id}>
-                  <InputField
-                    label={r("fieldLabel")}
-                    value={field.label}
-                    onChangeText={(label) => update(field.id, { label })}
-                  />
-                  <InputField
-                    label={r("defaultsLabel")}
-                    value={
-                      field.default_value === null ||
-                      field.default_value === undefined
-                        ? ""
-                        : Array.isArray(field.default_value)
-                          ? field.default_value.join(", ")
-                          : String(field.default_value)
+                <Card key={field.id} style={{ padding: 16, gap: 8 }}>
+                  <SectionHeading
+                    title={`${index + 1}. ${field.label || r("fieldLabel")}`}
+                    action={r("edit")}
+                    onAction={() =>
+                      setExpandedField((current) =>
+                        current === field.id ? null : field.id,
+                      )
                     }
-                    onChangeText={(value) => {
-                      let parsed: ProgressField["default_value"] =
-                        value || null;
-                      if (
-                        [
-                          "integer",
-                          "decimal",
-                          "currency",
-                          "trip_count",
-                        ].includes(field.type) &&
-                        value !== ""
-                      )
-                        parsed = Number(value);
-                      if (
-                        ["boolean", "checkbox"].includes(field.type) &&
-                        value !== ""
-                      )
-                        parsed = value.toLowerCase() === "true";
-                      if (field.type === "multiselect" && value !== "")
-                        parsed = value
-                          .split(",")
-                          .map((v) => v.trim())
-                          .filter(Boolean);
-                      update(field.id, { default_value: parsed });
-                    }}
                   />
-                  <InputField
-                    label={r("fieldHelper")}
-                    value={field.helper}
-                    onChangeText={(helper) => update(field.id, { helper })}
-                  />
-                  {fieldTypes.map((type) => (
-                    <AppButton
-                      key={type}
-                      secondary={field.type !== type}
-                      label={
-                        type === "date"
-                          ? r("dateType")
-                          : r(type as keyof typeof recordCopy)
-                      }
-                      onPress={() => update(field.id, { type })}
-                    />
-                  ))}
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <AppText>{r("required")}</AppText>
-                    <Switch
-                      accessibilityLabel={r("required")}
-                      value={field.required}
-                      onValueChange={(required) =>
-                        update(field.id, { required })
-                      }
-                    />
-                  </View>
-                  {["select", "multiselect"].includes(field.type) && (
+                  <Expandable expanded={expandedField === field.id}>
                     <InputField
-                      label={r("options")}
-                      value={optionDrafts[field.id] ?? field.options.join(", ")}
-                      onChangeText={(options) => {
-                        setOptionDrafts((d) => ({ ...d, [field.id]: options }));
-                        update(field.id, {
-                          options: options
-                            .split(",")
-                            .map((s) => s.trim())
-                            .filter(Boolean),
-                        });
-                      }}
+                      label={r("fieldLabel")}
+                      required
+                      maxLength={120}
+                      value={field.label}
+                      onChangeText={(label) => update(field.id, { label })}
                     />
-                  )}
-                  <InputField
-                    label={r("min")}
-                    value={field.min === null ? "" : String(field.min)}
-                    keyboardType="decimal-pad"
-                    onChangeText={(min) =>
-                      update(field.id, { min: min === "" ? null : Number(min) })
-                    }
-                  />
-                  <InputField
-                    label={r("max")}
-                    value={field.max === null ? "" : String(field.max)}
-                    keyboardType="decimal-pad"
-                    onChangeText={(max) =>
-                      update(field.id, { max: max === "" ? null : Number(max) })
-                    }
-                  />
-                  <AppButton
-                    secondary={field.visibility !== "OWNER"}
-                    label={r(
-                      field.visibility === "OWNER" ? "private" : "public",
+                    {["integer", "decimal", "currency", "trip_count"].includes(
+                      field.type,
+                    ) ? (
+                      <NumericValueField
+                        label={r("defaultsLabel")}
+                        value={
+                          field.default_value === null ||
+                          field.default_value === undefined
+                            ? null
+                            : Number(field.default_value)
+                        }
+                        scale={
+                          ["integer", "trip_count"].includes(field.type)
+                            ? 0
+                            : field.type === "currency"
+                              ? 2
+                              : 6
+                        }
+                        signed={field.type !== "trip_count"}
+                        onValidityChange={(valid) =>
+                          setInvalidNumbers((current) => ({
+                            ...current,
+                            [`${field.id}.default`]: !valid,
+                          }))
+                        }
+                        onChange={(value) =>
+                          update(field.id, { default_value: value })
+                        }
+                      />
+                    ) : (
+                      <>
+                        <InputField
+                          label={r("defaultsLabel")}
+                          value={
+                            field.default_value === null ||
+                            field.default_value === undefined
+                              ? ""
+                              : Array.isArray(field.default_value)
+                                ? field.default_value.join(", ")
+                                : String(field.default_value)
+                          }
+                          onChangeText={(value) => {
+                            let parsed: ProgressField["default_value"] =
+                              value || null;
+                            if (
+                              [
+                                "integer",
+                                "decimal",
+                                "currency",
+                                "trip_count",
+                              ].includes(field.type) &&
+                              value !== ""
+                            )
+                              parsed = Number(value);
+                            if (
+                              ["boolean", "checkbox"].includes(field.type) &&
+                              value !== ""
+                            )
+                              parsed = value.toLowerCase() === "true";
+                            if (field.type === "multiselect" && value !== "")
+                              parsed = value
+                                .split(",")
+                                .map((v) => v.trim())
+                                .filter(Boolean);
+                            update(field.id, { default_value: parsed });
+                          }}
+                        />
+                      </>
                     )}
-                    onPress={() =>
-                      update(field.id, {
-                        visibility:
-                          field.visibility === "OWNER" ? "ALL" : "OWNER",
-                      })
-                    }
-                  />
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <AppText>{r("reportable")}</AppText>
-                    <Switch
-                      accessibilityLabel={r("reportable")}
-                      value={field.reportable}
-                      onValueChange={(reportable) =>
-                        update(field.id, { reportable })
+                    <InputField
+                      label={r("fieldHelper")}
+                      optional
+                      maxLength={300}
+                      value={field.helper}
+                      onChangeText={(helper) => update(field.id, { helper })}
+                    />
+                    <FilterChips
+                      items={fieldTypes.map((type) => ({
+                        id: type,
+                        label:
+                          type === "date"
+                            ? r("dateType")
+                            : r(type as keyof typeof recordCopy),
+                      }))}
+                      value={field.type}
+                      onChange={(type) =>
+                        update(field.id, {
+                          type: type as ProgressField["type"],
+                        })
                       }
                     />
-                  </View>
-                  {field.reportable &&
-                    (["SUM", "AVG", "LAST"] as const).map((aggregation) => (
-                      <AppButton
-                        key={aggregation}
-                        secondary={field.aggregation !== aggregation}
-                        label={r(aggregation)}
-                        onPress={() => update(field.id, { aggregation })}
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <AppText>{r("required")}</AppText>
+                      <Switch
+                        accessibilityLabel={r("required")}
+                        value={field.required}
+                        onValueChange={(required) =>
+                          update(field.id, { required })
+                        }
                       />
-                    ))}
-                  <AppButton
-                    secondary
-                    label={r("moveUp")}
-                    disabled={index === 0}
-                    onPress={() => move(index, -1)}
-                  />
-                  <AppButton
-                    secondary
-                    label={r("moveDown")}
-                    disabled={index === definition.fields.length - 1}
-                    onPress={() => move(index, 1)}
-                  />
-                  <AppButton
-                    secondary
-                    label={r("duplicate")}
-                    onPress={() =>
-                      setDefinition((d) => ({
-                        ...d,
-                        fields: [
-                          ...d.fields,
-                          { ...field, id: Crypto.randomUUID() },
-                        ],
-                      }))
-                    }
-                  />
-                  <AppButton
-                    secondary
-                    label={r("remove")}
-                    onPress={() =>
-                      setDefinition((d) => ({
-                        ...d,
-                        fields: d.fields.filter((f) => f.id !== field.id),
-                      }))
-                    }
-                  />
+                    </View>
+                    {["select", "multiselect"].includes(field.type) && (
+                      <InputField
+                        label={r("options")}
+                        required
+                        value={
+                          optionDrafts[field.id] ?? field.options.join(", ")
+                        }
+                        onChangeText={(options) => {
+                          setOptionDrafts((d) => ({
+                            ...d,
+                            [field.id]: options,
+                          }));
+                          update(field.id, {
+                            options: options
+                              .split(",")
+                              .map((s) => s.trim())
+                              .filter(Boolean),
+                          });
+                        }}
+                      />
+                    )}
+                    {![
+                      "boolean",
+                      "checkbox",
+                      "date",
+                      "time",
+                      "select",
+                      "multiselect",
+                    ].includes(field.type) &&
+                      (["min", "max"] as const).map((bound) => (
+                        <NumericValueField
+                          key={bound}
+                          label={r(bound)}
+                          value={field[bound]}
+                          scale={
+                            [
+                              "integer",
+                              "trip_count",
+                              "text",
+                              "paragraph",
+                              "location_text",
+                              "start_location",
+                              "destination",
+                              "route",
+                            ].includes(field.type)
+                              ? 0
+                              : field.type === "currency"
+                                ? 2
+                                : 6
+                          }
+                          signed={["integer", "decimal", "currency"].includes(
+                            field.type,
+                          )}
+                          onValidityChange={(valid) =>
+                            setInvalidNumbers((current) => ({
+                              ...current,
+                              [`${field.id}.${bound}`]: !valid,
+                            }))
+                          }
+                          onChange={(value) =>
+                            update(field.id, { [bound]: value })
+                          }
+                        />
+                      ))}
+                    <AppButton
+                      secondary={field.visibility !== "OWNER"}
+                      label={r(
+                        field.visibility === "OWNER" ? "private" : "public",
+                      )}
+                      onPress={() =>
+                        update(field.id, {
+                          visibility:
+                            field.visibility === "OWNER" ? "ALL" : "OWNER",
+                        })
+                      }
+                    />
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <AppText>{r("reportable")}</AppText>
+                      <Switch
+                        accessibilityLabel={r("reportable")}
+                        value={field.reportable}
+                        disabled={
+                          ![
+                            "integer",
+                            "decimal",
+                            "currency",
+                            "trip_count",
+                          ].includes(field.type)
+                        }
+                        onValueChange={(reportable) =>
+                          update(field.id, { reportable })
+                        }
+                      />
+                    </View>
+                    {field.reportable && (
+                      <FilterChips
+                        items={(["SUM", "AVG", "LAST"] as const).map((id) => ({
+                          id,
+                          label: r(id),
+                        }))}
+                        value={field.aggregation}
+                        onChange={(aggregation) =>
+                          update(field.id, {
+                            aggregation:
+                              aggregation as ProgressField["aggregation"],
+                          })
+                        }
+                      />
+                    )}
+                    <AppButton
+                      secondary
+                      label={r("moveUp")}
+                      disabled={index === 0}
+                      onPress={() => move(index, -1)}
+                    />
+                    <AppButton
+                      secondary
+                      label={r("moveDown")}
+                      disabled={index === definition.fields.length - 1}
+                      onPress={() => move(index, 1)}
+                    />
+                    <AppButton
+                      secondary
+                      label={r("duplicate")}
+                      onPress={() =>
+                        setDefinition((d) => ({
+                          ...d,
+                          fields: [
+                            ...d.fields,
+                            { ...field, id: Crypto.randomUUID() },
+                          ],
+                        }))
+                      }
+                    />
+                    <AppButton
+                      secondary
+                      label={r("remove")}
+                      onPress={() =>
+                        setDefinition((d) => ({
+                          ...d,
+                          fields: d.fields.filter((f) => f.id !== field.id),
+                        }))
+                      }
+                    />
+                  </Expandable>
                 </Card>
               ))}
               <AppButton
@@ -480,15 +672,22 @@ function BuilderEditor() {
           <Card>
             <AppText large>{r("versions")}</AppText>
             {query.data?.map((version) => (
-              <AppButton
-                key={version.id}
-                secondary
-                label={`${version.version} · ${version.created_at} · ${version.published ? r("published") : r("history")}`}
-                onPress={() => {
-                  setDefinition(version.definition);
-                  setPreview(true);
-                }}
-              />
+              <View key={version.id} style={{ gap: 4, paddingBottom: 10 }}>
+                <MenuRow
+                  label={`${r("versions")} ${version.version}`}
+                  subtitle={version.published ? r("published") : r("history")}
+                  icon="layers-outline"
+                  tone="violet"
+                  onPress={() => {
+                    setDefinition(version.definition);
+                    setPreview(true);
+                  }}
+                />
+                <Timestamp
+                  value={version.created_at}
+                  timezone={vehicle?.timezone}
+                />
+              </View>
             ))}
           </Card>
         </>

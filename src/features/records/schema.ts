@@ -1,3 +1,7 @@
+import { canonicalDeadline } from "./linkedReminder";
+import { recordFormIssues, type RecordFormContext } from "./formRules";
+import { fuelTypes, fuelUnit } from "@/src/features/garage/energy";
+import { t } from "@/src/lib/i18n";
 import { r } from "./copy";
 import { domainCopy as c } from "@/src/lib/domainCopy";
 import { z } from "zod";
@@ -48,19 +52,19 @@ const optionalReading = z.union([
 ]);
 export const baseFormSchema = z.object({
   event_at: z.iso.datetime({ offset: true }),
-  title: z.string().max(160),
+  title: z.string().trim().max(160),
   amount: z.string(),
   quantity: z.string(),
   unit_price: z.string(),
   unit: z.enum(["L", "KG", "KWH"]),
   energy_type: z.string(),
   is_full_tank: z.boolean(),
-  category: z.string(),
+  category: z.string().trim().max(60),
   km: optionalReading,
   hours: optionalReading,
   observed_at: z.string(),
-  station_name: z.string(),
-  vendor: z.string(),
+  station_name: z.string().trim().max(160),
+  vendor: z.string().trim().max(160),
   payment_method: z.string(),
   notes: z.string().max(3000),
   principal: z.string(),
@@ -71,7 +75,7 @@ export const baseFormSchema = z.object({
   threshold_km: z.string(),
   threshold_hours: z.string(),
   recurrence: z.enum(["NONE", "MONTHLY", "YEARLY"]),
-  reference: z.string(),
+  reference: z.string().trim().max(160),
   progress_date: z.string(),
   answers: z.record(z.string(), z.unknown()),
   form_version_id: z.string(),
@@ -115,8 +119,22 @@ export function defaultEntry(): EntryForm {
     confirmed_observation: false,
   };
 }
-export function entryPayload(kind: Kind, input: EntryForm): Payload {
-  const v = baseFormSchema.parse(input);
+export function recordInputSchema(kind: Kind, context: RecordFormContext = {}) {
+  return baseFormSchema.superRefine((value, ctx) => {
+    for (const issue of recordFormIssues(kind, value, context))
+      ctx.addIssue({
+        code: "custom",
+        path: [issue.field],
+        message: issue.message,
+      });
+  });
+}
+export function entryPayload(
+  kind: Kind,
+  input: EntryForm,
+  context: RecordFormContext = {},
+): Payload {
+  const v = recordInputSchema(kind, context).parse(input);
   let metadata: Payload;
   let items: { title: string; amount_paise: number }[];
   try {
@@ -125,7 +143,11 @@ export function entryPayload(kind: Kind, input: EntryForm): Payload {
       .array(
         z.object({
           title: z.string().trim().min(1).max(160),
-          amount_paise: z.number().int().positive(),
+          amount_paise: z
+            .number()
+            .int()
+            .positive()
+            .max(Number.MAX_SAFE_INTEGER),
         }),
       )
       .parse(JSON.parse(v.items));
@@ -139,6 +161,7 @@ export function entryPayload(kind: Kind, input: EntryForm): Payload {
     km: v.km === "" ? null : Number(v.km),
     hours: v.hours === "" ? null : Number(v.hours),
     reading_at: v.km !== "" || v.hours !== "" ? v.observed_at : null,
+    ...(kind === "meters" ? { event_at: v.observed_at } : {}),
   };
   if (
     (payload.km !== null || payload.hours !== null) &&
@@ -153,8 +176,14 @@ export function entryPayload(kind: Kind, input: EntryForm): Payload {
     !v.confirmed_observation
   )
     throw new Error(r("fillConfirmation"));
-  if (kind === "fuel")
+  if (kind === "fuel") {
+    if (
+      !fuelTypes.some((type) => type === v.energy_type) ||
+      v.unit !== fuelUnit(v.energy_type)
+    )
+      throw new Error(t("fuelMismatch"));
     Object.assign(payload, solveFuel(v.amount, v.quantity, v.unit_price));
+  }
   if (kind === "expenses") {
     if (!v.title.trim()) throw new Error(c.expenseTitle);
     Object.assign(payload, {
@@ -186,11 +215,15 @@ export function entryPayload(kind: Kind, input: EntryForm): Payload {
       throw new Error(c.threshold);
   return payload;
 }
-export function formFromRecord(record: RecordEntry): EntryForm {
+export function formFromRecord(
+  record: RecordEntry,
+  timezone = "Asia/Kolkata",
+): EntryForm {
   const p = record.payload;
   return {
     ...defaultEntry(),
     ...p,
+    due_at: p.due_at ? canonicalDeadline(String(p.due_at), timezone) : "",
     amount: p.amount_paise ? String(Number(p.amount_paise) / 100) : "",
     unit_price: p.unit_price_paise
       ? String(Number(p.unit_price_paise) / 100)

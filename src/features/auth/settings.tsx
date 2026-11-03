@@ -1,11 +1,17 @@
-import { VehicleHeader } from "@/src/components/navigation/VehicleHeader";
+import { AdditionalOptions } from "@/src/components/ui/AdditionalOptions";
+import { errorMessage } from "@/src/lib/errors";
+import { Card } from "@/src/components/ui";
+import {
+  MenuRow,
+  SectionHeading,
+  InfoRows,
+  ColorIcon,
+} from "@/src/components/ui/premium";
 import { SignOutButton } from "./SignOutButton";
 import { notificationPermission } from "@/src/features/reminders/notifications";
 import { r } from "@/src/features/records/copy";
-import { useActiveVehicle } from "@/src/features/garage/hooks";
-import { usePermissions } from "@/src/features/records/hooks";
 import { useEffect, useState, useRef } from "react";
-import { router } from "expo-router";
+import { router, usePreventRemove } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useProfile, updateProfile } from "./profile";
 import { useSession, useAccountId } from "./session";
@@ -15,140 +21,81 @@ import {
   AppText,
   InputField,
   Choice,
+  ConfirmDialog,
   ErrorState,
   useToast,
 } from "@/src/components/ui";
 import { t } from "@/src/lib/i18n";
 import { draftCount } from "@/src/lib/db";
 import type { ThemeMode } from "@/src/lib/theme";
-export function More() {
-  const active = useActiveVehicle();
-  const access = usePermissions(active.vehicle?.id);
-  return (
-    <Screen title={t("more")}>
-      <SignOutButton />
-      <VehicleHeader />
-      {active.error && (
-        <ErrorState
-          message={active.error.message}
-          retry={() => void active.refetch()}
-        />
-      )}
-      {access.error && (
-        <ErrorState
-          message={access.error.message}
-          retry={() => void access.refetch()}
-        />
-      )}
-      <AppButton label={t("add")} onPress={() => router.push("/garage/add")} />
-      {access.data?.["meters.create"] && (
-        <AppButton
-          label={r("addMeter")}
-          onPress={() =>
-            router.push({
-              pathname: "/records/[kind]/[action]",
-              params: { kind: "meters", action: "add" },
-            })
-          }
-        />
-      )}
-      {(["meters", "progress", "documents", "reminders"] as const)
-        .filter(
-          (kind) =>
-            access.data?.[
-              kind === "progress" ? "progress.view" : `${kind}.read`
-            ],
-        )
-        .map((kind) => (
-          <AppButton
-            key={kind}
-            secondary
-            label={r(kind)}
-            onPress={() =>
-              kind === "meters"
-                ? router.push("/meters/history")
-                : router.push({ pathname: "/records/[kind]", params: { kind } })
-            }
-          />
-        ))}
-      {access.data?.["expenses.create"] && (
-        <AppButton
-          label={r("addMaintenance")}
-          onPress={() =>
-            router.push({
-              pathname: "/records/[kind]/[action]",
-              params: { kind: "expenses", action: "add", category: "SERVICE" },
-            })
-          }
-        />
-      )}
-      {access.data?.["expenses.read"] && (
-        <AppButton
-          secondary
-          label={r("maintenance")}
-          onPress={() => router.push("/maintenance")}
-        />
-      )}
-      {access.data?.["reports.read"] && (
-        <AppButton
-          secondary
-          label={r("reports")}
-          onPress={() => router.push("/reports")}
-        />
-      )}
-      {access.data?.owner && (
-        <>
-          <AppButton
-            secondary
-            label={r("members")}
-            onPress={() => router.push("/owner/members")}
-          />
-          <AppButton
-            secondary
-            label={r("builder")}
-            onPress={() => router.push("/owner/form-builder")}
-          />
-        </>
-      )}
-      <AppButton
-        secondary
-        label={r("security")}
-        onPress={() => router.push("/settings/security")}
-      />
-      <AppButton
-        secondary
-        label={r("help")}
-        onPress={() => router.push("/settings/help")}
-      />
-      {(
-        [
-          { key: "garage", href: "/garage" },
-          { key: "profile", href: "/settings/profile" },
-          { key: "settings", href: "/settings" },
-          { key: "sync", href: "/settings/sync" },
-          { key: "about", href: "/settings/about" },
-        ] as const
-      ).map((item) => (
-        <AppButton
-          key={item.key}
-          secondary
-          label={t(item.key)}
-          onPress={() => router.push(item.href)}
-        />
-      ))}
-    </Screen>
-  );
-}
+export { MoreDrawerRoute as More } from "@/src/components/navigation/MoreDrawer";
 export function Settings() {
   const auth = useSession();
   const toast = useToast();
   const [error, setError] = useState("");
   return (
-    <Screen title={t("settings")}>
-      <AppButton
-        label={t("profile")}
-        onPress={() => router.push("/settings/profile")}
-      />
+    <Screen title={t("settings")} compact>
+      <Card style={{ padding: 16 }}>
+        <SectionHeading title={t("uiAccount")} />
+        <MenuRow
+          label={t("profile")}
+          icon="person-circle"
+          tone="violet"
+          onPress={() => router.push("/settings/profile")}
+        />
+        <MenuRow
+          label={r("security")}
+          icon="shield-checkmark"
+          tone="mint"
+          onPress={() => router.push("/settings/security")}
+        />
+      </Card>
+      <Card style={{ padding: 16 }}>
+        <SectionHeading title={t("uiPreferences")} />
+        <MenuRow
+          label={t("appearance")}
+          icon="color-palette"
+          tone="violet"
+          onPress={() => router.push("/settings/profile")}
+        />
+        <InfoRows items={[{ label: t("language"), value: t("english") }]} />
+        <AppText muted>{t("hindi")}</AppText>
+        <MenuRow
+          label={r("notificationPermission")}
+          icon="notifications"
+          tone="coral"
+          onPress={() => {
+            void notificationPermission()
+              .then((allowed) =>
+                toast(
+                  r(allowed ? "notificationsEnabled" : "notificationDenied"),
+                  allowed ? "info" : "warning",
+                ),
+              )
+              .catch((e) => setError(String(e)));
+          }}
+        />
+      </Card>
+      <Card style={{ padding: 16 }}>
+        <MenuRow
+          label={t("sync")}
+          icon="cloud-upload"
+          tone="cyan"
+          onPress={() => router.push("/settings/sync")}
+        />
+        <MenuRow
+          label={t("legal")}
+          icon="document-text"
+          tone="amber"
+          onPress={() => router.push("/auth/legal")}
+        />
+        <MenuRow
+          label={t("about")}
+          icon="information-circle"
+          tone="blue"
+          onPress={() => router.push("/settings/about")}
+        />
+      </Card>
       {__DEV__ && !auth.development && (
         <AppButton
           secondary
@@ -158,33 +105,6 @@ export function Settings() {
           }
         />
       )}
-      <AppButton
-        secondary
-        label={r("notificationPermission")}
-        onPress={() => {
-          void notificationPermission()
-            .then((allowed) =>
-              toast(
-                r(allowed ? "notificationsEnabled" : "notificationDenied"),
-                allowed ? "info" : "warning",
-              ),
-            )
-            .catch((e) => setError(String(e)));
-        }}
-      />
-      <AppText>{t("language")}</AppText>
-      <AppText>{t("english")}</AppText>
-      <AppButton label={t("hindi")} disabled onPress={() => undefined} />
-      <AppButton
-        secondary
-        label={t("appearance")}
-        onPress={() => router.push("/settings/profile")}
-      />
-      <AppButton
-        secondary
-        label={t("legal")}
-        onPress={() => router.push("/auth/legal")}
-      />
       <SignOutButton />
       {error && <ErrorState message={error} retry={() => setError("")} />}
     </Screen>
@@ -202,6 +122,9 @@ export function Profile() {
   const [theme, setTheme] = useState<ThemeMode>("system");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [additionalOpen, setAdditionalOpen] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   useEffect(() => {
     if (query.data && !hydrated.current) {
       hydrated.current = true;
@@ -209,8 +132,26 @@ export function Profile() {
       setName(query.data.display_name);
       setTheme(query.data.theme);
       setTimezone(query.data.timezone);
+      setInitialized(true);
     }
   }, [query.data]);
+  const dirty =
+    initialized &&
+    !!query.data &&
+    (name !== query.data.display_name ||
+      theme !== query.data.theme ||
+      timezone !== query.data.timezone);
+  const disablePrevention = usePreventRemove(dirty && !leaving, ({ repeat }) =>
+    ConfirmDialog(
+      t("unsaved"),
+      t("discardUnsaved"),
+      () => {
+        setLeaving(true);
+        repeat();
+      },
+      { cancelLabel: t("keepEditing"), confirmLabel: t("leaveForm") },
+    ),
+  );
   const save = async () => {
     setBusy(true);
     try {
@@ -230,16 +171,20 @@ export function Profile() {
         queryKey: [user, "profile"],
       });
       toast(t("saved"));
+      setLeaving(true);
+      disablePrevention();
       if (router.canGoBack()) router.back();
       else router.replace("/(tabs)");
     } catch (e) {
-      setError(String(e));
+      setError(errorMessage(e));
+      if (e instanceof RangeError) setAdditionalOpen(true);
     } finally {
       setBusy(false);
     }
   };
   return (
     <Screen
+      compact
       title={t("profile")}
       loading={query.isPending || busy}
       action={
@@ -250,18 +195,32 @@ export function Profile() {
         />
       }
     >
-      <InputField label={t("name")} value={name} onChangeText={setName} />
       <InputField
-        label={t("timezone")}
-        value={timezone}
-        onChangeText={setTimezone}
+        label={t("name")}
+        required
+        maxLength={120}
+        value={name}
+        onChangeText={setName}
       />
-      <AppText>{t("appearance")}</AppText>
-      <Choice
-        values={["light", "dark", "system"] as const}
-        value={theme}
-        onChange={setTheme}
-      />
+      <AdditionalOptions
+        open={additionalOpen}
+        onToggle={() => setAdditionalOpen((value) => !value)}
+      >
+        <InputField
+          label={t("timezone")}
+          required
+          maxLength={100}
+          value={timezone}
+          onChangeText={setTimezone}
+        />
+        <AppText>{t("appearance")}</AppText>
+        <Choice
+          compact
+          values={["light", "dark", "system"] as const}
+          value={theme}
+          onChange={setTheme}
+        />
+      </AdditionalOptions>
       {query.error && (
         <ErrorState
           message={query.error.message}
@@ -298,14 +257,21 @@ export function Sync() {
 }
 export function About() {
   return (
-    <Screen title={t("about")}>
-      <AppText large>{t("app")}</AppText>
-      <AppText>{t("tagline")}</AppText>
-      <AppText>{t("roleInfo")}</AppText>
-      <AppButton
-        label={t("legal")}
-        onPress={() => router.push("/auth/legal")}
-      />
+    <Screen title={t("about")} compact>
+      <Card style={{ padding: 18 }}>
+        <ColorIcon name="pulse" tone="mint" size={26} />
+        <AppText large>{t("app")}</AppText>
+        <AppText muted>{t("tagline")}</AppText>
+      </Card>
+      <Card style={{ padding: 16 }}>
+        <AppText>{t("roleInfo")}</AppText>
+        <MenuRow
+          label={t("legal")}
+          icon="document-text"
+          tone="amber"
+          onPress={() => router.push("/auth/legal")}
+        />
+      </Card>
     </Screen>
   );
 }

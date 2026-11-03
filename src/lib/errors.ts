@@ -1,5 +1,8 @@
+import { ZodError } from "zod";
 import { t } from "./i18n";
 export function errorMessage(value: unknown): string {
+  if (value instanceof ZodError)
+    return value.issues[0]?.message ?? t("invalidData");
   if (value instanceof Error) return value.message;
   if (
     value &&
@@ -11,6 +14,8 @@ export function errorMessage(value: unknown): string {
   return t("error");
 }
 export function readableError(message: string) {
+  if (/VEHICLE_FUEL_MISMATCH|FUEL_UNIT_INVALID/i.test(message))
+    return t("fuelMismatch");
   if (/PERMISSION|FORBIDDEN|OWNER_REQUIRED/i.test(message))
     return t("permissionDenied");
   if (/EMAIL_NOT_VERIFIED/i.test(message)) return t("verify");

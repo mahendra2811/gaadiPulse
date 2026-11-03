@@ -1,3 +1,5 @@
+> Current update (2026-10-24): root assets now use the user's updated `my docs/assets/` pack. Subtype artwork is the 43-image v2 PNG registry, replacing legacy subtype SVGs. See ASSETS.md and assets/vehicle-subtypes/README.md for current provenance/integration. Earlier starter-art descriptions below are historical.
+
 # Visual asset manifest and requirements
 
 All included imagery is newly created for this project and saved locally; no remote links or vendor/manufacturer copyrighted artwork required. Use Expo asset imports / bundled image static references. Local assets are real images; user receipts and vehicle photo uploads are **not** part of Phase 1.

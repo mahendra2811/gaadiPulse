@@ -1,3 +1,4 @@
+import { fuelTypes } from "@/src/features/garage/energy";
 import { z } from "zod";
 import type { Kind, Payload } from "./schema";
 const amount = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
@@ -13,14 +14,7 @@ export const fuelPayloadSchema = z
     quantity: z.number().positive().max(1000000),
     unit_price_paise: amount,
     unit: z.enum(["L", "KG", "KWH"]),
-    energy_type: z.enum([
-      "PETROL",
-      "DIESEL",
-      "ELECTRIC",
-      "CNG",
-      "HYBRID",
-      "OTHER",
-    ]),
+    energy_type: z.enum(fuelTypes),
     is_full_tank: z.boolean(),
     ...meters,
   })

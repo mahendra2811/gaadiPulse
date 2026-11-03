@@ -131,6 +131,8 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
           {stage === "details" ? (
             <InputField
               label={t("email")}
+              required
+              maxLength={254}
               value={email}
               onChangeText={setEmail}
               editable={!busy}
@@ -152,6 +154,7 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
               </AppText>
               <InputField
                 label={t("code")}
+                required
                 value={code}
                 onChangeText={setCode}
                 editable={!busy}
@@ -165,6 +168,8 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
             <>
               <InputField
                 label={t(stage === "password" ? "newPassword" : "password")}
+                required
+                maxLength={128}
                 value={password}
                 onChangeText={setPassword}
                 editable={!busy}
@@ -180,6 +185,8 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
                   <AppText muted>{t("passwordRules")}</AppText>
                   <InputField
                     label={t("confirmPassword")}
+                    required
+                    maxLength={128}
                     value={confirm}
                     onChangeText={setConfirm}
                     editable={!busy}

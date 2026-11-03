@@ -1,33 +1,21 @@
-import sharp from "sharp";
-import { readFile, writeFile } from "node:fs/promises";
-const assets = new URL("../assets/", import.meta.url);
-const icon = await readFile(new URL("app-icon.svg", assets));
-await sharp(icon)
-  .resize(1024, 1024)
-  .flatten({ background: "#122C2A" })
-  .png()
-  .toFile(new URL("android-store-icon.png", assets).pathname);
-await sharp(new URL("adaptive-icon-foreground.svg", assets).pathname)
-  .resize(432, 432)
-  .png()
-  .toFile(new URL("adaptive-icon-foreground.png", assets).pathname);
-await sharp(new URL("splash-screen.svg", assets).pathname)
-  .resize(1080, 1920)
-  .png()
-  .toFile(new URL("splash-screen.png", assets).pathname);
-const result = [];
-for (const [file, width, height] of [
-  ["android-store-icon.png", 1024, 1024],
-  ["adaptive-icon-foreground.png", 432, 432],
-  ["splash-screen.png", 1080, 1920],
-]) {
-  const info = await sharp(new URL(file, assets).pathname).metadata();
-  if (info.width !== width || info.height !== height)
-    throw Error(`Invalid dimensions: ${file}`);
-  result.push({ file, width, height });
-}
-await writeFile(
-  new URL("../docs/asset-validation.json", import.meta.url),
-  JSON.stringify(result, null, 2) + "\n",
+/** Import the user-maintained artwork without regenerating obsolete illustrations. */
+import { cp, mkdir, readdir, rm } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+const source = new URL("../my docs/assets/", import.meta.url);
+const destination = new URL("../assets/", import.meta.url);
+await mkdir(destination, { recursive: true });
+await cp(source, destination, {
+  recursive: true,
+  force: true,
+  filter: (path) => !path.split("/").some((part) => part.startsWith(".")),
+});
+// The replacement pack has PNG artwork; remove the obsolete distorted subtype SVGs.
+const subtypePath = new URL("vehicle-subtypes/", destination);
+const sourceNames = new Set(
+  await readdir(new URL("vehicle-subtypes/", source)),
 );
-console.log("Asset dimensions verified", result);
+for (const name of await readdir(subtypePath)) {
+  if (name.endsWith(".svg") && !sourceNames.has(name))
+    await rm(new URL(name, subtypePath));
+}
+console.log(`Imported supplied artwork from ${fileURLToPath(source)}`);

@@ -1,3 +1,5 @@
+import { DateTimeInput } from "@/src/components/ui/fields";
+import { ChoiceChip } from "@/src/components/ui/premium";
 import { View, Switch } from "react-native";
 import { AppText, InputField, AppButton, Card } from "@/src/components/ui";
 import type { ProgressField } from "./schema";
@@ -36,7 +38,7 @@ export function DynamicFields({
             );
           };
           return (
-            <Card key={field.id}>
+            <Card key={field.id} style={{ padding: 14, gap: 8 }}>
               <AppText>
                 {field.label}
                 {field.required ? " *" : ""}
@@ -70,23 +72,52 @@ export function DynamicFields({
                   />
                 </View>
               ) : field.type === "select" || field.type === "multiselect" ? (
-                <View style={{ gap: 8 }}>
+                <View
+                  style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}
+                >
                   {field.options.map((option) => (
-                    <AppButton
+                    <ChoiceChip
                       key={option}
                       label={option}
-                      secondary={
+                      selected={
                         field.type === "select"
-                          ? value !== option
-                          : !Array.isArray(value) || !value.includes(option)
+                          ? value === option
+                          : Array.isArray(value) && value.includes(option)
                       }
                       onPress={() => toggleOption(option)}
                     />
                   ))}
                 </View>
+              ) : field.type === "date" || field.type === "time" ? (
+                <DateTimeInput
+                  label={field.label}
+                  mode={field.type}
+                  allowFuture
+                  required={field.required}
+                  optional={!field.required}
+                  value={String(value ?? "")}
+                  onChange={(text) => onChange(field.id, text)}
+                />
               ) : (
                 <InputField
                   label={field.label}
+                  required={field.required}
+                  optional={!field.required}
+                  numeric={
+                    ["integer", "decimal", "currency", "trip_count"].includes(
+                      field.type,
+                    )
+                      ? {
+                          scale: ["integer", "trip_count"].includes(field.type)
+                            ? 0
+                            : field.type === "currency"
+                              ? 2
+                              : 6,
+                          signed: field.type !== "trip_count",
+                          wholeDigits: 15,
+                        }
+                      : undefined
+                  }
                   value={String(value ?? "")}
                   multiline={field.type === "paragraph"}
                   keyboardType={

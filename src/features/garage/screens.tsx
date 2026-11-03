@@ -1,3 +1,6 @@
+import { Timestamp } from "@/src/components/ui/Timestamp";
+import { recordVisuals } from "@/src/features/records/RecordCard";
+import { SearchField } from "@/src/components/ui/SearchField";
 import { usePermissions } from "@/src/features/records/hooks";
 import { r } from "@/src/features/records/copy";
 import { Dashboard } from "@/src/features/dashboard/Dashboard";
@@ -5,7 +8,16 @@ import { developmentReadings } from "@/src/features/development/repository";
 import { meterObservationSchema } from "@/src/lib/observations";
 import { useVehicleAccess } from "@/src/hooks/useVehicleAccess";
 import { useState } from "react";
-import { Image } from "react-native";
+import { Image, View, Text } from "react-native";
+import {
+  ColorIcon,
+  SectionHeading,
+  MotionPress,
+  TextAction,
+  ActionTile,
+  InfoRows,
+} from "@/src/components/ui/premium";
+import { useTheme } from "@/src/lib/theme";
 import { router, useLocalSearchParams } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useVehicles, useActiveVehicle } from "./hooks";
@@ -17,61 +29,155 @@ import {
   AppButton,
   EmptyState,
   ErrorState,
-  InputField,
   ConfirmDialog,
   useToast,
 } from "@/src/components/ui";
 import { VehicleHeader } from "@/src/components/navigation/VehicleHeader";
-import { artwork, vehicleArt } from "@/src/lib/assets";
+import { subtypeLabel } from "./subtypes";
+import { vehicleArt } from "@/src/lib/assets";
 import { t } from "@/src/lib/i18n";
 import { client } from "@/src/lib/supabase";
 import { useSession, useAccountId } from "@/src/features/auth/session";
 export function Garage() {
   const query = useVehicles();
   const [search, setSearch] = useState("");
+  const colors = useTheme();
+  const vehicles =
+    query.data?.filter((v) =>
+      `${v.nickname} ${v.registration_number ?? ""} ${v.model} ${subtypeLabel(v.subtype)}`
+        .toLowerCase()
+        .includes(search.toLowerCase()),
+    ) ?? [];
   return (
-    <Screen title={t("garage")} loading={query.isPending}>
-      <AppButton label={t("add")} onPress={() => router.push("/garage/add")} />
-      <InputField label={t("search")} value={search} onChangeText={setSearch} />
+    <Screen title={t("garage")} loading={query.isPending} compact>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+        }}
+      >
+        <View style={{ flex: 1 }}>
+          <AppText muted>{t("uiGarageHint")}</AppText>
+        </View>
+        <TextAction
+          label={t("add")}
+          icon="add-circle"
+          onPress={() => router.push("/garage/add")}
+        />
+      </View>
+      <SearchField value={search} onChange={setSearch} />
       {query.error ? (
         <ErrorState
           message={query.error.message}
           retry={() => void query.refetch()}
         />
-      ) : query.data?.length === 0 ? (
-        <EmptyState title={t("empty")} body={t("emptyBody")} />
+      ) : !query.isPending && query.data?.length === 0 ? (
+        <EmptyState
+          title={t("empty")}
+          body={t("emptyBody")}
+          action={
+            <AppButton
+              label={t("add")}
+              onPress={() => router.push("/garage/add")}
+            />
+          }
+        />
       ) : (
-        query.data
-          ?.filter((v) =>
-            `${v.nickname} ${v.registration_number} ${v.model}`
-              .toLowerCase()
-              .includes(search.toLowerCase()),
-          )
-          .map((v) => (
-            <Card key={v.id}>
-              <Image
-                source={artwork[v.category]}
-                style={{ width: "100%", height: 110, resizeMode: "contain" }}
-              />
-              <AppText large>
-                {v.nickname || v.registration_number || v.model}
-              </AppText>
-              <AppText>
-                {t(v.role === "OWNER" ? "owner" : "pilot")}
-                {v.archived_at ? ` · ${t("archived")}` : ""}
-              </AppText>
-              <AppButton
-                secondary
-                label={t("details")}
+        <>
+          {!query.isPending && !vehicles.length && (
+            <AppText muted>{t("uiNoSearchResults")}</AppText>
+          )}
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+            {vehicles.map((v) => (
+              <MotionPress
+                key={v.id}
+                label={`${t("details")}: ${v.nickname || v.registration_number || v.model}`}
                 onPress={() =>
                   router.push({
                     pathname: "/garage/[id]",
                     params: { id: v.id },
                   })
                 }
-              />
-            </Card>
-          ))
+                style={{ width: "47%", flexGrow: 1, maxWidth: "49%" }}
+              >
+                <View
+                  style={{
+                    padding: 8,
+                    borderRadius: 20,
+                    backgroundColor: colors.surface,
+                    gap: 8,
+                    borderWidth: 1,
+                    borderColor: colors.line,
+                    shadowColor: "#163B46",
+                    shadowOpacity: 0.05,
+                    shadowOffset: { width: 0, height: 3 },
+                    shadowRadius: 8,
+                    elevation: 1,
+                  }}
+                >
+                  <Image
+                    source={vehicleArt(v.category, v.subtype)}
+                    style={{
+                      width: "100%",
+                      aspectRatio: 1,
+                      borderRadius: 14,
+                      backgroundColor: "#F1F9F6",
+                    }}
+                    resizeMode="contain"
+                    accessible={false}
+                  />
+                  <View
+                    style={{ paddingHorizontal: 3, gap: 5, paddingBottom: 4 }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 15,
+                        fontWeight: "700",
+                        color: colors.ink,
+                      }}
+                    >
+                      {v.nickname || v.registration_number || v.model}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: colors.muted }}>
+                      {subtypeLabel(v.subtype)}
+                    </Text>
+                    <View
+                      style={{ flexDirection: "row", flexWrap: "wrap", gap: 4 }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          fontWeight: "600",
+                          color: colors.primary,
+                          backgroundColor: colors.background,
+                          paddingHorizontal: 7,
+                          paddingVertical: 4,
+                          borderRadius: 8,
+                        }}
+                      >
+                        {t(v.role === "OWNER" ? "owner" : "pilot")} ·{" "}
+                        {t(v.meter_mode)}
+                      </Text>
+                      {v.archived_at && (
+                        <Text
+                          style={{
+                            fontSize: 11,
+                            color: colors.muted,
+                            paddingVertical: 4,
+                          }}
+                        >
+                          {t("archived")}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                </View>
+              </MotionPress>
+            ))}
+          </View>
+        </>
       )}
     </Screen>
   );
@@ -99,44 +205,58 @@ export function VehicleDetails() {
     }
   };
   return (
-    <Screen title={t("details")} loading={query.isPending || busy}>
+    <Screen compact title={t("details")} loading={query.isPending || busy}>
       {vehicle ? (
         <>
-          <Image
-            source={vehicleArt(vehicle.category, vehicle.subtype)}
-            style={{ width: "100%", height: 180, resizeMode: "contain" }}
-          />
-          <AppText large>{vehicle.nickname || vehicle.model}</AppText>
-          <AppText>{vehicle.registration_number}</AppText>
-          <AppText>
-            {vehicle.brand} {vehicle.model}
-          </AppText>
-          <AppText>
-            {t(vehicle.meter_mode)} · {vehicle.timezone}
-          </AppText>
-          <AppText>{t(vehicle.role === "OWNER" ? "owner" : "pilot")}</AppText>
+          <VehicleHeader vehicleId={id} allowSwitch={false} />
+          <Card style={{ padding: 16 }}>
+            <InfoRows
+              items={[
+                {
+                  label: t("registration"),
+                  value: vehicle.registration_number || "—",
+                },
+                {
+                  label: t("modelStep"),
+                  value: `${vehicle.brand} ${vehicle.model}`.trim() || "—",
+                },
+                { label: t("timezone"), value: vehicle.timezone },
+              ]}
+            />
+          </Card>
           <AppText muted>{t("roleInfo")}</AppText>
           <AppText muted>{t("noPhoto")}</AppText>
-          {(["fuel", "expenses", "progress", "documents", "reminders"] as const)
-            .filter(
-              (kind) =>
-                access.data?.[
-                  kind === "progress" ? "progress.view" : `${kind}.read`
-                ],
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+            {(
+              [
+                "fuel",
+                "expenses",
+                "progress",
+                "documents",
+                "reminders",
+              ] as const
             )
-            .map((kind) => (
-              <AppButton
-                key={kind}
-                secondary
-                label={r(kind)}
-                onPress={() =>
-                  router.push({
-                    pathname: "/records/[kind]",
-                    params: { kind, vehicle: id },
-                  })
-                }
-              />
-            ))}
+              .filter(
+                (kind) =>
+                  access.data?.[
+                    kind === "progress" ? "progress.view" : `${kind}.read`
+                  ],
+              )
+              .map((kind) => (
+                <ActionTile
+                  key={kind}
+                  icon={recordVisuals[kind].icon}
+                  tone={recordVisuals[kind].tone}
+                  label={r(kind)}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/records/[kind]",
+                      params: { kind, vehicle: id },
+                    })
+                  }
+                />
+              ))}
+          </View>
           {access.data?.["meters.read"] && (
             <AppButton
               secondary
@@ -225,6 +345,7 @@ export function Home() {
       return meterObservationSchema.array().parse(data);
     },
   });
+  const colors = useTheme();
   return (
     <Screen
       title={t("app")}
@@ -235,7 +356,7 @@ export function Home() {
             (access.data?.metersRead === true && readings.isPending)))
       }
     >
-      <AppText muted>{t("tagline")}</AppText>
+      <AppText muted>{t("uiOverview")}</AppText>
       {query.error ? (
         <ErrorState
           message={query.error.message}
@@ -243,40 +364,90 @@ export function Home() {
         />
       ) : v ? (
         <>
-          <VehicleHeader />
-          <Card>
-            <AppText>{t("meters")}</AppText>
-            {access.error ? (
-              <ErrorState
-                message={access.error.message}
-                retry={() => void access.refetch()}
-              />
-            ) : access.data && !access.data.metersRead ? (
-              <AppText>{t("noAccess")}</AppText>
-            ) : readings.error ? (
-              <ErrorState
-                message={readings.error.message}
-                retry={() => void readings.refetch()}
-              />
-            ) : readings.data?.length ? (
-              (["KM", "HOURS"] as const).map((kind) => {
-                const r = readings.data.find(
-                  (row: { reading_type: string }) => row.reading_type === kind,
-                );
-                return r ? (
-                  <AppText
-                    key={kind}
-                  >{`${r.value} ${t(kind)} · ${new Date(r.observed_at).toLocaleString()}`}</AppText>
-                ) : null;
-              })
-            ) : (
-              <AppText muted>{t("noReadings")}</AppText>
-            )}
-          </Card>
-          <AppButton
-            label={t("garage")}
-            onPress={() => router.push("/garage")}
+          <SectionHeading
+            title={t("home")}
+            action={t("garage")}
+            onAction={() => router.push("/garage")}
           />
+          <VehicleHeader hero />
+          {access.error ? (
+            <ErrorState
+              message={access.error.message}
+              retry={() => void access.refetch()}
+            />
+          ) : (
+            access.data?.metersRead && (
+              <>
+                <SectionHeading
+                  title={t("uiLatestReadings")}
+                  action={r("history")}
+                  onAction={() => router.push("/meters/history")}
+                />
+                {readings.error ? (
+                  <ErrorState
+                    message={readings.error.message}
+                    retry={() => void readings.refetch()}
+                  />
+                ) : readings.data?.length ? (
+                  <View
+                    style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}
+                  >
+                    {(["KM", "HOURS"] as const)
+                      .filter(
+                        (kind) =>
+                          v.meter_mode === "BOTH" || v.meter_mode === kind,
+                      )
+                      .map((kind) => {
+                        const reading = readings.data.find(
+                          (row) => row.reading_type === kind,
+                        );
+                        return (
+                          <Card
+                            key={kind}
+                            style={{
+                              flexBasis: "45%",
+                              flexGrow: 1,
+                              padding: 16,
+                              borderWidth: 0,
+                              shadowColor: "#192D48",
+                              shadowOpacity: 0.06,
+                              shadowOffset: { width: 0, height: 4 },
+                              shadowRadius: 12,
+                              elevation: 2,
+                            }}
+                          >
+                            <ColorIcon
+                              name={kind === "KM" ? "speedometer" : "time"}
+                              tone={kind === "KM" ? "cyan" : "violet"}
+                            />
+                            <Text
+                              style={{
+                                color: colors.ink,
+                                fontSize: 24,
+                                fontWeight: "800",
+                              }}
+                            >
+                              {reading ? reading.value.toLocaleString() : "—"}
+                            </Text>
+                            <AppText muted>{t(kind)}</AppText>
+                            {reading ? (
+                              <Timestamp
+                                value={reading.observed_at}
+                                timezone={v.timezone}
+                              />
+                            ) : (
+                              <AppText muted>{t("noReadings")}</AppText>
+                            )}
+                          </Card>
+                        );
+                      })}
+                  </View>
+                ) : (
+                  <AppText muted>{t("noReadings")}</AppText>
+                )}
+              </>
+            )
+          )}
           <Dashboard />
         </>
       ) : (

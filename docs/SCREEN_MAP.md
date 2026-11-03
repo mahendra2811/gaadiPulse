@@ -9,7 +9,7 @@ Composed screens are reused for related modules; no empty files are counted as d
 | `/auth/legal` | Real local pre-release Terms/Privacy text; operator review required |
 | `/(tabs)` | Per-vehicle Owner/Pilot home, vehicle context, monthly permitted spending, latest observations, progress, reminders and Owner actions |
 | `/(tabs)/fuel`, `/(tabs)/expenses` | Period/search/status history, local/pending badges, summary and authorized add/analysis |
-| `/(tabs)/more` | Role-aware garage, meters, progress, documents, reminders, maintenance, reports, members, form builder and settings |
+| `/(tabs)/more` | Opens the left-side More drawer over Home; tab presses preserve the current tab beneath the drawer. Grouped quick add, vehicle tools, owner controls and account/support retain role gates. |
 | `/garage` | Search owned/shared/archived vehicles and open profile |
 | `/garage/add`, `/garage/edit?id=…` | Six-step category/subtype/make/model/details/meter/review wizard, persistent drafts, authenticated save or separate local development repository |
 | `/garage/[id]` | Vehicle profile, Owner edit/archive/recover, per-vehicle role |
@@ -32,3 +32,5 @@ Composed screens are reused for related modules; no empty files are counted as d
 Vehicle roles are resolved per membership. Financial read/create/edit permissions are independent. `progress.view` gives Pilots only their own submissions, with Owner-only fields removed by SQL. Permission checks in UI do not replace backend RLS/RPC authorization. Owner-only deep links are rejected by the server. Native date/time dialogs are Android-specific; ISO inputs remain the fallback. Photo capture, uploads, GPS and untranslated Hindi are deliberately unavailable.
 
 Runtime navigation, keyboard, TalkBack, width and end-to-end validation are NOT RUN for Stage 2/3 under the user's instruction to defer testing.
+
+Secondary browsing screens now share the floating navigation bar. Entry/edit forms, profile/security, form builder and Auth omit it; More opens the left-side 75% drawer from any enabled browsing destination. Runtime verification remains pending.

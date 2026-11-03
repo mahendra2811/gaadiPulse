@@ -37,6 +37,7 @@ export function solveFuel(amount: string, quantity: string, price: string) {
   if (
     a <= 0n ||
     q! <= 0n ||
+    q! > 1000000000n ||
     p! <= 0n ||
     a > BigInt(Number.MAX_SAFE_INTEGER) ||
     p! > BigInt(Number.MAX_SAFE_INTEGER)

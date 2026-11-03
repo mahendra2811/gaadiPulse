@@ -1,3 +1,4 @@
+import { accountEmail, emailCode } from "./passwordSchema";
 import { t } from "@/src/lib/i18n";
 import * as WebBrowser from "expo-web-browser";
 import { client } from "@/src/lib/supabase";
@@ -40,15 +41,15 @@ export async function googleSignIn() {
 }
 export async function sendOtp(email: string) {
   const { error } = await client().auth.signInWithOtp({
-    email,
+    email: accountEmail.parse(email),
     options: { shouldCreateUser: true },
   });
   if (error) throw error;
 }
 export async function verifyOtp(email: string, token: string) {
   const { error } = await client().auth.verifyOtp({
-    email,
-    token,
+    email: accountEmail.parse(email),
+    token: emailCode.parse(token.trim()),
     type: "email",
   });
   if (error) throw error;

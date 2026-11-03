@@ -3,6 +3,7 @@ import { client } from "../../lib/supabase";
 import { accountEmail, emailCode, newPassword } from "./passwordSchema";
 
 export async function passwordLogin(email: string, password: string) {
+  if (!password || password.length > 128) throw new Error(t("passwordRules"));
   const { error } = await client().auth.signInWithPassword({
     email: accountEmail.parse(email.trim()),
     password,

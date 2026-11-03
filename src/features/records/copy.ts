@@ -1,4 +1,14 @@
 export const recordCopy = {
+  fullCharge: "Full charge",
+  partialCharge: "Partial charge",
+
+  PETROL_CNG: "Petrol + CNG",
+  PETROL_LPG: "Petrol + LPG",
+  PLUGIN_HYBRID: "Plug-in hybrid (petrol + electric)",
+  DIESEL_HYBRID: "Diesel hybrid",
+  LPG: "LPG",
+  HYDROGEN: "Hydrogen",
+
   addMeter: "Add meter reading",
   addMaintenance: "Add maintenance",
   auditLatest: "Latest 100 changes",
@@ -169,7 +179,7 @@ export const recordCopy = {
     "Date reminder scheduled on this device. Android delivery is subject to system limits.",
   schedule: "Schedule on this device",
   official: "Open official documents service",
-  date: "Progress date (YYYY-MM-DD)",
+  date: "Progress date",
   today: "Today",
   yesterday: "Yesterday",
   submit: "Submit progress",

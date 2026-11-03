@@ -1,5 +1,6 @@
 import { r } from "@/src/features/records/copy";
-import { Platform } from "react-native";
+import { AppState, Platform } from "react-native";
+import { showToast } from "@/src/lib/toast";
 import * as Notifications from "expo-notifications";
 import { AndroidImportance } from "expo-notifications";
 import { readLocal, writeLocal } from "@/src/lib/localStore";
@@ -30,6 +31,7 @@ export async function reconcileReminders(
       revision: number;
       id: string;
       threshold?: boolean;
+      presentationVersion?: number;
     } | null;
     if (entry.status !== "ACTIVE") {
       if (old?.id) await Notifications.cancelScheduledNotificationAsync(old.id);
@@ -51,16 +53,33 @@ export async function reconcileReminders(
     const date = due && due.getTime() > Date.now() ? due : null;
     if (
       old?.revision === entry.revision &&
+      old.presentationVersion === 2 &&
       old.threshold === Boolean(threshold)
     )
       continue;
     if (old?.id) await Notifications.cancelScheduledNotificationAsync(old.id);
-    if (!date && !threshold) continue;
+    if (!date && !threshold) {
+      await writeLocal(key, {
+        revision: entry.revision,
+        id: "",
+        threshold: false,
+        presentationVersion: 2,
+      });
+      continue;
+    }
     const id = await Notifications.scheduleNotificationAsync({
       content: {
         title: String(entry.payload.title),
         body: r("notificationBody"),
-        data: { vehicleId: vehicle, reminderId: entry.id },
+        color: "#147D69",
+        autoDismiss: true,
+        sticky: false,
+        data: {
+          type: "gaadipulse.reminder",
+          accountId: user,
+          vehicleId: vehicle,
+          reminderId: entry.id,
+        },
       },
       trigger:
         date && !threshold
@@ -75,6 +94,7 @@ export async function reconcileReminders(
       revision: entry.revision,
       id,
       threshold: Boolean(threshold),
+      presentationVersion: 2,
     });
   }
 }
@@ -95,4 +115,35 @@ export async function clearDeviceNotifications() {
   if (Platform.OS === "web") return;
   await Notifications.cancelAllScheduledNotificationsAsync();
   await Notifications.dismissAllNotificationsAsync();
+}
+
+/** Foreground feedback is app-owned; background notifications keep the OS presentation. */
+export function startReminderFeedback(user: string) {
+  if (Platform.OS === "web") return () => {};
+  const belongsToAccount = (notification: Notifications.Notification) =>
+    notification.request.content.data?.type === "gaadipulse.reminder" &&
+    notification.request.content.data?.accountId === user;
+  Notifications.setNotificationHandler({
+    handleNotification: async (notification) => ({
+      shouldShowBanner:
+        !belongsToAccount(notification) || AppState.currentState !== "active",
+      shouldShowList:
+        !belongsToAccount(notification) || AppState.currentState !== "active",
+      shouldPlaySound: !belongsToAccount(notification),
+      shouldSetBadge: false,
+    }),
+  });
+  const subscription = Notifications.addNotificationReceivedListener(
+    (notification) => {
+      if (AppState.currentState !== "active" || !belongsToAccount(notification))
+        return;
+      const message =
+        notification.request.content.title || notification.request.content.body;
+      if (message) showToast(message, "reminder");
+    },
+  );
+  return () => {
+    subscription.remove();
+    Notifications.setNotificationHandler(null);
+  };
 }

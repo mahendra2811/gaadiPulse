@@ -1,3 +1,6 @@
+import { z } from "zod";
+import { accountEmail } from "@/src/features/auth/passwordSchema";
+import { t } from "@/src/lib/i18n";
 import * as Crypto from "expo-crypto";
 import { client } from "@/src/lib/supabase";
 import {
@@ -24,6 +27,16 @@ export const permissionKeys = [
   "reminders.read",
   "reminders.create",
 ] as const;
+export const memberRoleSchema = z.enum(["OWNER", "PILOT"]);
+export const permissionMapSchema = z
+  .record(z.string(), z.boolean())
+  .refine(
+    (value) =>
+      Object.keys(value).every((key) =>
+        permissionKeys.includes(key as (typeof permissionKeys)[number]),
+      ),
+    t("permissionsInvalid"),
+  );
 export type Member = {
   user_id: string;
   role: "OWNER" | "PILOT";
@@ -100,6 +113,9 @@ export async function grantAccess(
   permissions: Record<string, boolean>,
   development: boolean,
 ) {
+  email = accountEmail.parse(email);
+  role = memberRoleSchema.parse(role);
+  permissions = permissionMapSchema.parse(permissions);
   if (development) {
     const state = await members(vehicle, true);
     const normalized = email.trim().toLowerCase();
@@ -137,9 +153,22 @@ export async function changeMember(
   status: string,
   development: boolean,
 ) {
+  role = memberRoleSchema.parse(role);
+  permissions = permissionMapSchema.parse(permissions);
+  z.enum(["ACTIVE", "REVOKED"]).parse(status);
   if (development) {
     const state = await members(vehicle, true);
     const m = state.members.find((m) => m.user_id === user);
+    if (!m) throw new Error("MEMBER_NOT_FOUND");
+    if (
+      m.role === "OWNER" &&
+      m.status === "ACTIVE" &&
+      (role !== "OWNER" || status !== "ACTIVE") &&
+      state.members.filter(
+        (item) => item.role === "OWNER" && item.status === "ACTIVE",
+      ).length <= 1
+    )
+      throw new Error("LAST_OWNER_PROTECTED");
     if (m?.is_primary_admin && (role !== "OWNER" || status !== "ACTIVE"))
       throw new Error("PRIMARY_ADMIN_PROTECTED");
     await writeDevelopment(`members.${vehicle}`, {
@@ -187,6 +216,7 @@ export async function saveDefaults(
   permissions: Record<string, boolean>,
   development: boolean,
 ) {
+  permissions = permissionMapSchema.parse(permissions);
   if (development) {
     const state = await members(vehicle, true);
     await writeDevelopment(`members.${vehicle}`, {

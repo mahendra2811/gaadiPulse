@@ -1,8 +1,10 @@
+import { errorMessage } from "@/src/lib/errors";
 import { useSession } from "./session";
 import { useEffect, useState } from "react";
 import { Image } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
-import { z } from "zod";
+import { accountEmail, emailCode } from "./passwordSchema";
+import { useRef } from "react";
 import {
   Screen,
   AppText,
@@ -67,15 +69,19 @@ export function Login() {
   const auth = useSession();
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
+  const running = useRef(false);
   const [error, setError] = useState("");
   const run = async (action: () => Promise<void>) => {
+    if (running.current) return;
+    running.current = true;
     setBusy(true);
     setError("");
     try {
       await action();
     } catch (e) {
-      setError(String(e instanceof Error ? e.message : e));
+      setError(errorMessage(e));
     } finally {
+      running.current = false;
       setBusy(false);
     }
   };
@@ -121,6 +127,8 @@ export function Login() {
           />
           <InputField
             label={t("email")}
+            required
+            maxLength={254}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -129,7 +137,7 @@ export function Login() {
           />
           <AppButton
             label={t("send")}
-            disabled={busy || !z.email().safeParse(email.trim()).success}
+            disabled={busy || !accountEmail.safeParse(email.trim()).success}
             onPress={() =>
               void run(async () => {
                 await sendOtp(email.trim());
@@ -151,6 +159,7 @@ export function Verify() {
   const { email } = useLocalSearchParams<{ email: string }>();
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
+  const running = useRef(false);
   const [error, setError] = useState("");
   const [until, setUntil] = useState(() => Date.now() + 60000);
   const [now, setNow] = useState(() => Date.now());
@@ -159,13 +168,16 @@ export function Verify() {
     return () => clearInterval(timer);
   }, []);
   const run = async (fn: () => Promise<void>) => {
+    if (running.current) return;
+    running.current = true;
     setBusy(true);
     setError("");
     try {
       await fn();
     } catch (e) {
-      setError(String(e instanceof Error ? e.message : e));
+      setError(errorMessage(e));
     } finally {
+      running.current = false;
       setBusy(false);
     }
   };
@@ -174,6 +186,8 @@ export function Verify() {
       <AppText>{email}</AppText>
       <InputField
         label={t("code")}
+        required
+        maxLength={8}
         value={code}
         onChangeText={setCode}
         keyboardType="number-pad"
@@ -181,7 +195,11 @@ export function Verify() {
       />
       <AppButton
         label={t("verify")}
-        disabled={busy || code.length < 6}
+        disabled={
+          busy ||
+          !emailCode.safeParse(code).success ||
+          !accountEmail.safeParse(email ?? "").success
+        }
         onPress={() => void run(() => verifyOtp(email, code))}
       />
       <AppButton

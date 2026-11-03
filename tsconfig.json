@@ -13,6 +13,7 @@
     "node_modules",
     "my docs",
     "config/app.config.example.ts",
-    "supabase/functions"
+    "supabase/functions",
+    "assets/**/*.example.tsx"
   ]
 }

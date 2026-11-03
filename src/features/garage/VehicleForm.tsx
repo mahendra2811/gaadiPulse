@@ -1,6 +1,8 @@
+import { AdditionalOptions } from "@/src/components/ui/AdditionalOptions";
+import { vehicleEnergyTypes } from "./energy";
 import { DateTimeInput } from "@/src/components/ui/fields";
 import { useEffect, useState } from "react";
-import { BackHandler, Image, Pressable } from "react-native";
+import { BackHandler, Image, Pressable, View, Text } from "react-native";
 import { router, useLocalSearchParams, usePreventRemove } from "expo-router";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,7 +19,17 @@ import { useVehicles } from "./hooks";
 import { saveVehicle } from "./api";
 import { useSession, useAccountId } from "@/src/features/auth/session";
 import { loadDraft, saveDraft, clearDraft } from "@/src/lib/db";
-import { artwork } from "@/src/lib/assets";
+import { VehicleSubtypeSelector } from "./VehicleSubtypeSelector";
+import { subtypeOptions, subtypeLabel } from "./subtypes";
+import { WizardSteps } from "./WizardSteps";
+import {
+  GradientButton,
+  TextAction,
+  SectionHeading,
+  ChoiceChip,
+} from "@/src/components/ui/premium";
+import { useTheme } from "@/src/lib/theme";
+import { vehicleArt } from "@/src/lib/assets";
 import {
   Screen,
   AppText,
@@ -31,18 +43,11 @@ import {
 } from "@/src/components/ui";
 import { t } from "@/src/lib/i18n";
 import catalog from "../../../config/vehicle-catalog.seed.json";
-const subtypeOptions = {
-  two_wheeler: ["motorcycle", "scooter", "moped"],
-  four_wheeler: ["hatchback", "sedan", "suv", "muv"],
-  commercial: ["pickup", "truck", "tipper", "bus", "van"],
-  agricultural: ["tractor", "other"],
-  heavy_machinery: ["excavator", "loader", "crane", "generator", "other"],
-};
 const initial: VehicleInput = {
   nickname: "",
   registration_number: "",
   category: "two_wheeler",
-  subtype: "motorcycle",
+  subtype: "",
   brand: "",
   model: "",
   energy_type: "PETROL",
@@ -60,7 +65,9 @@ export default function VehicleForm() {
   const user = useAccountId();
   const qc = useQueryClient();
   const toast = useToast();
+  const colors = useTheme();
   const [step, setStep] = useState(0);
+  const [additionalStep, setAdditionalStep] = useState<number | null>(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -112,10 +119,25 @@ export default function VehicleForm() {
   const disablePrevention = usePreventRemove(
     form.formState.isDirty && !allowExit,
     ({ repeat }) => {
-      ConfirmDialog(t("unsaved"), t("unsavedBody"), () => {
-        setAllowExit(true);
-        repeat();
-      });
+      ConfirmDialog(
+        t("unsaved"),
+        t("unsavedBody"),
+        () => {
+          if (!user) return;
+          setBusy(true);
+          void saveDraft(user, key, { values: form.getValues(), operation })
+            .then(() => {
+              setAllowExit(true);
+              repeat();
+            })
+            .catch((e) => {
+              setDraftError(true);
+              setError(String(e));
+            })
+            .finally(() => setBusy(false));
+        },
+        { cancelLabel: t("keepEditing"), confirmLabel: t("leaveForm") },
+      );
     },
   );
   useEffect(() => {
@@ -139,12 +161,26 @@ export default function VehicleForm() {
             label={label}
             value={String(value ?? "")}
             onChange={onChange}
+            required={!!values.km || !!values.hours}
+            error={form.formState.errors[name]?.message}
           />
         ) : (
           <InputField
             label={label}
             value={String(value ?? "")}
             onChangeText={onChange}
+            required={name === "timezone"}
+            optional={name !== "timezone"}
+            numeric={numeric ? { scale: 3 } : undefined}
+            maxLength={
+              name === "registration_number"
+                ? 40
+                : name === "nickname"
+                  ? 120
+                  : name === "brand" || name === "model"
+                    ? 80
+                    : undefined
+            }
             keyboardType={numeric ? "decimal-pad" : "default"}
             error={form.formState.errors[name]?.message}
           />
@@ -185,6 +221,31 @@ export default function VehicleForm() {
           .join("\n"),
       ),
   );
+  const next = async () => {
+    if (busy || !ready) return;
+    if (step === 5) {
+      await submit();
+      return;
+    }
+    const fields: (keyof VehicleInput)[][] = [
+      ["category"],
+      ["subtype"],
+      ["brand", "model"],
+      ["nickname", "registration_number", "energy_type", "timezone"],
+      ["meter_mode", ...(!id ? (["km", "hours", "observed_at"] as const) : [])],
+    ];
+    if (await form.trigger(fields[step], { shouldFocus: true })) {
+      setError("");
+      setStep(step + 1);
+    } else setError(t("uiStepInvalid"));
+  };
+  const categoryArt = {
+    two_wheeler: "motorcycle",
+    four_wheeler: "suv",
+    commercial: "truck",
+    agricultural: "tractor",
+    heavy_machinery: "excavator",
+  };
   const titles = [
     t("categoryStep"),
     t("subtypeStep"),
@@ -202,45 +263,134 @@ export default function VehicleForm() {
     );
   return (
     <Screen
-      title={titles[step]}
+      title={id ? t("uiEditVehicle") : t("add")}
+      compact
+      contentKey={step}
       onBack={step > 0 ? () => setStep((value) => value - 1) : undefined}
       loading={!ready || busy}
       action={
-        <AppButton
-          label={step === 5 ? t("save") : t("continue")}
-          disabled={busy || !ready}
-          onPress={() => (step < 5 ? setStep(step + 1) : void submit())}
-        />
+        <View
+          style={{
+            width: "100%",
+            maxWidth: 640,
+            alignSelf: "center",
+            paddingBottom: 12,
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 16,
+          }}
+        >
+          {step > 0 && (
+            <TextAction
+              label={t("back")}
+              icon="arrow-back"
+              onPress={() => {
+                if (!busy) setStep((value) => value - 1);
+              }}
+            />
+          )}
+          <View style={{ flex: 1 }}>
+            <GradientButton
+              label={step === 5 ? t("save") : t("continue")}
+              disabled={
+                busy || !ready || (step === 1 && !values.subtype?.trim())
+              }
+              onPress={() => void next()}
+            />
+          </View>
+        </View>
       }
     >
-      <AppText muted>{`${step + 1} / 6`}</AppText>
-      {step === 0 &&
-        categories.map((category) => (
-          <Pressable
-            key={category}
-            accessibilityRole="radio"
-            accessibilityLabel={t(category)}
-            accessibilityState={{ checked: values.category === category }}
-            disabled={!ready || busy}
-            onPress={() => {
-              form.setValue("category", category, { shouldDirty: true });
-              const subtype = subtypeOptions[category][0];
-              form.setValue("subtype", subtype);
-              form.setValue("meter_mode", defaultMeter(category, subtype));
-            }}
-          >
-            <Card>
+      <WizardSteps
+        step={step}
+        titles={titles}
+        disabled={busy || !ready}
+        onStep={(value) => {
+          setError("");
+          setStep(value);
+        }}
+      />
+      <SectionHeading title={titles[step]} />
+      {step === 0 && <AppText muted>{t("uiCategoryHint")}</AppText>}
+      {step === 0 && (
+        <View
+          accessibilityRole="radiogroup"
+          style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}
+        >
+          {categories.map((category) => (
+            <Pressable
+              key={category}
+              accessibilityRole="radio"
+              accessibilityLabel={t(category)}
+              accessibilityState={{
+                checked: values.category === category,
+                disabled: !ready || busy,
+              }}
+              disabled={!ready || busy}
+              onPress={() => {
+                form.setValue("category", category, { shouldDirty: true });
+                if (
+                  category !== values.category &&
+                  !subtypeOptions(category).some(
+                    (option) => option.id === values.subtype,
+                  )
+                ) {
+                  form.setValue("subtype", "", { shouldDirty: true });
+                  form.setValue("meter_mode", defaultMeter(category, ""));
+                }
+              }}
+              style={({ pressed }) => ({
+                width: category === "heavy_machinery" ? "100%" : "47%",
+                flexGrow: 1,
+                maxWidth: category === "heavy_machinery" ? "100%" : "49%",
+                flexDirection:
+                  category === "heavy_machinery" ? "row" : "column",
+                alignItems:
+                  category === "heavy_machinery" ? "center" : "stretch",
+                borderRadius: 20,
+                padding: 8,
+                gap: 8,
+                backgroundColor: colors.surface,
+                borderWidth: 2,
+                borderColor:
+                  values.category === category ? colors.accent : colors.line,
+                opacity: pressed ? 0.8 : 1,
+              })}
+            >
               <Image
-                source={artwork[category]}
-                style={{ width: "100%", height: 120, resizeMode: "contain" }}
+                source={vehicleArt(category, categoryArt[category])}
+                style={{
+                  width: category === "heavy_machinery" ? 88 : "100%",
+                  aspectRatio: 1,
+                  borderRadius: 13,
+                  backgroundColor: "#F1F9F6",
+                }}
+                resizeMode="contain"
+                accessible={false}
               />
-              <AppText>{`${values.category === category ? "✓  " : ""}${t(category)}`}</AppText>
-            </Card>
-          </Pressable>
-        ))}
+              <Text
+                style={{
+                  color: colors.ink,
+                  fontSize: 14,
+                  fontWeight: "600",
+                  textAlign: category === "heavy_machinery" ? "left" : "center",
+                  flex: category === "heavy_machinery" ? 1 : undefined,
+                  paddingHorizontal: 2,
+                  paddingBottom: 5,
+                }}
+              >
+                {values.category === category ? "✓ " : ""}
+                {t(category)}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
       {step === 1 && (
-        <Choice
-          values={subtypeOptions[values.category]}
+        <VehicleSubtypeSelector
+          key={values.category}
+          category={values.category}
+          disabled={busy || !ready}
           value={values.subtype}
           onChange={(v) => {
             form.setValue("subtype", v, { shouldDirty: true });
@@ -250,66 +400,78 @@ export default function VehicleForm() {
       )}
       {step === 2 && (
         <>
+          <AppText muted>{t("uiModelHint")}</AppText>
           {field("brand", t("brand"))}
           {field("model", t("model"))}
           <AppText muted>{t("catalog")}</AppText>
-          {catalog.categories
-            .flatMap((c) => c.makes)
-            .filter(
-              (m) =>
-                !values.brand ||
-                m.name.toLowerCase().includes(values.brand.toLowerCase()),
-            )
-            .slice(0, 6)
-            .map((make) => (
-              <AppButton
-                key={make.name}
-                secondary
-                label={make.name}
-                onPress={() =>
-                  form.setValue("brand", make.name, { shouldDirty: true })
-                }
-              />
-            ))}
-          {catalog.categories
-            .flatMap((c) => c.makes)
-            .find((m) => m.name === values.brand)
-            ?.models.map((m) => (
-              <AppButton
-                secondary
-                key={m}
-                label={m}
-                onPress={() => form.setValue("model", m, { shouldDirty: true })}
-              />
-            ))}
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            {catalog.categories
+              .filter((category) => category.id === values.category)
+              .flatMap((category) => category.makes)
+              .filter(
+                (make) =>
+                  !values.brand ||
+                  make.name.toLowerCase().includes(values.brand.toLowerCase()),
+              )
+              .slice(0, 6)
+              .map((make) => (
+                <ChoiceChip
+                  key={make.name}
+                  label={make.name}
+                  selected={make.name === values.brand}
+                  onPress={() =>
+                    form.setValue("brand", make.name, { shouldDirty: true })
+                  }
+                />
+              ))}
+          </View>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            {catalog.categories
+              .filter((category) => category.id === values.category)
+              .flatMap((category) => category.makes)
+              .find((make) => make.name === values.brand)
+              ?.models.map((model) => (
+                <ChoiceChip
+                  key={model}
+                  label={model}
+                  selected={values.model === model}
+                  onPress={() =>
+                    form.setValue("model", model, { shouldDirty: true })
+                  }
+                />
+              ))}
+          </View>
         </>
       )}
       {step === 3 && (
         <>
+          <AppText muted>{t("uiDetailsHint")}</AppText>
+          <AppText muted>{t("vehicleIdentityHelp")}</AppText>
           {field("nickname", t("nickname"))}
           {field("registration_number", t("registration"))}
           <Choice
-            values={
-              [
-                "PETROL",
-                "DIESEL",
-                "ELECTRIC",
-                "CNG",
-                "HYBRID",
-                "OTHER",
-              ] as const
-            }
+            compact
+            values={vehicleEnergyTypes}
             value={values.energy_type}
             onChange={(v) =>
               form.setValue("energy_type", v, { shouldDirty: true })
             }
           />
-          {field("timezone", t("timezone"))}
+          <AdditionalOptions
+            open={additionalStep === step}
+            onToggle={() =>
+              setAdditionalStep((value) => (value === step ? null : step))
+            }
+          >
+            {field("timezone", t("timezone"))}
+          </AdditionalOptions>
         </>
       )}
       {step === 4 && (
         <>
+          <AppText muted>{t("uiMeterHint")}</AppText>
           <Choice
+            compact
             values={meterModes}
             value={values.meter_mode}
             onChange={(v) =>
@@ -317,41 +479,90 @@ export default function VehicleForm() {
             }
           />
           {!id && (
-            <>
+            <AdditionalOptions
+              open={additionalStep === step}
+              onToggle={() =>
+                setAdditionalStep((value) => (value === step ? null : step))
+              }
+            >
               {values.meter_mode !== "HOURS" && field("km", t("km"), true)}
               {values.meter_mode !== "KM" && field("hours", t("hours"), true)}
-              {field("observed_at", t("observed"))}
-            </>
+              {values.km || values.hours ? (
+                field("observed_at", t("observed"))
+              ) : (
+                <AppText muted>{t("optionalObservation")}</AppText>
+              )}
+            </AdditionalOptions>
           )}
         </>
       )}
       {step === 5 && (
-        <Card>
-          <Image
-            source={artwork[values.category]}
-            style={{ width: "100%", height: 140, resizeMode: "contain" }}
-          />
-          <AppText large>
-            {values.nickname || values.model || values.registration_number}
-          </AppText>
-          <AppText>{`${values.brand} ${values.model}`}</AppText>
-          <AppText>
-            {t(values.category)} · {values.subtype}
-          </AppText>
-          <AppText>
-            {t(values.energy_type)} · {t(values.meter_mode)}
-          </AppText>
-          <AppText>{values.timezone}</AppText>
-        </Card>
+        <>
+          <AppText muted>{t("uiReviewHint")}</AppText>
+          <Card style={{ padding: 16, gap: 14 }}>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 14 }}
+            >
+              <Image
+                source={vehicleArt(values.category, values.subtype)}
+                style={{
+                  width: 96,
+                  aspectRatio: 1,
+                  borderRadius: 16,
+                  backgroundColor: "#F1F9F6",
+                }}
+                resizeMode="contain"
+                accessible={false}
+              />
+              <View style={{ flex: 1, gap: 6 }}>
+                <AppText large>
+                  {values.nickname ||
+                    values.model ||
+                    values.registration_number}
+                </AppText>
+                <AppText muted>{subtypeLabel(values.subtype)}</AppText>
+              </View>
+            </View>
+            {[
+              [t("categoryStep"), t(values.category)],
+              [t("registration"), values.registration_number || "—"],
+              [t("modelStep"), `${values.brand} ${values.model}`.trim() || "—"],
+              [t("uiEnergyType"), t(values.energy_type)],
+              [t("meters"), t(values.meter_mode)],
+              [t("timezone"), values.timezone],
+            ].map(([label, value]) => (
+              <View
+                key={label}
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  paddingVertical: 7,
+                  borderTopWidth: 1,
+                  borderTopColor: colors.line,
+                }}
+              >
+                <Text style={{ color: colors.muted, fontSize: 13, flex: 1 }}>
+                  {label}
+                </Text>
+                <Text
+                  style={{
+                    color: colors.ink,
+                    fontSize: 14,
+                    fontWeight: "600",
+                    flex: 1,
+                    textAlign: "right",
+                  }}
+                >
+                  {value}
+                </Text>
+              </View>
+            ))}
+          </Card>
+        </>
       )}
       <AppText muted>{draftError ? t("draftError") : t("draft")}</AppText>
       {!!error && <ErrorState message={error} retry={() => setError("")} />}
-      <AppButton
-        secondary
-        label={t("back")}
-        disabled={busy}
-        onPress={() => (step ? setStep(step - 1) : router.back())}
-      />
     </Screen>
   );
 }

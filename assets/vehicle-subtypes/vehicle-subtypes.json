@@ -1,0 +1,223 @@
+{
+  "version": 2,
+  "assetSize": 512,
+  "format": "png",
+  "description": "Curated 1:1 vehicle subtype art. Artwork source details in README.",
+  "items": [
+    {
+      "id": "motorcycle",
+      "title": "Motorcycle",
+      "category": "two_wheeler"
+    },
+    {
+      "id": "scooter",
+      "title": "Scooter",
+      "category": "two_wheeler"
+    },
+    {
+      "id": "electric_scooter",
+      "title": "Electric Scooter",
+      "category": "two_wheeler"
+    },
+    {
+      "id": "electric_motorcycle",
+      "title": "Electric Motorcycle",
+      "category": "two_wheeler"
+    },
+    {
+      "id": "moped",
+      "title": "Moped",
+      "category": "two_wheeler"
+    },
+    {
+      "id": "sports_motorcycle",
+      "title": "Sports Motorcycle",
+      "category": "two_wheeler"
+    },
+    {
+      "id": "cruiser_motorcycle",
+      "title": "Cruiser Motorcycle",
+      "category": "two_wheeler"
+    },
+    {
+      "id": "touring_motorcycle",
+      "title": "Touring Motorcycle",
+      "category": "two_wheeler"
+    },
+    {
+      "id": "hatchback",
+      "title": "Hatchback",
+      "category": "four_wheeler"
+    },
+    {
+      "id": "sedan",
+      "title": "Sedan",
+      "category": "four_wheeler"
+    },
+    {
+      "id": "compact_suv",
+      "title": "Compact SUV",
+      "category": "four_wheeler"
+    },
+    {
+      "id": "suv",
+      "title": "SUV",
+      "category": "four_wheeler"
+    },
+    {
+      "id": "muv",
+      "title": "MUV / MPV",
+      "category": "four_wheeler"
+    },
+    {
+      "id": "jeep",
+      "title": "Jeep / Off-road",
+      "category": "four_wheeler"
+    },
+    {
+      "id": "electric_car",
+      "title": "Electric Car",
+      "category": "four_wheeler"
+    },
+    {
+      "id": "hybrid_car",
+      "title": "Hybrid Car",
+      "category": "four_wheeler"
+    },
+    {
+      "id": "auto",
+      "title": "Auto / E-rickshaw",
+      "category": "commercial"
+    },
+    {
+      "id": "taxi",
+      "title": "Taxi",
+      "category": "commercial"
+    },
+    {
+      "id": "van",
+      "title": "Van",
+      "category": "commercial"
+    },
+    {
+      "id": "pickup",
+      "title": "Pickup",
+      "category": "commercial"
+    },
+    {
+      "id": "mini_truck",
+      "title": "Mini Truck",
+      "category": "commercial"
+    },
+    {
+      "id": "light_truck",
+      "title": "Light Truck",
+      "category": "commercial"
+    },
+    {
+      "id": "medium_truck",
+      "title": "Medium Truck",
+      "category": "commercial"
+    },
+    {
+      "id": "truck",
+      "title": "Truck",
+      "category": "commercial"
+    },
+    {
+      "id": "heavy_truck",
+      "title": "Heavy Truck",
+      "category": "commercial"
+    },
+    {
+      "id": "tipper",
+      "title": "Tipper / Dumper",
+      "category": "commercial"
+    },
+    {
+      "id": "bus",
+      "title": "Bus",
+      "category": "commercial"
+    },
+    {
+      "id": "tanker",
+      "title": "Tanker",
+      "category": "commercial"
+    },
+    {
+      "id": "container_truck",
+      "title": "Container Truck",
+      "category": "commercial"
+    },
+    {
+      "id": "trailer",
+      "title": "Trailer",
+      "category": "commercial"
+    },
+    {
+      "id": "tractor",
+      "title": "Tractor",
+      "category": "agriculture_heavy"
+    },
+    {
+      "id": "harvester",
+      "title": "Harvester",
+      "category": "agriculture_heavy"
+    },
+    {
+      "id": "excavator",
+      "title": "Excavator",
+      "category": "agriculture_heavy"
+    },
+    {
+      "id": "backhoe_loader",
+      "title": "Backhoe / JCB",
+      "category": "agriculture_heavy"
+    },
+    {
+      "id": "loader",
+      "title": "Wheel Loader",
+      "category": "agriculture_heavy"
+    },
+    {
+      "id": "crane",
+      "title": "Crane",
+      "category": "agriculture_heavy"
+    },
+    {
+      "id": "generator",
+      "title": "Generator",
+      "category": "agriculture_heavy"
+    },
+    {
+      "id": "compressor",
+      "title": "Compressor",
+      "category": "agriculture_heavy"
+    },
+    {
+      "id": "forklift",
+      "title": "Forklift",
+      "category": "agriculture_heavy"
+    },
+    {
+      "id": "road_roller",
+      "title": "Road Roller",
+      "category": "agriculture_heavy"
+    },
+    {
+      "id": "bulldozer",
+      "title": "Bulldozer",
+      "category": "agriculture_heavy"
+    },
+    {
+      "id": "grader",
+      "title": "Grader",
+      "category": "agriculture_heavy"
+    },
+    {
+      "id": "other",
+      "title": "Other Vehicle / Machine",
+      "category": "agriculture_heavy"
+    }
+  ]
+}

@@ -4,6 +4,7 @@ import { t } from "../../lib/i18n";
 export const accountEmail = z
   .string()
   .trim()
+  .max(254, t("invalidEmail"))
   .pipe(z.email(t("invalidEmail")));
 export const newPassword = z
   .string()

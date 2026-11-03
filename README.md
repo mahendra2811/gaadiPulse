@@ -32,7 +32,7 @@ supabase db reset       # disposable local development only
 supabase db push
 ```
 
-Apply the four chronological migrations, configure verified email OTP/Google and allow `gaadipulse://auth/callback`. The Auth implementation uses browser OAuth with PKCE; verified-email vehicle grants require no acceptance flow.
+Apply all chronological migrations (001–005), configure verified email OTP/Google and allow `gaadipulse://auth/callback`. The Auth implementation uses browser OAuth with PKCE; verified-email vehicle grants require no acceptance flow.
 
 ## Implemented modules
 

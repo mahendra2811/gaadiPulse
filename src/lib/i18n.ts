@@ -284,6 +284,8 @@ export const en = {
   invalidData: "Some values are invalid. Review the form and try again.",
   deletionPending:
     "Your account deletion request is pending. Contact your operator for support.",
+  deletionArchiveFirst:
+    "Archive all vehicles you administer before requesting deletion. Go to Garage to review them, then return here.",
   serviceSetup:
     "The service setup is incomplete. Contact your operator or use development mode in a debug build.",
   invalidOAuth: "The sign-in callback is incomplete. Start sign-in again.",
@@ -439,7 +441,7 @@ export const en = {
   about: "About",
   legal: "Privacy and terms",
   privacy:
-    "Your account and vehicle data are stored in the Supabase project configured by the app operator. Vehicle Owners control access. Forms are held in memory while open; offline drafts and record caches are not stored. This app does not track GPS or serve ads. Contact your app operator for deletion and privacy requests. This pre-release policy must be reviewed by the operator before public distribution.",
+    "Your account and vehicle data are stored in the Supabase project configured by the app operator. Vehicle Owners control access. Forms are held in memory while open; offline drafts and record caches are not stored. This app does not track GPS or serve ads. For privacy and account deletion questions, email mahendrapuniya92@gmail.com. This pre-release policy must be reviewed by the operator before public distribution.",
   terms:
     "Use accurate records and share access only with trusted people. In-app Owner status does not establish legal vehicle ownership. Entered document metadata is not an official RC or DL. Keep independent records where legally required. This pre-release app must be validated before relying on it for operational decisions.",
   offline:

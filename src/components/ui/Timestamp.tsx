@@ -25,7 +25,11 @@ export function Timestamp({
         rowGap: 4,
       }}
     >
-      {label && <Text style={{ fontSize: 11, color: c.muted, fontWeight: "600" }}>{label}</Text>}
+      {label && (
+        <Text style={{ fontSize: 11, color: c.muted, fontWeight: "600" }}>
+          {label}
+        </Text>
+      )}
       <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
         <Ionicons name="calendar-outline" size={13} color={c.muted} />
         <Text style={{ fontSize: 12, color: c.muted }}>{date.date}</Text>

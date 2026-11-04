@@ -13,24 +13,27 @@ import {
 import { client } from "@/src/lib/supabase";
 import { useSession } from "./session";
 import { r } from "@/src/features/records/copy";
+import { errorMessage, readableError } from "@/src/lib/errors";
 export default function SecurityScreen() {
   const auth = useSession();
   const toast = useToast();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [requested, setRequested] = useState(false);
   const request = async () => {
     if (auth.development) {
       toast(r("development"));
       return;
     }
     setBusy(true);
+    setError("");
     try {
       const { error } = await client().rpc("request_account_deletion");
-      if (error) throw new Error(error.message);
+      if (error) throw error;
+      setRequested(true);
       toast(r("deletionRequested"));
-      await auth.signOut();
     } catch (e) {
-      setError(String(e));
+      setError(readableError(errorMessage(e)));
     } finally {
       setBusy(false);
     }
@@ -45,16 +48,41 @@ export default function SecurityScreen() {
       )}
       <AppText>{r("deleteAccountBody")}</AppText>
       <AppText>{r("deletionWorkflow")}</AppText>
+      {requested ? (
+        <AppText>{r("deletionRequested")}</AppText>
+      ) : (
+        <AppButton
+          disabled={busy || auth.development}
+          label={r("requestDeletion")}
+          onPress={() =>
+            ConfirmDialog(
+              r("deleteAccount"),
+              r("deleteAccountBody"),
+              () => void request(),
+            )
+          }
+        />
+      )}
+      {requested && (
+        <AppButton
+          label={t("logout")}
+          onPress={() => {
+            setError("");
+            void auth
+              .signOut()
+              .catch((e) => setError(readableError(errorMessage(e))));
+          }}
+        />
+      )}
       <AppButton
-        disabled={busy || auth.development}
-        label={r("requestDeletion")}
-        onPress={() =>
-          ConfirmDialog(
-            r("deleteAccount"),
-            r("deleteAccountBody"),
-            () => void request(),
-          )
-        }
+        secondary
+        label={r("deletionContact")}
+        onPress={() => {
+          setError("");
+          void Linking.openURL(
+            "mailto:mahendrapuniya92@gmail.com?subject=GaadiPulse%20account%20deletion%20request",
+          ).catch((e) => setError(readableError(errorMessage(e))));
+        }}
       />
       <AppButton
         secondary

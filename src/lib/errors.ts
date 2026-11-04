@@ -14,6 +14,8 @@ export function errorMessage(value: unknown): string {
   return t("error");
 }
 export function readableError(message: string) {
+  if (/ARCHIVE_ADMINISTERED_VEHICLES_FIRST/i.test(message))
+    return t("deletionArchiveFirst");
   if (/METER_BELOW_PREVIOUS|METER_RESET_NOT_ALLOWED/i.test(message))
     return t("readingBelowPreviousServer");
   if (/INVALID_OPERATION|SAVE_NOT_CONFIRMED/i.test(message))

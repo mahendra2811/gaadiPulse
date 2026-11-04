@@ -21,10 +21,14 @@ export function fieldDate(value: string, mode: DateFieldMode) {
       ? `${value}T12:00:00`
       : mode === "time"
         ? `${localDate(new Date())}T${value || "00:00"}:00`
-        : value
+        : value,
   );
   return Number.isFinite(date.getTime()) ? date : new Date();
 }
 export function formatDateValue(date: Date, mode: DateFieldMode) {
-  return mode === "date" ? localDate(date) : mode === "time" ? localTime(date) : date.toISOString();
+  return mode === "date"
+    ? localDate(date)
+    : mode === "time"
+      ? localTime(date)
+      : date.toISOString();
 }

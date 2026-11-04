@@ -1,7 +1,10 @@
 import { Component, type ReactNode } from "react";
 import { ErrorState, Screen } from "./index";
 import { t } from "@/src/lib/i18n";
-export class ErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+export class ErrorBoundary extends Component<
+  { children: ReactNode },
+  { error: Error | null }
+> {
   state: { error: Error | null } = { error: null };
   static getDerivedStateFromError(error: Error) {
     return { error };

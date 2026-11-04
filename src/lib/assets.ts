@@ -1,3 +1,7 @@
+import {
+  VEHICLE_SUBTYPE_IMAGES,
+  type VehicleSubtypeId,
+} from "@/assets/vehicle-subtypes";
 export const artwork = {
   two_wheeler: require("../../assets/vehicle-two-wheeler.png"),
   four_wheeler: require("../../assets/vehicle-four-wheeler.png"),
@@ -18,10 +22,6 @@ export const artwork = {
   logo: require("../../assets/app-icon.png"),
 };
 export { VEHICLE_SUBTYPE_IMAGES as subtypeArtwork } from "@/assets/vehicle-subtypes";
-import {
-  VEHICLE_SUBTYPE_IMAGES,
-  type VehicleSubtypeId,
-} from "@/assets/vehicle-subtypes";
 export function vehicleArt(_category: string, subtype: string) {
   return Object.prototype.hasOwnProperty.call(VEHICLE_SUBTYPE_IMAGES, subtype)
     ? VEHICLE_SUBTYPE_IMAGES[subtype as VehicleSubtypeId]

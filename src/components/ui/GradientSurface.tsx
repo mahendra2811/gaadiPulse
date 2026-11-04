@@ -1,6 +1,6 @@
 import { useId, type ReactNode } from "react";
 import { View, type StyleProp, type ViewStyle } from "react-native";
-import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
+import { Svg, Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 export function GradientSurface({
   children,
   colors = ["#0D584E", "#167D75", "#1D7087"],

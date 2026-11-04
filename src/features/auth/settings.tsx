@@ -49,6 +49,12 @@ export function Settings() {
           tone="mint"
           onPress={() => router.push("/settings/security")}
         />
+        <MenuRow
+          label={r("requestDeletion")}
+          icon="trash"
+          tone="coral"
+          onPress={() => router.push("/settings/security")}
+        />
       </Card>
       <Card style={{ padding: 16 }}>
         <SectionHeading title={t("uiPreferences")} />

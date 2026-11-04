@@ -11,11 +11,12 @@ Deno.serve(async request => {
  const before=new Date(Date.now()-retention*86400000).toISOString();
  const {data,error}=await admin.from('account_deletion_requests').select('user_id').is('completed_at',null).lt('requested_at',before).limit(20);
  if(error)return Response.json({error:'Could not load deletion requests'},{status:500});
- let processed=0;
+ let processed=0,failed=0;
  for(const entry of data??[]){
   const {error:authError}=await admin.auth.admin.updateUserById(entry.user_id,{email:`deleted+${entry.user_id}@account.invalid`,email_confirm:true,ban_duration:'876000h',user_metadata:{full_name:null,display_name:null,avatar_url:null}});
-  if(authError)continue;
-  const {error:doneError}=await admin.rpc('complete_account_anonymization',{p_user:entry.user_id});if(!doneError)processed++;
+  if(authError){failed++;continue;}
+  const {error:doneError}=await admin.rpc('complete_account_anonymization',{p_user:entry.user_id});if(doneError)failed++;else processed++;
  }
- return Response.json({processed});
+ // Leave failed requests pending for retry and make scheduler failures observable.
+ return Response.json({processed,failed},{status:failed?500:200});
 });

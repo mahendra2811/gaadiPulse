@@ -5,6 +5,14 @@ import {
   passwordPair,
 } from "../src/features/auth/passwordSchema";
 import { keepsAuthenticatedAuthScreen } from "../src/features/auth/routing";
+import {
+  passwordLogin,
+  passwordSignup,
+  requestPasswordReset,
+  resendSignup,
+  setNewPassword,
+  verifyAccountCode,
+} from "../src/features/auth/passwordApi";
 const auth = vi.hoisted(() => ({
   signInWithPassword: vi.fn(),
   signUp: vi.fn(),
@@ -14,14 +22,6 @@ const auth = vi.hoisted(() => ({
   updateUser: vi.fn(),
 }));
 vi.mock("../src/lib/supabase", () => ({ client: () => ({ auth }) }));
-import {
-  passwordLogin,
-  passwordSignup,
-  requestPasswordReset,
-  resendSignup,
-  setNewPassword,
-  verifyAccountCode,
-} from "../src/features/auth/passwordApi";
 
 beforeEach(() => {
   vi.resetAllMocks();

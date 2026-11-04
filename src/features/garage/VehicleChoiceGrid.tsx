@@ -21,8 +21,14 @@ export function VehicleChoiceGrid({
   const colors = useTheme();
   const { fontScale } = useWindowDimensions();
   const [width, setWidth] = useState(0);
-  const columns = width >= 540 && fontScale < 1.5 ? 3 : width < 260 || fontScale >= 1.8 ? 1 : 2;
-  const cardWidth = width > 0 ? (width - (columns - 1) * 10) / columns : undefined;
+  const columns =
+    width >= 540 && fontScale < 1.5
+      ? 3
+      : width < 260 || fontScale >= 1.8
+        ? 1
+        : 2;
+  const cardWidth =
+    width > 0 ? (width - (columns - 1) * 10) / columns : undefined;
   return (
     <View
       accessibilityRole="radiogroup"

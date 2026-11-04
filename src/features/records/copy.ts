@@ -77,6 +77,7 @@ export const recordCopy = {
   byCategory: "By category",
   notificationBody: "Your vehicle reminder is due.",
   requestDeletion: "Request account deletion",
+  deletionContact: "Email us about account deletion",
   deletionRequested:
     "Deletion request recorded. The operator will complete account anonymization under the retention policy.",
   deletionWorkflow:

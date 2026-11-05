@@ -1,3 +1,4 @@
+import { HistoryRow } from "@/src/components/ui/HistoryRow";
 import { Timestamp } from "@/src/components/ui/Timestamp";
 import { readableDateTime } from "@/src/utils/dateDisplay";
 import { View, Text } from "react-native";
@@ -57,23 +58,13 @@ export function recordTimestamp(row: RecordEntry, kind: Kind) {
         ? row.payload.reading_at
         : kind === "reminders" || kind === "documents"
           ? row.payload.due_at
-          : row.payload.event_at) ?? row.created_at,
+          : row.payload.event_at) ?? row.created_at
   );
 }
-export function recordDate(
-  row: RecordEntry,
-  kind: Kind,
-  timezone = "Asia/Kolkata",
-) {
+export function recordDate(row: RecordEntry, kind: Kind, timezone = "Asia/Kolkata") {
   return readableDateTime(recordTimestamp(row, kind), timezone);
 }
-export function RecordBadge({
-  label,
-  tone = "blue",
-}: {
-  label: string;
-  tone?: IconTone;
-}) {
+export function RecordBadge({ label, tone = "blue" }: { label: string; tone?: IconTone }) {
   const c = useTheme();
   return (
     <View
@@ -122,15 +113,13 @@ export function RecordCard({
           : "partialCharge"
         : row.payload.is_full_tank
           ? "full"
-          : "partial",
+          : "partial"
     );
     const unit = String(row.payload.unit ?? "L");
     const unitLabel = unit === "KWH" ? "kWh" : unit === "KG" ? "kg" : "L";
     const quantity = row.payload.quantity;
     const quantityLabel =
-      quantity === null || quantity === undefined
-        ? ""
-        : `${quantity} ${unitLabel}`;
+      quantity === null || quantity === undefined ? "" : `${quantity} ${unitLabel}`;
     const title = String(row.payload.title ?? "");
     const category = String(row.payload.category ?? "");
     const categoryLabel = r(category as keyof typeof recordCopy) ?? category;
@@ -138,73 +127,19 @@ export function RecordCard({
     const primaryDetail = kind === "expenses" ? title : quantityLabel;
     const amount = money(Number(row.payload.amount_paise ?? 0));
     const date = recordDate(row, kind, timezone);
-    const compactContent = (
-      <View
-        style={{
-          paddingVertical: 14,
-          paddingHorizontal: 16,
-          gap: 6,
-          minHeight: 64,
-          borderTopWidth: separated ? 1 : 0,
-          borderTopColor: c.line,
-        }}
-      >
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-          <View style={{ flex: 1, gap: 6 }}>
-            <Text style={{ color: c.primary, fontWeight: "700", fontSize: 19 }}>
-              {amount}
-              {primaryDetail ? (
-                <Text style={{ color: c.ink, fontWeight: "500", fontSize: 15 }}>
-                  {` (${primaryDetail})`}
-                </Text>
-              ) : null}
-            </Text>
-            <View
-              style={{
-                flexDirection: "row",
-                flexWrap: "wrap",
-                gap: 8,
-                alignItems: "center",
-              }}
-            >
-              <Text
-                style={{ color: c.primary, fontSize: 11, fontWeight: "600" }}
-              >
-                {secondaryLabel}
-              </Text>
-              {row.status === "ARCHIVED" && (
-                <Text style={{ color: c.muted, fontSize: 11 }}>{status}</Text>
-              )}
-              <Text
-                style={{
-                  color: c.muted,
-                  fontSize: 11,
-                  lineHeight: 16,
-                  marginLeft: "auto",
-                  flexShrink: 1,
-                }}
-              >
-                {date}
-              </Text>
-            </View>
-          </View>
-          {onPress && (
-            <Ionicons name="chevron-forward" size={20} color={c.primary} />
-          )}
-        </View>
-      </View>
-    );
-    return onPress ? (
-      <MotionPress
-        label={`${r("detail")}: ${amount}, ${primaryDetail}, ${secondaryLabel}, ${date}${row.status === "ARCHIVED" ? `, ${status}` : ""}`}
+    return (
+      <HistoryRow
+        primary={amount}
+        detail={primaryDetail}
+        secondary={secondaryLabel}
+        date={date}
+        status={row.status === "ARCHIVED" ? status : undefined}
+        separated={separated}
         onPress={onPress}
-      >
-        {compactContent}
-      </MotionPress>
-    ) : (
-      compactContent
+      />
     );
   }
+
   const content = (
     <Card style={{ padding: 14, gap: 10, borderRadius: 20 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
@@ -215,9 +150,7 @@ export function RecordCard({
           </Text>
           <Timestamp value={recordTimestamp(row, kind)} timezone={timezone} />
         </View>
-        {onPress && (
-          <Ionicons name="chevron-forward" size={18} color={c.muted} />
-        )}
+        {onPress && <Ionicons name="chevron-forward" size={18} color={c.muted} />}
       </View>
       {row.payload.amount_paise !== undefined && (
         <Text style={{ color: c.ink, fontWeight: "800", fontSize: 23 }}>
@@ -236,15 +169,14 @@ export function RecordCard({
             )}
           </>
         )}
-        {(kind === "documents" || kind === "reminders") &&
-          row.payload.category !== undefined && (
-            <RecordBadge
-              label={
-                r(String(row.payload.category) as keyof typeof recordCopy) ??
-                String(row.payload.category)
-              }
-            />
-          )}
+        {(kind === "documents" || kind === "reminders") && row.payload.category !== undefined && (
+          <RecordBadge
+            label={
+              r(String(row.payload.category) as keyof typeof recordCopy) ??
+              String(row.payload.category)
+            }
+          />
+        )}
       </View>
     </Card>
   );
@@ -270,19 +202,12 @@ export function RecordSummary({
 }) {
   const visual = recordVisuals[kind];
   return (
-    <GradientSurface
-      colors={visual.colors}
-      style={{ padding: 18, gap: 10, borderRadius: 24 }}
-    >
+    <GradientSurface colors={visual.colors} style={{ padding: 18, gap: 10, borderRadius: 24 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
         <Ionicons name={visual.icon} color="#FFF" size={22} />
-        <Text style={{ color: "#F0F4FF", fontSize: 14, fontWeight: "600" }}>
-          {r(kind)}
-        </Text>
+        <Text style={{ color: "#F0F4FF", fontSize: 14, fontWeight: "600" }}>{r(kind)}</Text>
       </View>
-      <Text style={{ color: "#FFF", fontSize: 28, fontWeight: "800" }}>
-        {value}
-      </Text>
+      <Text style={{ color: "#FFF", fontSize: 28, fontWeight: "800" }}>{value}</Text>
       <Text style={{ color: "#F0F4FF", fontSize: 12 }}>{subtitle}</Text>
     </GradientSurface>
   );

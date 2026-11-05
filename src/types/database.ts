@@ -176,6 +176,10 @@ export type Database = {
     };
     Views: Record<string, never>;
     Functions: {
+      record_author_name: {
+        Args: { p_kind: string; p_vehicle: string; p_record: string };
+        Returns: { display_name: string | null }[];
+      };
       vehicle_access: { Args: { p_vehicle: string }; Returns: Json };
       save_record: {
         Args: {

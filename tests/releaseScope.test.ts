@@ -17,25 +17,21 @@ describe("release boundaries", () => {
     expect(supportsVehicle("four_wheeler")).toBe(true);
     for (const category of ["commercial", "agricultural", "heavy_machinery"])
       expect(supportsVehicle(category)).toBe(true);
-    for (const kind of [
-      "fuel",
-      "expenses",
-      "meters",
-      "progress",
-      "documents",
-      "reminders",
-    ])
+    for (const kind of ["fuel", "expenses", "meters", "documents", "reminders"])
       expect(supportsRecord(kind)).toBe(true);
     expect(supportsVehicle("unknown")).toBe(false);
     expect(supportsRecord("unknown")).toBe(false);
+    expect(supportsRecord("progress")).toBe(false);
     for (const path of [
       "/owner/form-builder",
       "/progress/approvals",
+      "/records/progress/add",
+    ])
+      expect(deferredPath(path)).toBe(true);
+    for (const path of [
       "/reports",
-      "/maintenance",
       "/records/documents",
       "/records/reminders/add",
-      "/records/progress/add",
       "/records/fuel/analytics",
     ])
       expect(deferredPath(path)).toBe(false);

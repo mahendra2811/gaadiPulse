@@ -4,7 +4,6 @@ import type { Href } from "expo-router";
 import { useActiveVehicle } from "@/src/features/garage/hooks";
 import { usePermissions } from "@/src/features/records/hooks";
 import { useProfile } from "@/src/features/auth/profile";
-import { SignOutButton } from "@/src/features/auth/SignOutButton";
 import { ErrorState, AppText } from "@/src/components/ui";
 import {
   MenuRow,
@@ -54,27 +53,6 @@ export function MoreMenu({ navigate }: { navigate: (href: Href) => void }) {
           href: record("meters", "add"),
           show: !!access.data?.["meters.create"],
         },
-        {
-          label: r("progress"),
-          icon: "checkbox",
-          tone: "violet",
-          href: record("progress", "add"),
-          show: !!access.data?.["progress.submit"],
-        },
-        {
-          label: r("documents"),
-          icon: "document-text",
-          tone: "amber",
-          href: record("documents", "add"),
-          show: !!access.data?.owner,
-        },
-        {
-          label: r("addMaintenance"),
-          icon: "build",
-          tone: "coral",
-          href: record("expenses", "add", { category: "SERVICE" }),
-          show: !!access.data?.["expenses.create"],
-        },
       ],
     },
     {
@@ -94,13 +72,6 @@ export function MoreMenu({ navigate }: { navigate: (href: Href) => void }) {
           show: !!access.data?.["meters.read"],
         },
         {
-          label: r("progress"),
-          icon: "calendar",
-          tone: "violet",
-          href: record("progress"),
-          show: !!access.data?.["progress.view"],
-        },
-        {
           label: r("documents"),
           icon: "documents",
           tone: "amber",
@@ -115,13 +86,6 @@ export function MoreMenu({ navigate }: { navigate: (href: Href) => void }) {
           show: !!access.data?.["reminders.read"],
         },
         {
-          label: r("maintenance"),
-          icon: "construct",
-          tone: "cyan",
-          href: "/maintenance",
-          show: !!access.data?.["expenses.read"],
-        },
-        {
           label: r("reports"),
           icon: "stats-chart",
           tone: "blue",
@@ -134,24 +98,10 @@ export function MoreMenu({ navigate }: { navigate: (href: Href) => void }) {
       title: t("uiOwnerTools"),
       items: [
         {
-          label: r("approvals"),
-          icon: "checkmark-done-circle",
-          tone: "mint",
-          href: "/progress/approvals",
-          show: !!access.data?.owner,
-        },
-        {
           label: r("members"),
           icon: "people",
           tone: "violet",
           href: "/owner/members",
-          show: !!access.data?.owner,
-        },
-        {
-          label: r("builder"),
-          icon: "options",
-          tone: "blue",
-          href: "/owner/form-builder",
           show: !!access.data?.owner,
         },
       ],
@@ -160,34 +110,10 @@ export function MoreMenu({ navigate }: { navigate: (href: Href) => void }) {
       title: t("uiAccount"),
       items: [
         {
-          label: t("profile"),
-          icon: "person-circle",
-          tone: "violet",
-          href: "/settings/profile",
-        },
-        {
           label: t("settings"),
           icon: "settings",
           tone: "blue",
           href: "/settings",
-        },
-        {
-          label: r("security"),
-          icon: "shield-checkmark",
-          tone: "mint",
-          href: "/settings/security",
-        },
-        {
-          label: r("help"),
-          icon: "help-buoy",
-          tone: "amber",
-          href: "/settings/help",
-        },
-        {
-          label: t("about"),
-          icon: "information-circle",
-          tone: "blue",
-          href: "/settings/about",
         },
       ],
     },
@@ -288,9 +214,6 @@ export function MoreMenu({ navigate }: { navigate: (href: Href) => void }) {
           </View>
         ) : null;
       })}
-      <View style={{ paddingTop: 8, borderTopWidth: 1, borderColor: c.line }}>
-        <SignOutButton />
-      </View>
     </View>
   );
 }

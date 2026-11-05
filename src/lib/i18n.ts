@@ -7,20 +7,22 @@ export const en = {
   filterMaximumAmount: "Maximum amount (₹)",
   filterClear: "Clear filters",
   lastMeterReading: "Previous reading: {value}",
-  readingBelowPrevious:
-    "Reading must be at least the previous reading ({value}).",
+  latestMeterEntry: "Latest reading: {value} · {date}",
+  fillConfirmationRequired:
+    "Confirm the reading was observed at the fill time, or choose its actual observation time.",
+  fillConfirmationHelp:
+    "If you observed the reading at the fill time, confirm below. Otherwise, choose the actual observation time.",
+  readingBelowPrevious: "Reading must be at least the previous reading ({value}).",
   readingBelowPreviousServer:
     "Reading must be at least the previous reading for the selected time. Check the reading and try again.",
   closePopup: "Close popup",
-  fuelPrimaryRequired:
-    "Enter the total amount and quantity to save this record.",
+  fuelPrimaryRequired: "Enter the total amount and quantity to save this record.",
   readingAboveNextServer:
     "This reading is higher than a later reading. Check the value and observation time.",
   fuelQuickHelp:
     "Enter amount and quantity. The unit price is calculated automatically; you can enter the receipt rate under Additional options.",
 
-  chooseAllowedMeter:
-    "Choose a meter mode available for this vehicle type and subtype.",
+  chooseAllowedMeter: "Choose a meter mode available for this vehicle type and subtype.",
   selectOption: "Select an option",
   editEnergyLabel: "Fuel / energy type",
   editMeterHelp:
@@ -38,8 +40,7 @@ export const en = {
   authRestoreTitle: "Opening your garage",
   authRestoreHint: "Checking your saved sign-in securely.",
   authProfileTitle: "Make it yours",
-  authProfileHint:
-    "What should we call you? Finish your profile to open your garage.",
+  authProfileHint: "Add your name and account time zone to open your garage.",
   authTagline: "Every Vehicle. Every Detail.",
   authBrandHint: "Your vehicles. One clear picture.",
   authOrEmail: "or use email",
@@ -62,17 +63,35 @@ export const en = {
 
   additionalOptions: "Additional options",
   additionalOptionsHint: "Optional details · tap to expand",
-  vehicleIdentityHelp:
-    "Provide at least one: vehicle name, registration or model.",
+  vehicleIdentityHelp: "Provide at least one: vehicle name, registration or model.",
+  timezoneOptional: "Vehicle time zone (optional)",
+  accountTimezone: "Account time zone",
+  accountTimezoneHelp:
+    "New vehicles use this time zone by default. Each vehicle can use a different time zone.",
+  timezoneHelp: "Used for vehicle dates and Pilot history. Defaults to your account time zone.",
+  timezoneDefaultHint:
+    "Time zone defaults to your account setting. Change it in Additional options if needed.",
+  timezoneSearch: "Search city, region or UTC offset",
+  timezoneOffsetHelp:
+    "Offsets shown are current and can change with daylight saving or local rules.",
+  timezoneNoResults: "No time zones match your search.",
+  timezoneRefineSearch: "Search to see more time zones.",
+  vehicleFuelEntries: "Fuel records available for this vehicle: {fuels}.",
+  vehicleFuelOtherHelp:
+    "Other currently records quantity in litres only. Choose a specific supported fuel when possible.",
+  vehicleFuelChangeHelp:
+    "Changing the configuration affects new fuel entries. Existing records keep their original fuel and unit.",
+  initialReadingHelp:
+    "Starting readings are optional. Enter the actual reading and when it was observed. The time starts when you open this form; change it if needed.",
+  meterModeClearHelp:
+    "Changing this meter mode will clear the starting reading that no longer applies. Continue?",
 
   requiredField: "Required",
   optionalField: "Optional",
   numericOnly: "Use numbers only, with the allowed decimal places.",
   invalidReading: "Use a non-negative reading with up to 3 decimal places.",
-  invalidPositiveReading:
-    "Use a positive threshold with up to 3 decimal places.",
-  validPastTime:
-    "Choose the actual observation time; future readings are not allowed.",
+  invalidPositiveReading: "Use a positive threshold with up to 3 decimal places.",
+  validPastTime: "Choose the actual observation time; future readings are not allowed.",
   requiredValue: "This field is required.",
   invalidTimeZone: "Choose a valid timezone.",
   reminderCriterion: "Choose a due date or at least one meter threshold.",
@@ -80,8 +99,7 @@ export const en = {
     "Monthly/yearly reminders require a due date and no meter thresholds. Use a separate reminder for meter-based service.",
   linkedReminderDue: "Choose a date before enabling the linked reminder.",
   linkedReminder: "Create a linked reminder",
-  progressMeterPolicy:
-    "Reading requirements follow the published vehicle form.",
+  progressMeterPolicy: "Reading requirements follow the published vehicle form.",
   linkedOwnerOnly:
     "The linked reminder is Owner-only by default; its visibility can be changed in Reminders.",
   linkedReminderHelp:
@@ -90,15 +108,13 @@ export const en = {
   documentExpiry: "Expiry / renewal date",
   documentStorage:
     "Document details and linked reminders sync with your account. Photo/PDF attachments are not implemented yet; future files will stay on your phone.",
-  fuelAnyTwo:
-    "Required: any two of amount, quantity and unit price. The third is calculated.",
+  fuelAnyTwo: "Required: any two of amount, quantity and unit price. The third is calculated.",
   optionalMeters:
     "Readings are optional. Missing readings stay pending and are excluded from efficiency calculations.",
   meterOnlyTime:
     "Enter when you actually observed the meter. The app records the entry time separately.",
   meterRequired: "Enter at least one actual reading.",
-  optionalObservation:
-    "Choose an observation time only when you enter a reading.",
+  optionalObservation: "Choose an observation time only when you enter a reading.",
   dateOrder: "The end/expiry date cannot be before the start date.",
   invalidCalendarDate: "Choose a valid calendar date.",
   reviewReason: "Enter a reason for rejection or a correction request.",
@@ -131,10 +147,8 @@ export const en = {
     "This entry uses a fuel that is not configured for this vehicle. Review the fuel selection before saving.",
   fuelHistorical:
     "This older record keeps its original fuel. The vehicle's current configuration applies to new entries.",
-  fuelMismatch:
-    "Choose a fuel configured for this vehicle. Its measurement unit is fixed.",
-  discardUnsaved:
-    "Your changes on this screen have not been saved. Leave without saving them?",
+  fuelMismatch: "Choose a fuel configured for this vehicle. Its measurement unit is fixed.",
+  discardUnsaved: "Your changes on this screen have not been saved. Leave without saving them?",
   keepEditing: "Keep editing",
   leaveForm: "Leave form",
 
@@ -165,16 +179,30 @@ export const en = {
   uiOf: "of",
   uiVehicleSetup: "Vehicle setup",
   uiGarageHint: "Your vehicles, ready to go.",
+  emptyFuelTitle: "No fuel records found",
+  emptyChargingTitle: "No charging records found",
+  emptyExpensesTitle: "No expenses found",
+  emptyMetersTitle: "No meter readings yet",
+  emptyMetersBody: "Add a reading to start tracking this vehicle’s distance or engine hours.",
+  emptyMeterFilterTitle: "No readings for this meter",
+  emptyMeterFilterBody: "Choose another meter type to see its readings.",
+  emptyDocumentsTitle: "No document details found",
+  emptyRemindersTitle: "No reminders found",
+  emptyRecordsTitle: "No records found",
+  emptyRecordsBody: "Try another date range or adjust your search and filters.",
+  emptyFuelBody: "Saved fuel entries will appear here.",
+  emptyChargingBody: "Saved charging sessions will appear here.",
+  emptyExpensesBody: "Saved expenses will appear here.",
+  emptyDocumentsBody: "Saved document details will appear here.",
+  emptyRemindersBody: "Saved reminders will appear here.",
+  emptyMeterReadOnlyBody: "Recorded readings will appear here.",
+  emptySearchTitle: "No vehicles found",
   uiNoSearchResults: "No vehicles match your search.",
   uiCategoryHint: "Choose a category. You can select the exact type next.",
-  uiModelHint:
-    "Brand and model are optional. Enter your own or choose a suggestion.",
-  uiMeterHint:
-    "Choose what you track. Initial readings are optional and can be added later.",
-  uiDetailsHint:
-    "Give your vehicle a name or registration, and choose its energy type.",
-  uiReviewHint:
-    "Review your details before saving. You can go back to any step.",
+  uiModelHint: "Brand and model are optional. Enter your own or choose a suggestion.",
+  uiMeterHint: "Choose what you track. Initial readings are optional and can be added later.",
+  uiDetailsHint: "Identify your vehicle and choose the fuel or energy it uses.",
+  uiReviewHint: "Review your details before saving. You can go back to any step.",
   uiRecentActivity: "Recent activity",
   uiMoreActivity: "Show more activity",
   uiQuickAdd: "Quick add",
@@ -202,8 +230,7 @@ export const en = {
   subtypeNoMatch: "No matching vehicle types.",
   subtypeManual: "Other vehicle type",
   subtypeRequired: "Choose a vehicle type to continue.",
-  subtypeIllustration:
-    "Illustration only; model and energy type are entered separately.",
+  subtypeIllustration: "Illustration only; model and energy type are entered separately.",
   subtype_motorcycle: "Motorcycle",
   subtype_scooter: "Scooter",
   subtype_electric_scooter: "Electric Scooter",
@@ -262,14 +289,12 @@ export const en = {
     "If an account exists for this email, a reset code has been sent. Check your inbox and spam folder.",
   signupSent:
     "Check your inbox for a verification code. If you already have an account, sign in or reset your password.",
-  passwordRules:
-    "Use 12–128 characters. A long, unique passphrase is recommended.",
+  passwordRules: "Use 12–128 characters. A long, unique passphrase is recommended.",
   passwordMismatch: "Passwords do not match.",
   passwordUpdated: "Your password was updated.",
   invalidEmail: "Enter a valid email address.",
   invalidCode: "Enter the 6–8 digit code from your email.",
-  codeSessionMissing:
-    "Verification did not complete. Request a new code and try again.",
+  codeSessionMissing: "Verification did not complete. Request a new code and try again.",
   useOtp: "Sign in with an email code",
   signupVerify: "Verify your account",
   recoveryVerify: "Verify reset code",
@@ -286,8 +311,7 @@ export const en = {
   networkError:
     "Unable to confirm the request. Keep this form open, check your connection and retry. Nothing will upload automatically.",
   invalidData: "Some values are invalid. Review the form and try again.",
-  deletionPending:
-    "Your account deletion request is pending. Contact your operator for support.",
+  deletionPending: "Your account deletion request is pending. Contact your operator for support.",
   deletionArchiveFirst:
     "Archive all vehicles you administer before requesting deletion. Go to Garage to review them, then return here.",
   serviceSetup:
@@ -369,28 +393,24 @@ export const en = {
   cancel: "Cancel",
   discard: "Discard",
   unsaved: "Leave this form?",
-  unsavedBody:
-    "Your changes have not been saved. Leave and discard them, or keep editing.",
+  unsavedBody: "Your changes have not been saved. Leave and discard them, or keep editing.",
+  addVehicleMember: "Add vehicle member",
   garage: "My Garage",
   add: "Add vehicle",
   empty: "Your garage starts here",
-  emptyBody:
-    "Add your first vehicle or ask an Owner to grant access to your verified email.",
+  emptyBody: "Add your first vehicle or ask an Owner to grant access to your verified email.",
   search: "Search vehicles",
   switch: "Switch vehicle",
   owner: "Owner",
   pilot: "Pilot",
   pilotAccessHint:
     "By default, pilots can add fuel, expenses and meter readings and view today and yesterday. You can restrict access or allow Daily Progress below. Pilots cannot edit or delete records.",
-  pilotPolicyUnavailable:
-    "Pilot access needs a server update. Try again after the update.",
-  pilotHistoryHint:
-    "Pilot access: showing today and yesterday in the vehicle’s time zone.",
+  pilotPolicyUnavailable: "Pilot access needs a server update. Try again after the update.",
+  pilotHistoryHint: "Pilot access: showing today and yesterday in the vehicle’s time zone.",
   archived: "Archived",
   archive: "Archive vehicle",
   recover: "Recover vehicle",
-  archiveBody:
-    "This vehicle stays in your garage history and can be recovered.",
+  archiveBody: "This vehicle stays in your garage history and can be recovered.",
   edit: "Edit vehicle",
   details: "Vehicle details",
   two_wheeler: "Two wheeler",
@@ -409,7 +429,7 @@ export const en = {
   timezone: "Timezone",
   km: "Kilometres (optional)",
   hours: "Hours (optional)",
-  observed: "Observed at (ISO date and time)",
+  observed: "Observed date and time",
   review: "Review vehicle",
   categoryStep: "Choose your vehicle",
   subtypeStep: "Choose a subtype",
@@ -417,14 +437,16 @@ export const en = {
   detailsStep: "Give it a name",
   meterStep: "Set up your meters",
   reviewStep: "Ready for your garage",
-  catalog:
-    "Suggestions are a small curated catalog. You can enter any make or model.",
+  catalog: "Suggestions are a small curated catalog. You can enter any make or model.",
   PETROL: "Petrol",
   DIESEL: "Diesel",
   ELECTRIC: "Electric",
   CNG: "CNG",
   HYBRID: "Hybrid (petrol + electric)",
   OTHER: "Other",
+  meterModeShortKm: "KM",
+  meterModeShortHours: "hrs",
+  meterModeShortBoth: "KM & hrs",
   KM: "Kilometres",
   HOURS: "Engine hours",
   unitKmShort: "km",
@@ -444,8 +466,7 @@ export const en = {
   sync: "Connection",
   saveUnconfirmed:
     "Could not confirm this save. Retry with the same values. If you changed them after an earlier attempt, check the latest server record before starting a new entry.",
-  onlineFormNotice:
-    "Changes stay on this screen until you save. Leaving discards unsaved changes.",
+  onlineFormNotice: "Changes stay on this screen until you save. Leaving discards unsaved changes.",
   onlineOnlyBody:
     "An internet connection is required. Records appear only after the server accepts them. There are no offline drafts or background uploads.",
   developmentNotice:
@@ -462,16 +483,14 @@ export const en = {
   denied: "Vehicle unavailable or access removed",
   sessionError: "Could not restore your session",
   stage2: "Fuel and expense recording is scheduled for Stage 2.",
-  stage3:
-    "Daily Progress and collaboration controls are scheduled for Stage 3.",
+  stage3: "Daily Progress and collaboration controls are scheduled for Stage 3.",
   progress: "Daily Progress",
   upcoming: "Next implementation stage",
   meters: "Latest observed readings",
   noReadings: "No observed readings yet",
   noAccess: "You do not have permission to read meter history.",
   refresh: "Refresh",
-  roleInfo:
-    "Access applies to this vehicle. App role is separate from legal ownership.",
+  roleInfo: "Access applies to this vehicle. App role is separate from legal ownership.",
   noPhoto: "Photo capture and uploads are coming later.",
   signoutBody: "Signing out clears your session and current unsaved changes.",
 } as const;

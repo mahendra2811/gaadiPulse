@@ -152,15 +152,6 @@ function DashboardContent({
         show: !!permissions.data?.["meters.create"],
         run: () => navigate("meters", "add"),
       },
-      {
-        label: t("uiAddProgress"),
-        icon: "checkbox",
-        tone: "violet",
-        show:
-          releaseFeatures.advancedTools &&
-          !!permissions.data?.["progress.submit"],
-        run: () => navigate("progress", "add"),
-      },
     ] satisfies Action[]
   ).filter((action) => action.show);
   const secondary = (
@@ -173,32 +164,11 @@ function DashboardContent({
         run: () => navigate("documents"),
       },
       {
-        label: r("progress"),
-        icon: "calendar",
-        tone: "violet",
-        show: !!permissions.data?.["progress.view"],
-        run: () => navigate("progress"),
-      },
-      {
         label: r("reports"),
         icon: "stats-chart",
         tone: "blue",
         show: !!permissions.data?.["reports.read"],
         run: () => router.push("/reports"),
-      },
-      {
-        label: r("approvals"),
-        icon: "checkmark-done-circle",
-        tone: "mint",
-        show: !!permissions.data?.owner,
-        run: () => router.push("/progress/approvals"),
-      },
-      {
-        label: r("builder"),
-        icon: "options",
-        tone: "cyan",
-        show: !!permissions.data?.owner,
-        run: () => router.push("/owner/form-builder"),
       },
       {
         label: r("members"),

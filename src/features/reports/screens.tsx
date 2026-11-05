@@ -1,6 +1,6 @@
 import { TimestampRange } from "@/src/components/ui/Timestamp";
 import { FilterChips } from "@/src/components/ui/FilterChips";
-import { RecordCard, RecordSummary } from "@/src/features/records/RecordCard";
+import { RecordSummary } from "@/src/features/records/RecordCard";
 import {
   InfoRows,
   SectionHeading,
@@ -10,28 +10,23 @@ import { t } from "@/src/lib/i18n";
 import { client } from "@/src/lib/supabase";
 import { observations as loadObservations } from "@/src/features/meters/api";
 import { useState } from "react";
-import { router } from "expo-router";
 import { useQueries } from "@tanstack/react-query";
 import { useQuery } from "@/src/lib/query";
 import { Screen, Card, AppText, ErrorState } from "@/src/components/ui";
 import { VehicleHeader } from "@/src/components/navigation/VehicleHeader";
 import { useActiveVehicle } from "@/src/features/garage/hooks";
 import { useSession, useAccountId } from "@/src/features/auth/session";
-import { kinds, type Kind } from "@/src/features/records/schema";
+import { type Kind } from "@/src/features/records/schema";
 import { listRecords, readPermission } from "@/src/features/records/api";
-import { usePermissions, useRecords } from "@/src/features/records/hooks";
+import { usePermissions } from "@/src/features/records/hooks";
 import { r } from "@/src/features/records/copy";
 import { recordsCsv, exportText, exportPdf } from "./export";
 import { money } from "@/src/utils/money";
 import { expenseAccounting } from "@/src/utils/expenseAccounting";
 import { measuredIntervals } from "@/src/utils/meter";
 import { fuelIntervals, type FuelPoint } from "@/src/utils/fuelEconomy";
-import { formVersions } from "@/src/features/progress/api";
-import {
-  aggregateAnswers,
-  dateInZone,
-  shiftDay,
-} from "@/src/features/progress/schema";
+import { dateInZone, shiftDay } from "@/src/features/progress/schema";
+const kinds = ["fuel", "expenses", "meters", "reminders", "documents"] as const;
 export function Reports() {
   const active = useActiveVehicle();
   const v = active.vehicle;
@@ -50,11 +45,6 @@ export function Reports() {
       enabled: !!v && !!user && canRead(kind),
       queryFn: () => listRecords(user!, v!.id, kind, development),
     })),
-  });
-  const forms = useQuery({
-    queryKey: [user, v?.id, "forms"],
-    enabled: !!v && canRead("progress"),
-    queryFn: () => formVersions(v!.id, development),
   });
   const observationQuery = useQuery({
     queryKey: [user, v?.id, "observations"],
@@ -86,32 +76,17 @@ export function Reports() {
   );
   const rows = all.filter(
     (row) =>
-      (row.kind === "progress"
-        ? String(row.payload.progress_date)
-        : dateInZone(
-            new Date(
-              String(
-                row.kind === "meters"
-                  ? (row.payload.reading_at ?? row.created_at)
-                  : (row.payload.event_at ?? row.created_at),
-              ),
-            ),
-            v?.timezone ?? "Asia/Kolkata",
-          )) >= start,
+      dateInZone(
+        new Date(
+          String(
+            row.kind === "meters"
+              ? (row.payload.reading_at ?? row.created_at)
+              : (row.payload.event_at ?? row.created_at),
+          ),
+        ),
+        v?.timezone ?? "Asia/Kolkata",
+      ) >= start,
   );
-  const memberSummary = new Map<
-    string,
-    { total: number; statuses: Record<string, number> }
-  >();
-  for (const row of rows.filter((row) => row.kind === "progress")) {
-    const member = memberSummary.get(row.created_by) ?? {
-      total: 0,
-      statuses: {},
-    };
-    member.total++;
-    member.statuses[row.status] = (member.statuses[row.status] ?? 0) + 1;
-    memberSummary.set(row.created_by, member);
-  }
   const expenseRows = rows.filter((row) => row.kind === "expenses");
   const fuel = rows.filter((row) => row.kind === "fuel");
   const cash = [...fuel, ...expenseRows].reduce(
@@ -143,11 +118,9 @@ export function Reports() {
     : [];
   const queryError =
     queries.find((q, index) => canRead(kinds[index]) && q.error)?.error ??
-    observationQuery.error ??
-    forms.error;
+    observationQuery.error;
   const loading =
     queries.some((q, index) => canRead(kinds[index]) && q.isPending) ||
-    (!!v && canRead("progress") && forms.isPending) ||
     (!!v &&
       access.data?.["reports.read"] === true &&
       access.data?.["meters.read"] === true &&
@@ -158,7 +131,6 @@ export function Reports() {
     setError("");
     try {
       let exportRows = rows;
-      let exportForms = forms.data ?? [];
       let exportMeasured = measured;
       if (!development) {
         const proof = await client().rpc("vehicle_access", { p_vehicle: v.id });
@@ -180,22 +152,17 @@ export function Reports() {
           .flat()
           .filter(
             (row) =>
-              (row.kind === "progress"
-                ? String(row.payload.progress_date)
-                : dateInZone(
-                    new Date(
-                      String(
-                        row.kind === "meters"
-                          ? (row.payload.reading_at ?? row.created_at)
-                          : (row.payload.event_at ?? row.created_at),
-                      ),
-                    ),
-                    v.timezone,
-                  )) >= start,
+              dateInZone(
+                new Date(
+                  String(
+                    row.kind === "meters"
+                      ? (row.payload.reading_at ?? row.created_at)
+                      : (row.payload.event_at ?? row.created_at),
+                  ),
+                ),
+                v.timezone,
+              ) >= start,
           );
-        exportForms = permissions["progress.view"]
-          ? await formVersions(v.id, false)
-          : [];
         exportMeasured = permissions["meters.read"]
           ? measuredIntervals(
               await loadObservations(user!, v.id, false),
@@ -239,7 +206,6 @@ export function Reports() {
               period,
               generated_at: new Date().toISOString(),
               records: exportRows,
-              forms: exportForms,
               measured_intervals: exportMeasured,
             },
             null,
@@ -308,7 +274,6 @@ export function Reports() {
                   ...queries
                     .filter((_, index) => canRead(kinds[index]))
                     .map((q) => q.refetch()),
-                  ...(canRead("progress") ? [forms.refetch()] : []),
                   ...(access.data?.["meters.read"]
                     ? [observationQuery.refetch()]
                     : []),
@@ -392,68 +357,6 @@ export function Reports() {
               ) : (
                 <AppText>{r("unknown")}</AppText>
               )}
-              {canRead("progress") && (
-                <>
-                  <AppText large>{r("memberSummary")}</AppText>
-                  {[...memberSummary].map(([id, summary]) => (
-                    <Card key={id}>
-                      <AppText>
-                        {r("member")}: {id}
-                      </AppText>
-                      <AppText>
-                        {r("submissions")}: {summary.total}
-                      </AppText>
-                      {Object.entries(summary.statuses).map(
-                        ([status, count]) => (
-                          <AppText key={status}>
-                            {r(status as Parameters<typeof r>[0])}: {count}
-                          </AppText>
-                        ),
-                      )}
-                    </Card>
-                  ))}
-                </>
-              )}
-              {forms.data?.map((version) =>
-                version.definition.fields
-                  .filter((field) => field.reportable)
-                  .map((field) => (
-                    <Card key={`${version.id}.${field.id}`}>
-                      <AppText>
-                        {field.label} · {r(field.aggregation)}
-                      </AppText>
-                      <AppText>
-                        {String(
-                          aggregateAnswers(
-                            rows
-                              .filter(
-                                (row) =>
-                                  row.kind === "progress" &&
-                                  row.status === "APPROVED" &&
-                                  row.payload.form_version_id === version.id,
-                              )
-                              .sort(
-                                (a, b) =>
-                                  String(a.payload.progress_date).localeCompare(
-                                    String(b.payload.progress_date),
-                                  ) ||
-                                  a.created_at.localeCompare(b.created_at) ||
-                                  a.id.localeCompare(b.id),
-                              )
-                              .map(
-                                (row) =>
-                                  row.payload.answers as Record<
-                                    string,
-                                    unknown
-                                  >,
-                              ),
-                            field,
-                          ) ?? "—",
-                        )}
-                      </AppText>
-                    </Card>
-                  )),
-              )}
               <Card style={{ padding: 16 }}>
                 <SectionHeading title={r("reports")} />
                 <TextAction
@@ -486,71 +389,6 @@ export function Reports() {
         </>
       )}
       {error && <ErrorState message={error} retry={() => setError("")} />}
-    </Screen>
-  );
-}
-export function Maintenance() {
-  const active = useActiveVehicle();
-  const query = useRecords("expenses");
-  const access = usePermissions(active.vehicle?.id);
-  const rows =
-    query.data?.filter(
-      (row) =>
-        ["SERVICE", "REPAIR", "TYRES", "BATTERY"].includes(
-          String(row.payload.category),
-        ) && row.status !== "ARCHIVED",
-    ) ?? [];
-  return (
-    <Screen
-      compact
-      title={r("maintenance")}
-      loading={query.isPending && !!active.vehicle}
-    >
-      <VehicleHeader />
-      <SectionHeading
-        title={r("maintenance")}
-        action={
-          access.data?.["expenses.create"] ? r("addMaintenance") : undefined
-        }
-        onAction={() =>
-          router.push({
-            pathname: "/records/[kind]/[action]",
-            params: {
-              kind: "expenses",
-              action: "add",
-              category: "SERVICE",
-              vehicle: active.vehicle?.id,
-            },
-          })
-        }
-      />
-      {query.error ? (
-        <ErrorState
-          message={query.error.message}
-          retry={() => void query.refetch()}
-        />
-      ) : rows.length ? (
-        rows.map((row) => (
-          <RecordCard
-            key={row.id}
-            row={row}
-            kind="expenses"
-            timezone={active.vehicle?.timezone}
-            onPress={() =>
-              router.push({
-                pathname: "/records/[kind]/[action]",
-                params: {
-                  kind: "expenses",
-                  action: row.id,
-                  vehicle: row.vehicle_id,
-                },
-              })
-            }
-          />
-        ))
-      ) : (
-        <AppText>{r("noData")}</AppText>
-      )}
     </Screen>
   );
 }

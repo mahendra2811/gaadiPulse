@@ -33,6 +33,7 @@ it("enforces per-vehicle pilot grants, two local days of history, and owner-only
       "202611040010_pilot_access.sql",
       "202611040011_pilot_progress.sql",
       "202611050012_record_meter_chronology.sql",
+      "202611050014_record_author_name.sql",
     ]) {
       await db.exec(readFileSync(`supabase/migrations/${file}`, "utf8"));
     }
@@ -78,6 +79,53 @@ it("enforces per-vehicle pilot grants, two local days of history, and owner-only
       select set_config('request.jwt.claim.sub','${pilot}',false);
       set role authenticated;
     `);
+    await db.exec(
+      `reset role; update public.profiles set display_name='Owner Name' where id='${owner}'; select set_config('request.jwt.claim.sub','${pilot}',false); set role authenticated`,
+    );
+    const authorName = async (
+      kind: string,
+      record: string,
+      selectedVehicle = vehicle,
+    ) =>
+      (
+        await db.query<{ display_name: string }>(
+          `select * from public.record_author_name('${kind}', '${selectedVehicle}', '${record}')`,
+        )
+      ).rows;
+    expect(
+      await authorName("expenses", "70000000-0000-4000-8000-000000000001"),
+    ).toEqual([{ display_name: "Owner Name" }]);
+    expect(
+      await authorName("expenses", "70000000-0000-4000-8000-000000000002"),
+    ).toEqual([]);
+    expect(
+      await authorName("meters", "72000000-0000-4000-8000-000000000001"),
+    ).toEqual([{ display_name: "Owner Name" }]);
+    expect(
+      await authorName(
+        "expenses",
+        "70000000-0000-4000-8000-000000000001",
+        secondVehicle,
+      ),
+    ).toEqual([]);
+    expect(
+      await authorName("documents", "70000000-0000-4000-8000-000000000001"),
+    ).toEqual([]);
+    await db.exec(
+      `reset role; select set_config('request.jwt.claim.sub','${other}',false); set role authenticated`,
+    );
+    expect(
+      await authorName("expenses", "70000000-0000-4000-8000-000000000001"),
+    ).toEqual([]);
+    await db.exec(
+      `reset role; select set_config('request.jwt.claim.sub','${owner}',false); set role authenticated`,
+    );
+    expect(
+      await authorName("expenses", "70000000-0000-4000-8000-000000000002"),
+    ).toEqual([{ display_name: "Owner Name" }]);
+    await db.exec(
+      `reset role; select set_config('request.jwt.claim.sub','${pilot}',false); set role authenticated`,
+    );
     const rows = await db.query("select id from public.fuel_logs order by id");
     expect(rows.rows).toHaveLength(2);
     const page = await db.query<{ result: { rows: unknown[]; count: number } }>(
@@ -334,6 +382,9 @@ it("enforces per-vehicle pilot grants, two local days of history, and owner-only
         `select public.save_record('expenses','${vehicle}',jsonb_build_object('amount_paise',100,'title','Toll','category','TOLL','payment_method','CASH','event_at',now()),'60000000-0000-4000-8000-000000000004')`,
       ),
     ).rejects.toThrow("PERMISSION_DENIED");
+    expect(
+      await authorName("expenses", "70000000-0000-4000-8000-000000000001"),
+    ).toEqual([]);
   } finally {
     await db.close();
   }

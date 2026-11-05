@@ -5,7 +5,7 @@ import { InlineSelect } from "@/src/components/ui/InlineSelect";
 import { AdditionalOptions } from "@/src/components/ui/AdditionalOptions";
 import { ZodError } from "zod";
 import { errorMessage } from "@/src/lib/errors";
-import { Timestamp, TimestampRange } from "@/src/components/ui/Timestamp";
+import { TimestampRange } from "@/src/components/ui/Timestamp";
 import { readableDateTime } from "@/src/utils/dateDisplay";
 import {
   allowedFuelTypes,
@@ -59,8 +59,8 @@ import { money, solveFuel } from "@/src/utils/money";
 import { fuelIntervals, type FuelPoint } from "@/src/utils/fuelEconomy";
 import { expenseAccounting } from "@/src/utils/expenseAccounting";
 import {
-  recordAudit,
   saveRecord,
+  recordAuthorName,
   fuelRecord,
   expenseCategories as loadCategories,
   addExpenseCategory,
@@ -110,9 +110,7 @@ export function useRouteKind(fixed?: Kind) {
     source?: string;
     category?: string;
   }>();
-  const kind =
-    fixed ??
-    (kinds.includes(params.kind as Kind) ? (params.kind as Kind) : "fuel");
+  const kind = fixed ?? (kinds.includes(params.kind as Kind) ? (params.kind as Kind) : "fuel");
   return {
     ...params,
     kind,
@@ -123,11 +121,7 @@ export function useRouteKind(fixed?: Kind) {
         : undefined),
   };
 }
-function go(
-  kind: Kind,
-  action: "add" | "analytics" | string,
-  vehicle?: string,
-) {
+function go(kind: Kind, action: "add" | "analytics" | string, vehicle?: string) {
   router.push({
     pathname: "/records/[kind]/[action]",
     params: { kind, action, ...(vehicle ? { vehicle } : {}) },
@@ -148,7 +142,7 @@ function filterRecords(
   period: string,
   timezone: string,
   kind: Kind,
-  includeArchived = false,
+  includeArchived = false
 ) {
   const start = periodStart(period, timezone);
   return records.filter(
@@ -161,11 +155,11 @@ function filterRecords(
               String(
                 kind === "meters"
                   ? (e.payload.reading_at ?? e.created_at)
-                  : (e.payload.event_at ?? e.created_at),
-              ),
+                  : (e.payload.event_at ?? e.created_at)
+              )
             ),
-            timezone,
-          )) >= start,
+            timezone
+          )) >= start
   );
 }
 export function RecordsList({
@@ -186,7 +180,7 @@ export function RecordsList({
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState(initialStatus ?? "ALL");
   const [period, setPeriod] = useState(
-    ["documents", "reminders", "meters"].includes(kind) ? "all" : "month",
+    ["documents", "reminders", "meters"].includes(kind) ? "all" : "month"
   );
   const [limit, setLimit] = useState(30);
   const [showArchived, setShowArchived] = useState(false);
@@ -212,22 +206,19 @@ export function RecordsList({
       max: maximumAmount ? Math.round(Number(maximumAmount) * 100) : null,
       search: search.trim(),
       timezone: v?.timezone ?? "Asia/Kolkata",
-    },
+    }
   );
   const query =
     kind === "fuel"
       ? { ...fuelQuery, data: fuelQuery.error ? undefined : fuelQuery.rows }
       : otherQuery;
-  const canCreate =
-    permissions.data?.[
-      kind === "progress" ? "progress.submit" : `${kind}.create`
-    ];
+  const canCreate = permissions.data?.[kind === "progress" ? "progress.submit" : `${kind}.create`];
   const rows = filterRecords(
     query.data ?? [],
     permissions.data?.owner === false ? "all" : period,
     v?.timezone ?? "Asia/Kolkata",
     kind,
-    showArchived,
+    showArchived
   ).filter(
     (row) =>
       (v?.role !== "PILOT" ||
@@ -237,59 +228,41 @@ export function RecordsList({
               ? (row.payload.reading_at ?? row.payload.event_at)
               : kind === "progress"
                 ? row.payload.progress_date
-                : row.payload.event_at,
+                : row.payload.event_at
           ),
           v.timezone,
-          now,
+          now
         )) &&
       (statusFilter === "ALL" || row.status === statusFilter) &&
       (kind !== "fuel" ||
         ((!fromDate ||
-          dateInZone(
-            new Date(String(row.payload.event_at)),
-            v?.timezone ?? "Asia/Kolkata",
-          ) >= fromDate) &&
+          dateInZone(new Date(String(row.payload.event_at)), v?.timezone ?? "Asia/Kolkata") >=
+            fromDate) &&
           (!toDate ||
-            dateInZone(
-              new Date(String(row.payload.event_at)),
-              v?.timezone ?? "Asia/Kolkata",
-            ) <= toDate) &&
+            dateInZone(new Date(String(row.payload.event_at)), v?.timezone ?? "Asia/Kolkata") <=
+              toDate) &&
           (!minimumAmount ||
-            Number(row.payload.amount_paise) >=
-              Math.round(Number(minimumAmount) * 100)) &&
+            Number(row.payload.amount_paise) >= Math.round(Number(minimumAmount) * 100)) &&
           (!maximumAmount ||
-            Number(row.payload.amount_paise) <=
-              Math.round(Number(maximumAmount) * 100)))) &&
+            Number(row.payload.amount_paise) <= Math.round(Number(maximumAmount) * 100)))) &&
       (kind === "fuel" ||
         `${row.payload.title ?? ""} ${row.payload.notes ?? ""} ${row.payload.category ?? ""} ${row.payload.station_name ?? ""}`
           .toLowerCase()
-          .includes(search.toLowerCase())),
+          .includes(search.toLowerCase()))
   );
   const confirmed = rows.filter((row) => row.status !== "ARCHIVED");
   return (
     <Screen
-      title={
-        kind === "fuel" && v?.energy_type === "ELECTRIC"
-          ? t("charging")
-          : r(kind)
-      }
+      title={kind === "fuel" && v?.energy_type === "ELECTRIC" ? t("charging") : r(kind)}
       compact
-      loading={
-        active.isPending || (!!v && (permissions.isPending || query.isPending))
-      }
+      loading={active.isPending || (!!v && (permissions.isPending || query.isPending))}
     >
       <VehicleHeader vehicleId={v?.id} allowSwitch={!contextVehicle} />
       {active.error && (
-        <ErrorState
-          message={active.error.message}
-          retry={() => void active.refetch()}
-        />
+        <ErrorState message={active.error.message} retry={() => void active.refetch()} />
       )}
       {permissions.error && (
-        <ErrorState
-          message={permissions.error.message}
-          retry={() => void permissions.refetch()}
-        />
+        <ErrorState message={permissions.error.message} retry={() => void permissions.refetch()} />
       )}
       {!v ? (
         <EmptyState title={r("noVehicle")} />
@@ -298,25 +271,16 @@ export function RecordsList({
           <SectionHeading
             title={t("uiRecords")}
             action={
-              !["fuel", "expenses"].includes(kind) &&
-              canCreate &&
-              !v.archived_at
+              !["fuel", "expenses"].includes(kind) && canCreate && !v.archived_at
                 ? r("add")
                 : undefined
             }
             onAction={() => go(kind, "add", v.id)}
           />
-          {permissions.data?.owner === false && (
-            <AppText muted>{t("pilotHistoryHint")}</AppText>
+          {permissions.data?.owner === false && <AppText muted>{t("pilotHistoryHint")}</AppText>}
+          {["fuel", "expenses"].includes(kind) && canCreate && !v.archived_at && (
+            <GradientButton label={r("addRecord")} onPress={() => go(kind, "add", v.id)} />
           )}
-          {["fuel", "expenses"].includes(kind) &&
-            canCreate &&
-            !v.archived_at && (
-              <GradientButton
-                label={r("addRecord")}
-                onPress={() => go(kind, "add", v.id)}
-              />
-            )}
           {permissions.data?.owner &&
             ["fuel", "expenses"].includes(kind) &&
             permissions.data?.[`${kind}.read`] && (
@@ -329,10 +293,9 @@ export function RecordsList({
                         kind === "fuel"
                           ? fuelQuery.total
                           : confirmed.reduce(
-                              (sum, row) =>
-                                sum + Number(row.payload.amount_paise ?? 0),
-                              0,
-                            ),
+                              (sum, row) => sum + Number(row.payload.amount_paise ?? 0),
+                              0
+                            )
                       )
                 }
                 subtitle={`${r("cash")} · ${r(period as keyof typeof recordCopy)} · ${kind === "fuel" ? fuelQuery.count : confirmed.length} ${r("confirmed")}`}
@@ -460,46 +423,37 @@ export function RecordsList({
                   onPress={() => setShowArchived((value) => !value)}
                 />
               )}
-              {releaseFeatures.advancedTools &&
-                permissions.data?.["reports.read"] && (
-                  <TextAction
-                    label={r("analytics")}
-                    icon="stats-chart"
-                    onPress={() => go(kind, "analytics", v.id)}
-                  />
-                )}
+              {releaseFeatures.advancedTools && permissions.data?.["reports.read"] && (
+                <TextAction
+                  label={r("analytics")}
+                  icon="stats-chart"
+                  onPress={() => go(kind, "analytics", v.id)}
+                />
+              )}
             </View>
           </Expandable>
           {query.error ? (
-            <ErrorState
-              message={query.error.message}
-              retry={() => void query.refetch()}
-            />
+            <ErrorState message={query.error.message} retry={() => void query.refetch()} />
           ) : query.isPending ? (
             <Skeleton />
           ) : !rows.length ? (
             <EmptyState
-              kind={
-                kind === "fuel" || kind === "expenses" || kind === "progress"
-                  ? kind
-                  : "garage"
-              }
-              title={r("noData")}
+              kind={kind === "fuel" && v.energy_type === "ELECTRIC" ? "charging" : kind}
+              title={t(kind === "fuel" ? (v.energy_type === "ELECTRIC" ? "emptyChargingTitle" : "emptyFuelTitle") : kind === "expenses" ? "emptyExpensesTitle" : kind === "documents" ? "emptyDocumentsTitle" : kind === "reminders" ? "emptyRemindersTitle" : "emptyRecordsTitle")}
+              body={t(search || statusFilter !== "ALL" || (permissions.data?.owner !== false && period !== "all") || fromDate || toDate || minimumAmount || maximumAmount ? "emptyRecordsBody" : kind === "fuel" ? (v.energy_type === "ELECTRIC" ? "emptyChargingBody" : "emptyFuelBody") : kind === "expenses" ? "emptyExpensesBody" : kind === "documents" ? "emptyDocumentsBody" : kind === "reminders" ? "emptyRemindersBody" : "emptyMeterReadOnlyBody")}
             />
           ) : kind === "fuel" || kind === "expenses" ? (
             <Card style={{ padding: 0, gap: 0, overflow: "hidden" }}>
-              {rows
-                .slice(0, kind === "fuel" ? undefined : limit)
-                .map((row, index) => (
-                  <RecordCard
-                    key={row.id}
-                    row={row}
-                    kind={kind}
-                    timezone={v.timezone}
-                    separated={index > 0}
-                    onPress={() => setDetailId(row.id)}
-                  />
-                ))}
+              {rows.slice(0, kind === "fuel" ? undefined : limit).map((row, index) => (
+                <RecordCard
+                  key={row.id}
+                  row={row}
+                  kind={kind}
+                  timezone={v.timezone}
+                  separated={index > 0}
+                  onPress={() => setDetailId(row.id)}
+                />
+              ))}
             </Card>
           ) : (
             rows
@@ -524,17 +478,11 @@ export function RecordsList({
           )}
           {(kind === "fuel" ? fuelQuery.hasNextPage : rows.length > limit) && (
             <TextAction
-              label={
-                fuelQuery.isFetchingNextPage && kind === "fuel"
-                  ? t("loadingMore")
-                  : r("more")
-              }
+              label={fuelQuery.isFetchingNextPage && kind === "fuel" ? t("loadingMore") : r("more")}
               icon="chevron-down"
               disabled={kind === "fuel" && fuelQuery.isFetchingNextPage}
               onPress={() =>
-                kind === "fuel"
-                  ? void fuelQuery.fetchNextPage()
-                  : setLimit((value) => value + 30)
+                kind === "fuel" ? void fuelQuery.fetchNextPage() : setLimit((value) => value + 30)
               }
             />
           )}
@@ -544,21 +492,12 @@ export function RecordsList({
   );
 }
 export function RecordForm() {
-  const {
-    kind,
-    vehicle: routeVehicle,
-    id,
-    title,
-    source,
-    category,
-  } = useRouteKind();
+  const { kind, vehicle: routeVehicle, id, title, source, category } = useRouteKind();
   const { development } = useSession();
   const user = useAccountId();
   const active = useActiveVehicle();
   const vehicles = useVehicles();
-  const [boundVehicle, setBoundVehicle] = useState<string | null>(
-    routeVehicle ?? null,
-  );
+  const [boundVehicle, setBoundVehicle] = useState<string | null>(routeVehicle ?? null);
   const vehicle = id
     ? vehicles.data?.find((v) => v.id === routeVehicle)
     : boundVehicle
@@ -604,17 +543,18 @@ export function RecordForm() {
     enabled:
       !!user &&
       !!v &&
-      kind === "meters" &&
-      !id &&
+      ["fuel", "expenses", "meters", "progress"].includes(kind) &&
       !!access.data?.["meters.read"],
     queryFn: () => loadObservations(user!, v!.id, development),
   });
+  const latestReading = (type: "KM" | "HOURS") =>
+    meterHistory.data?.find((reading) => reading.reading_type === type);
   const previousReading = (type: "KM" | "HOURS") =>
     meterHistory.data
       ?.filter(
         (reading) =>
           reading.reading_type === type &&
-          Date.parse(reading.observed_at) < Date.parse(values.observed_at),
+          Date.parse(reading.observed_at) < Date.parse(values.observed_at)
       )
       .sort((a, b) => Date.parse(b.observed_at) - Date.parse(a.observed_at))[0];
   const categories = useQuery({
@@ -629,15 +569,13 @@ export function RecordForm() {
     }
   }, [kind, ready, values.form_version_id, forms.data, form]);
   useEffect(() => {
-    if (ready || !user || !v || (id && (query.isPending || query.error)))
-      return;
+    if (ready || !user || !v || (id && (query.isPending || query.error))) return;
     if (existing) form.reset(formFromRecord(existing, v.timezone));
     else
       form.reset({
         ...defaultEntry(),
         title: title ?? "",
-        category:
-          kind === "expenses" && category === "SERVICE" ? "SERVICE" : "OTHER",
+        category: kind === "expenses" && category === "SERVICE" ? "SERVICE" : "OTHER",
         metadata: source ? JSON.stringify({ expense_id: source }) : "{}",
         ...defaultFuel(v.energy_type),
         progress_date: dateInZone(new Date(), v.timezone),
@@ -660,23 +598,20 @@ export function RecordForm() {
     category,
     kind,
   ]);
-  const disablePrevention = usePreventRemove(
-    form.formState.isDirty && !leaving,
-    ({ repeat }) =>
-      ConfirmDialog(
-        t("unsaved"),
-        t("unsavedBody"),
-        () => {
-          setLeaving(true);
-          repeat();
-        },
-        { cancelLabel: t("keepEditing"), confirmLabel: t("leaveForm") },
-      ),
+  const disablePrevention = usePreventRemove(form.formState.isDirty && !leaving, ({ repeat }) =>
+    ConfirmDialog(
+      t("unsaved"),
+      t("unsavedBody"),
+      () => {
+        setLeaving(true);
+        repeat();
+      },
+      { cancelLabel: t("keepEditing"), confirmLabel: t("leaveForm") }
+    )
   );
   const field = (name: keyof EntryForm, label: string, numeric = false) => {
     const required =
-      (name === "title" &&
-        ["expenses", "documents", "reminders"].includes(kind)) ||
+      (name === "title" && ["expenses", "documents", "reminders"].includes(kind)) ||
       (["fuel", "expenses"].includes(kind) && name === "event_at") ||
       (kind === "progress" && name === "progress_date") ||
       (name === "notes" && kind === "progress" && definition.notes_required) ||
@@ -684,28 +619,25 @@ export function RecordForm() {
       (name === "hours" && kind === "progress" && definition.hours_required) ||
       (name === "km" && kind === "meters" && v?.meter_mode === "KM") ||
       (name === "hours" && kind === "meters" && v?.meter_mode === "HOURS") ||
-      (name === "due_at" &&
-        kind === "documents" &&
-        metadata.create_reminder === true) ||
+      (name === "due_at" && kind === "documents" && metadata.create_reminder === true) ||
       (name === "observed_at" && (values.km !== "" || values.hours !== ""));
-    const fuelRequired =
-      kind === "fuel" && ["amount", "quantity"].includes(name);
-    const money = ["amount", "unit_price", "principal", "interest"].includes(
-      name,
-    );
+    const fuelRequired = kind === "fuel" && ["amount", "quantity"].includes(name);
+    const money = ["amount", "unit_price", "principal", "interest"].includes(name);
     return (
       <Controller
         key={name}
         control={form.control}
         name={name}
         render={({ field: { value, onChange } }) =>
-          ["event_at", "observed_at", "due_at", "progress_date"].includes(
-            name,
-          ) ? (
+          ["event_at", "observed_at", "due_at", "progress_date"].includes(name) ? (
             <DateTimeInput
               label={label}
               value={String(value ?? "")}
-              onChange={onChange}
+              onChange={(value) => {
+                onChange(value);
+                if (kind === "fuel" && (name === "event_at" || name === "observed_at"))
+                  form.setValue("confirmed_observation", false);
+              }}
               allowFuture={name === "due_at"}
               mode={name === "progress_date" ? "date" : "datetime"}
               required={required}
@@ -719,11 +651,7 @@ export function RecordForm() {
           ) : (
             <InputField
               label={label}
-              required={
-                required ||
-                fuelRequired ||
-                (kind === "expenses" && name === "amount")
-              }
+              required={required || fuelRequired || (kind === "expenses" && name === "amount")}
               optional={
                 !required &&
                 !fuelRequired &&
@@ -731,19 +659,17 @@ export function RecordForm() {
                 !(kind === "meters" && ["km", "hours"].includes(name))
               }
               value={String(value ?? "")}
-              onChangeText={onChange}
+              onChangeText={(value) => {
+                onChange(value);
+                if (kind === "fuel" && (name === "km" || name === "hours"))
+                  form.setValue("confirmed_observation", false);
+              }}
               keyboardType={numeric ? "decimal-pad" : "default"}
-              numeric={
-                numeric
-                  ? { scale: money ? 2 : 3, wholeDigits: money ? 15 : 12 }
-                  : undefined
-              }
+              numeric={numeric ? { scale: money ? 2 : 3, wholeDigits: money ? 15 : 12 } : undefined}
               maxLength={
                 name === "notes"
                   ? 3000
-                  : ["title", "vendor", "station_name", "reference"].includes(
-                        name,
-                      )
+                  : ["title", "vendor", "station_name", "reference"].includes(name)
                     ? 160
                     : undefined
               }
@@ -760,7 +686,7 @@ export function RecordForm() {
   };
   const choose = (
     name: "category" | "unit" | "payment_method" | "recurrence" | "energy_type",
-    options: readonly string[],
+    options: readonly string[]
   ) => (
     <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
       {options.map((option) => (
@@ -804,21 +730,13 @@ export function RecordForm() {
     try {
       meta = JSON.parse(values.metadata) as Record<string, unknown>;
     } catch {}
-    if (
-      ["start_date", "expiry_date", "next_date", "reminder_due_at"].includes(
-        name,
-      )
-    )
+    if (["start_date", "expiry_date", "next_date", "reminder_due_at"].includes(name))
       return (
         <DateTimeInput
           key={name}
           label={label}
           value={String(meta[name] ?? "")}
-          mode={
-            ["next_date", "reminder_due_at"].includes(name)
-              ? "datetime"
-              : "date"
-          }
+          mode={["next_date", "reminder_due_at"].includes(name) ? "datetime" : "date"}
           allowFuture
           required={name === "reminder_due_at"}
           optional={name !== "reminder_due_at"}
@@ -830,12 +748,8 @@ export function RecordForm() {
         key={name}
         label={label}
         optional
-        keyboardType={
-          ["next_km", "next_hours"].includes(name) ? "decimal-pad" : "default"
-        }
-        numeric={
-          ["next_km", "next_hours"].includes(name) ? { scale: 3 } : undefined
-        }
+        keyboardType={["next_km", "next_hours"].includes(name) ? "decimal-pad" : "default"}
+        numeric={["next_km", "next_hours"].includes(name) ? { scale: 3 } : undefined}
         maxLength={160}
         value={String(meta[name] ?? "")}
         onChangeText={(value) => updateMeta(name, value)}
@@ -853,13 +767,12 @@ export function RecordForm() {
           km: next.meter_mode === "HOURS" ? "" : values.km,
           hours: next.meter_mode === "KM" ? "" : values.hours,
           ...defaultFuel(next.energy_type),
-          ...(kind === "fuel"
-            ? { quantity: "", unit_price: "", is_full_tank: false }
-            : {}),
+          ...(kind === "fuel" ? { quantity: "", unit_price: "", is_full_tank: false } : {}),
+          confirmed_observation: false,
           answers: kind === "progress" ? {} : values.answers,
           form_version_id: "",
         },
-        { keepDefaultValues: true },
+        { keepDefaultValues: true }
       );
       setBoundVehicle(nextId);
       active.select(nextId);
@@ -872,14 +785,9 @@ export function RecordForm() {
     setBusy(true);
     setError("");
     try {
-      if (
-        kind === "fuel" &&
-        (!values.amount.trim() || !values.quantity.trim())
-      ) {
-        if (!values.amount.trim())
-          form.setError("amount", { message: t("requiredValue") });
-        if (!values.quantity.trim())
-          form.setError("quantity", { message: t("requiredValue") });
+      if (kind === "fuel" && (!values.amount.trim() || !values.quantity.trim())) {
+        if (!values.amount.trim()) form.setError("amount", { message: t("requiredValue") });
+        if (!values.quantity.trim()) form.setError("quantity", { message: t("requiredValue") });
         throw new Error(t("fuelPrimaryRequired"));
       }
       if (
@@ -898,7 +806,7 @@ export function RecordForm() {
           if (values[key] && previous && Number(values[key]) < previous.value) {
             const message = t("readingBelowPrevious").replace(
               "{value}",
-              `${previous.value} ${type}`,
+              `${previous.value} ${type}`
             );
             form.setError(key, { message });
             throw new Error(message);
@@ -914,31 +822,14 @@ export function RecordForm() {
       });
       if (kind === "progress") {
         const version = forms.data?.find(
-          (f) =>
-            f.id ===
-            (existing
-              ? existing.payload.form_version_id
-              : values.form_version_id),
+          (f) => f.id === (existing ? existing.payload.form_version_id : values.form_version_id)
         );
-        if (!existing && version && !version.published)
-          throw new Error(r("formChanged"));
+        if (!existing && version && !version.published) throw new Error(r("formChanged"));
         if (!version) throw new Error(r("formChanged"));
-        if (!(
-          existing &&
-          owner &&
-          values.progress_date === existing.payload.progress_date
-        ))
-          validateProgressDate(
-            values.progress_date,
-            v.timezone,
-            version.definition.past_days,
-          );
+        if (!(existing && owner && values.progress_date === existing.payload.progress_date))
+          validateProgressDate(values.progress_date, v.timezone, version.definition.past_days);
         payload.form_version_id = version.id;
-        payload.answers = validateAnswers(
-          version.definition.fields,
-          values.answers,
-          owner,
-        );
+        payload.answers = validateAnswers(version.definition.fields, values.answers, owner);
         if (version.definition.notes_required && !values.notes.trim())
           throw new Error(r("notesRequired"));
         if (
@@ -962,7 +853,7 @@ export function RecordForm() {
         operation,
         id,
         existing?.revision,
-        status,
+        status
       );
       await qc.invalidateQueries();
       if (kind === "fuel") active.select(v.id);
@@ -999,12 +890,11 @@ export function RecordForm() {
             "km",
             "hours",
             "observed_at",
-          ].includes(String(issue.path[0])),
+          ].includes(String(issue.path[0]))
         )
       )
         setAdditionalOpen(true);
-      if (kind === "progress" && !(e instanceof ZodError))
-        setAdditionalOpen(true);
+      if (kind === "progress" && !(e instanceof ZodError)) setAdditionalOpen(true);
       if (e instanceof ZodError)
         for (const issue of e.issues) {
           const name = issue.path[0];
@@ -1019,21 +909,15 @@ export function RecordForm() {
       setBusy(false);
     }
   };
-  const createPermission =
-    kind === "progress" ? "progress.submit" : `${kind}.create`;
+  const createPermission = kind === "progress" ? "progress.submit" : `${kind}.create`;
   const allowed = id
     ? owner ||
-      (kind === "progress" &&
-        existing?.created_by === user &&
-        access.data?.[`${kind}.edit_own`])
+      (kind === "progress" && existing?.created_by === user && access.data?.[`${kind}.edit_own`])
     : access.data?.[createPermission];
   if (id && query.error)
     return (
       <Screen title={r("edit")}>
-        <ErrorState
-          message={query.error.message}
-          retry={() => void query.refetch()}
-        />
+        <ErrorState message={query.error.message} retry={() => void query.refetch()} />
         <AppButton secondary label={r("back")} onPress={() => router.back()} />
       </Screen>
     );
@@ -1048,10 +932,7 @@ export function RecordForm() {
     return (
       <Screen title={r(kind)}>
         {vehicles.error ? (
-          <ErrorState
-            message={vehicles.error.message}
-            retry={() => void vehicles.refetch()}
-          />
+          <ErrorState message={vehicles.error.message} retry={() => void vehicles.refetch()} />
         ) : vehicles.isPending ? (
           <Skeleton />
         ) : (
@@ -1070,11 +951,7 @@ export function RecordForm() {
   let derived = "";
   if (kind === "fuel") {
     try {
-      const solved = solveFuel(
-        values.amount,
-        values.quantity,
-        values.unit_price,
-      );
+      const solved = solveFuel(values.amount, values.quantity, values.unit_price);
       derived = `${r("unit_price")}: ${money(solved.unit_price_paise)}/${values.unit}`;
     } catch {}
   }
@@ -1097,10 +974,9 @@ export function RecordForm() {
               {t(
                 kind === "meters"
                   ? "meterOnlyTime"
-                  : kind === "progress" &&
-                      (definition.km_required || definition.hours_required)
+                  : kind === "progress" && (definition.km_required || definition.hours_required)
                     ? "progressMeterPolicy"
-                    : "optionalMeters",
+                    : "optionalMeters"
               )}
             </AppText>
           )}
@@ -1109,35 +985,36 @@ export function RecordForm() {
               (v.meter_mode === "KM" && values.hours !== "")) && (
               <AppText muted>{t("legacyReading")}</AppText>
             )}
-          {kind === "meters" && !id && meterHistory.error && (
+          {meterHistory.error && (
             <ErrorState
               message={meterHistory.error.message}
               retry={() => void meterHistory.refetch()}
             />
           )}
-          {kind === "meters" &&
-            !id &&
-            previousReading("KM") &&
-            v.meter_mode !== "HOURS" && (
-              <AppText muted>
-                {t("lastMeterReading").replace(
+          {v.meter_mode !== "HOURS" && latestReading("KM") && (
+            <AppText muted>
+              {t("latestMeterEntry")
+                .replace(
                   "{value}",
-                  `${previousReading("KM")!.value} KM`,
-                )}
-              </AppText>
-            )}
+                  `${latestReading("KM")!.value.toLocaleString("en-IN", { maximumFractionDigits: 3 })} km`
+                )
+                .replace("{date}", readableDateTime(latestReading("KM")!.observed_at, v.timezone))}
+            </AppText>
+          )}
           {v.meter_mode !== "HOURS" && field("km", r("distance"), true)}
-          {kind === "meters" &&
-            !id &&
-            previousReading("HOURS") &&
-            v.meter_mode !== "KM" && (
-              <AppText muted>
-                {t("lastMeterReading").replace(
+          {v.meter_mode !== "KM" && latestReading("HOURS") && (
+            <AppText muted>
+              {t("latestMeterEntry")
+                .replace(
                   "{value}",
-                  `${previousReading("HOURS")!.value} HOURS`,
+                  `${latestReading("HOURS")!.value.toLocaleString("en-IN", { maximumFractionDigits: 3 })} hrs`
+                )
+                .replace(
+                  "{date}",
+                  readableDateTime(latestReading("HOURS")!.observed_at, v.timezone)
                 )}
-              </AppText>
-            )}
+            </AppText>
+          )}
           {v.meter_mode !== "KM" && field("hours", r("hours"), true)}
           {values.km !== "" || values.hours !== "" ? (
             field("observed_at", r("observed"))
@@ -1147,32 +1024,31 @@ export function RecordForm() {
           {kind !== "fuel" && <AppText muted>{r("readingHelp")}</AppText>}
         </Card>
       )}
-      {kind === "fuel" && (values.km !== "" || values.hours !== "") && (
-        <View style={{ gap: 8 }}>
-          <AppText>{r("fillConfirmation")}</AppText>
-          <Switch
-            accessibilityLabel={r("fillConfirmation")}
-            value={values.confirmed_observation}
-            onValueChange={(value) =>
-              form.setValue("confirmed_observation", value, {
-                shouldDirty: true,
-              })
-            }
-          />
-        </View>
-      )}
+      {kind === "fuel" &&
+        (values.km !== "" || values.hours !== "") &&
+        Date.parse(values.observed_at) === Date.parse(values.event_at) && (
+          <View style={{ gap: 8 }}>
+            <AppText>{t("fillConfirmationHelp")}</AppText>
+            <AppText>{r("fillConfirmation")}</AppText>
+            <Switch
+              accessibilityLabel={r("fillConfirmation")}
+              value={values.confirmed_observation}
+              onValueChange={(value) => {
+                form.setValue("confirmed_observation", value, {
+                  shouldDirty: true,
+                });
+                if (value) setError("");
+              }}
+            />
+          </View>
+        )}
     </>
   );
   return (
     <Screen
       compact
       title={`${r(id ? "edit" : "add")} · ${kind === "fuel" && v?.energy_type === "ELECTRIC" ? t("charging") : r(kind)}`}
-      loading={
-        !ready ||
-        busy ||
-        access.isPending ||
-        (kind === "progress" && forms.isPending)
-      }
+      loading={!ready || busy || access.isPending || (kind === "progress" && forms.isPending)}
       action={
         <View
           style={{
@@ -1189,8 +1065,7 @@ export function RecordForm() {
               disabled={
                 busy ||
                 !ready ||
-                (kind === "progress" &&
-                  (forms.isPending || !values.form_version_id))
+                (kind === "progress" && (forms.isPending || !values.form_version_id))
               }
               onPress={() => void submit()}
             />
@@ -1201,42 +1076,27 @@ export function RecordForm() {
       {id ? (
         <VehicleHeader vehicleId={v.id} allowSwitch={false} />
       ) : (
-        <VehicleHeader
-          vehicleId={v.id}
-          disabled={busy}
-          onSelect={selectVehicle}
-        />
+        <VehicleHeader vehicleId={v.id} disabled={busy} onSelect={selectVehicle} />
       )}
       <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-        <ColorIcon
-          name={recordVisuals[kind].icon}
-          tone={recordVisuals[kind].tone}
-        />
+        <ColorIcon name={recordVisuals[kind].icon} tone={recordVisuals[kind].tone} />
         <AppText large>{r(kind)}</AppText>
       </View>
       {kind === "progress" &&
         !id &&
         values.form_version_id &&
-        forms.data?.find((f) => f.id === values.form_version_id)?.published ===
-          false && (
+        forms.data?.find((f) => f.id === values.form_version_id)?.published === false && (
           <Card>
             <AppText>{r("formChanged")}</AppText>
             <AppButton
               secondary
               label={r("reviewCurrentForm")}
               onPress={() =>
-                ConfirmDialog(
-                  r("reviewCurrentForm"),
-                  r("reviewNewVersion"),
-                  () => {
-                    form.setValue("answers", {});
-                    form.setValue(
-                      "form_version_id",
-                      forms.data!.find((f) => f.published)!.id,
-                    );
-                    setOperation(Crypto.randomUUID());
-                  },
-                )
+                ConfirmDialog(r("reviewCurrentForm"), r("reviewNewVersion"), () => {
+                  form.setValue("answers", {});
+                  form.setValue("form_version_id", forms.data!.find((f) => f.published)!.id);
+                  setOperation(Crypto.randomUUID());
+                })
               }
             />
           </Card>
@@ -1249,11 +1109,9 @@ export function RecordForm() {
             secondary
             label={r("today")}
             onPress={() =>
-              form.setValue(
-                "progress_date",
-                dateInZone(new Date(), v.timezone),
-                { shouldDirty: true },
-              )
+              form.setValue("progress_date", dateInZone(new Date(), v.timezone), {
+                shouldDirty: true,
+              })
             }
           />
           {definition.past_days >= 1 && (
@@ -1261,11 +1119,9 @@ export function RecordForm() {
               secondary
               label={r("yesterday")}
               onPress={() =>
-                form.setValue(
-                  "progress_date",
-                  shiftDay(dateInZone(new Date(), v.timezone), -1),
-                  { shouldDirty: true },
-                )
+                form.setValue("progress_date", shiftDay(dateInZone(new Date(), v.timezone), -1), {
+                  shouldDirty: true,
+                })
               }
             />
           )}
@@ -1274,11 +1130,7 @@ export function RecordForm() {
             answers={values.answers}
             owner={owner}
             onChange={(field, value) =>
-              form.setValue(
-                "answers",
-                { ...values.answers, [field]: value },
-                { shouldDirty: true },
-              )
+              form.setValue("answers", { ...values.answers, [field]: value }, { shouldDirty: true })
             }
           />
         </>
@@ -1291,9 +1143,8 @@ export function RecordForm() {
             <Card style={{ padding: 12, gap: 8 }}>
               <AppText>
                 {t("uiEnergyType")}:{" "}
-                {r(values.energy_type as keyof typeof recordCopy) ??
-                  values.energy_type}{" "}
-                · {values.unit}
+                {r(values.energy_type as keyof typeof recordCopy) ?? values.energy_type} ·{" "}
+                {values.unit}
               </AppText>
               {["HYBRID", "DIESEL_HYBRID"].includes(v.energy_type) && (
                 <AppText muted>{t("fuelHybridHelp")}</AppText>
@@ -1308,9 +1159,7 @@ export function RecordForm() {
                   onChange={(type) => {
                     if (
                       type === values.energy_type ||
-                      !allowedFuelTypes(v.energy_type).some(
-                        (fuel) => fuel === type,
-                      )
+                      !allowedFuelTypes(v.energy_type).some((fuel) => fuel === type)
                     )
                       return;
                     const apply = () => {
@@ -1325,32 +1174,20 @@ export function RecordForm() {
                       });
                     };
                     if (values.quantity || values.unit_price)
-                      ConfirmDialog(
-                        t("uiEnergyType"),
-                        t("fuelSwitchAmounts"),
-                        apply,
-                      );
+                      ConfirmDialog(t("uiEnergyType"), t("fuelSwitchAmounts"), apply);
                     else apply();
                   }}
                 />
               )}
-              {(!permittedFuel(
-                v.energy_type,
-                values.energy_type,
-                existing?.payload,
-              ) ||
+              {(!permittedFuel(v.energy_type, values.energy_type, existing?.payload) ||
                 values.unit !== fuelUnit(values.energy_type)) && (
                 <AppText>{t("fuelChanged")}</AppText>
               )}
               {existing &&
                 !allowedFuelTypes(v.energy_type).some(
-                  (fuel) => fuel === existing.payload.energy_type,
+                  (fuel) => fuel === existing.payload.energy_type
                 ) && <AppText muted>{t("fuelHistorical")}</AppText>}
-              {(!permittedFuel(
-                v.energy_type,
-                values.energy_type,
-                existing?.payload,
-              ) ||
+              {(!permittedFuel(v.energy_type, values.energy_type, existing?.payload) ||
                 values.unit !== fuelUnit(values.energy_type)) && (
                 <TextAction
                   label={r("edit")}
@@ -1376,9 +1213,9 @@ export function RecordForm() {
                 ? "chargeQuantity"
                 : values.unit === "KG"
                   ? "massQuantity"
-                  : "volumeQuantity",
+                  : "volumeQuantity"
             ),
-            true,
+            true
           )}
           {!!derived && <AppText muted>{derived}</AppText>}
         </>
@@ -1391,15 +1228,13 @@ export function RecordForm() {
             label={r("category")}
             value={values.category}
             disabled={busy}
-            options={[
-              ...new Set([...expenseCategories, ...(categories.data ?? [])]),
-            ].map((category) => ({
-              value: category,
-              label: r(category as keyof typeof recordCopy) ?? category,
-            }))}
-            onChange={(category) =>
-              form.setValue("category", category, { shouldDirty: true })
-            }
+            options={[...new Set([...expenseCategories, ...(categories.data ?? [])])].map(
+              (category) => ({
+                value: category,
+                label: r(category as keyof typeof recordCopy) ?? category,
+              })
+            )}
+            onChange={(category) => form.setValue("category", category, { shouldDirty: true })}
           />
           {categories.error && (
             <ErrorState
@@ -1411,23 +1246,13 @@ export function RecordForm() {
       )}
       {["fuel", "expenses"].includes(kind) && field("event_at", r("event"))}
       {kind === "documents" &&
-        choose("category", [
-          "RC",
-          "INSURANCE",
-          "PUC",
-          "PERMIT",
-          "FITNESS",
-          "TAX",
-          "LOAN",
-          "OTHER",
-        ])}
-      {kind === "reminders" &&
-        choose("category", ["SERVICE", "EMI", "INSURANCE", "OTHER"])}
+        choose("category", ["RC", "INSURANCE", "PUC", "PERMIT", "FITNESS", "TAX", "LOAN", "OTHER"])}
+      {kind === "reminders" && choose("category", ["SERVICE", "EMI", "INSURANCE", "OTHER"])}
       {["documents", "reminders"].includes(kind) && field("title", r("title"))}
       {kind === "reminders" && field("due_at", r("due"))}
-      {(kind === "meters" ||
-        (kind === "progress" &&
-          (definition.km_required || definition.hours_required))) &&
+      {(kind === "fuel" ||
+        kind === "meters" ||
+        (kind === "progress" && (definition.km_required || definition.hours_required))) &&
         readingEditor}
       {kind === "progress" &&
         definition.notes_visible &&
@@ -1444,17 +1269,11 @@ export function RecordForm() {
               items={[
                 {
                   id: "partial",
-                  label: r(
-                    values.energy_type === "ELECTRIC"
-                      ? "partialCharge"
-                      : "partial",
-                  ),
+                  label: r(values.energy_type === "ELECTRIC" ? "partialCharge" : "partial"),
                 },
                 {
                   id: "full",
-                  label: r(
-                    values.energy_type === "ELECTRIC" ? "fullCharge" : "full",
-                  ),
+                  label: r(values.energy_type === "ELECTRIC" ? "fullCharge" : "full"),
                 },
               ]}
               value={values.is_full_tank ? "full" : "partial"}
@@ -1472,9 +1291,9 @@ export function RecordForm() {
                   ? "chargePrice"
                   : values.unit === "KG"
                     ? "massPrice"
-                    : "volumePrice",
+                    : "volumePrice"
               ),
-              true,
+              true
             )}
             {field("station_name", r("station"))}
           </>
@@ -1530,14 +1349,13 @@ export function RecordForm() {
             {["SERVICE", "REPAIR", "BATTERY"].includes(values.category) && (
               <>
                 {metaField("components", r("components"))}
-                {releaseFeatures.advancedTools &&
-                  access.data?.["reminders.create"] && (
-                    <>
-                      {metaField("next_date", r("nextService"))}
-                      {metaField("next_km", r("thresholdKm"))}
-                      {metaField("next_hours", r("thresholdHours"))}
-                    </>
-                  )}
+                {releaseFeatures.advancedTools && access.data?.["reminders.create"] && (
+                  <>
+                    {metaField("next_date", r("nextService"))}
+                    {metaField("next_km", r("thresholdKm"))}
+                    {metaField("next_hours", r("thresholdHours"))}
+                  </>
+                )}
               </>
             )}
             <AppText>{r("items")}</AppText>
@@ -1552,12 +1370,8 @@ export function RecordForm() {
                   onChangeText={(title) =>
                     form.setValue(
                       "items",
-                      JSON.stringify(
-                        items.map((v, i) =>
-                          i === index ? { ...v, title } : v,
-                        ),
-                      ),
-                      { shouldDirty: true },
+                      JSON.stringify(items.map((v, i) => (i === index ? { ...v, title } : v))),
+                      { shouldDirty: true }
                     )
                   }
                 />
@@ -1582,10 +1396,10 @@ export function RecordForm() {
                                   ...v,
                                   amount_paise: Math.round(Number(text) * 100),
                                 }
-                              : v,
-                          ),
+                              : v
+                          )
                         ),
-                        { shouldDirty: true },
+                        { shouldDirty: true }
                       );
                     }
                   }}
@@ -1595,11 +1409,9 @@ export function RecordForm() {
                   label={r("remove")}
                   onPress={() => {
                     setItemAmounts({});
-                    form.setValue(
-                      "items",
-                      JSON.stringify(items.filter((_, i) => i !== index)),
-                      { shouldDirty: true },
-                    );
+                    form.setValue("items", JSON.stringify(items.filter((_, i) => i !== index)), {
+                      shouldDirty: true,
+                    });
                   }}
                 />
               </Card>
@@ -1608,11 +1420,9 @@ export function RecordForm() {
               secondary
               label={r("addItem")}
               onPress={() =>
-                form.setValue(
-                  "items",
-                  JSON.stringify([...items, { title: "", amount_paise: 0 }]),
-                  { shouldDirty: true },
-                )
+                form.setValue("items", JSON.stringify([...items, { title: "", amount_paise: 0 }]), {
+                  shouldDirty: true,
+                })
               }
             />
             {field("vendor", r("vendor"))}
@@ -1624,8 +1434,7 @@ export function RecordForm() {
             {field("due_at", t("documentExpiry"))}
           </>
         )}
-        {(kind === "documents" ||
-          (kind === "expenses" && values.category === "EMI")) &&
+        {(kind === "documents" || (kind === "expenses" && values.category === "EMI")) &&
           releaseFeatures.advancedTools &&
           access.data?.["reminders.create"] && (
             <Card style={{ padding: 16, gap: 10 }}>
@@ -1643,9 +1452,7 @@ export function RecordForm() {
                 <Switch
                   accessibilityLabel={t("linkedReminder")}
                   value={metadata.create_reminder === true}
-                  onValueChange={(value) =>
-                    updateMeta("create_reminder", value)
-                  }
+                  onValueChange={(value) => updateMeta("create_reminder", value)}
                 />
               </View>
               {metadata.create_reminder === true && (
@@ -1656,15 +1463,12 @@ export function RecordForm() {
                     <>
                       {metaField("reminder_due_at", t("nextEmiDue"))}
                       <FilterChips
-                        items={(["NONE", "MONTHLY", "YEARLY"] as const).map(
-                          (id) => ({ id, label: r(id) }),
-                        )}
-                        value={String(
-                          metadata.reminder_recurrence ?? "MONTHLY",
-                        )}
-                        onChange={(value) =>
-                          updateMeta("reminder_recurrence", value)
-                        }
+                        items={(["NONE", "MONTHLY", "YEARLY"] as const).map((id) => ({
+                          id,
+                          label: r(id),
+                        }))}
+                        value={String(metadata.reminder_recurrence ?? "MONTHLY")}
+                        onChange={(value) => updateMeta("reminder_recurrence", value)}
                       />
                     </>
                   )}
@@ -1686,23 +1490,17 @@ export function RecordForm() {
         )}
         {kind === "reminders" && (
           <>
-            {v.meter_mode !== "HOURS" &&
-              field("threshold_km", r("thresholdKm"), true)}
-            {v.meter_mode !== "KM" &&
-              field("threshold_hours", r("thresholdHours"), true)}
+            {v.meter_mode !== "HOURS" && field("threshold_km", r("thresholdKm"), true)}
+            {v.meter_mode !== "KM" && field("threshold_hours", r("thresholdHours"), true)}
             {choose("recurrence", ["NONE", "MONTHLY", "YEARLY"])}
           </>
         )}
         {["fuel", "expenses"].includes(kind) &&
           choose("payment_method", ["CASH", "UPI", "CARD", "BANK", "OTHER"])}
-        {(kind === "fuel" ||
-          kind === "expenses" ||
-          (kind === "progress" &&
-            !definition.km_required &&
-            !definition.hours_required)) &&
+        {(kind === "expenses" ||
+          (kind === "progress" && !definition.km_required && !definition.hours_required)) &&
           readingEditor}
-        {(kind !== "progress" ||
-          (definition.notes_visible && !definition.notes_required)) &&
+        {(kind !== "progress" || (definition.notes_visible && !definition.notes_required)) &&
           field("notes", r("notes"))}
         {kind === "progress" && (
           <DynamicFields
@@ -1710,11 +1508,7 @@ export function RecordForm() {
             answers={values.answers}
             owner={owner}
             onChange={(field, value) =>
-              form.setValue(
-                "answers",
-                { ...values.answers, [field]: value },
-                { shouldDirty: true },
-              )
+              form.setValue("answers", { ...values.answers, [field]: value }, { shouldDirty: true })
             }
           />
         )}
@@ -1728,16 +1522,10 @@ export function RecordForm() {
       </AdditionalOptions>
       {kind === "documents" && <AppText muted>{r("noAttachment")}</AppText>}
       {kind === "progress" && forms.error && (
-        <ErrorState
-          message={forms.error.message}
-          retry={() => void forms.refetch()}
-        />
+        <ErrorState message={forms.error.message} retry={() => void forms.refetch()} />
       )}
       {access.error && (
-        <ErrorState
-          message={access.error.message}
-          retry={() => void access.refetch()}
-        />
+        <ErrorState message={access.error.message} retry={() => void access.refetch()} />
       )}
       {!!error && <ErrorState message={error} retry={() => void submit()} />}
     </Screen>
@@ -1789,8 +1577,7 @@ export function RecordDetail({
       : otherRecords;
   const vehicleQuery = useVehicles();
   const timezone =
-    vehicleQuery.data?.find((item) => item.id === vehicle)?.timezone ??
-    "Asia/Kolkata";
+    vehicleQuery.data?.find((item) => item.id === vehicle)?.timezone ?? "Asia/Kolkata";
   const row = query.data?.find((e) => e.id === id);
   const permissions = usePermissions(vehicle);
   const colors = useTheme();
@@ -1798,9 +1585,7 @@ export function RecordDetail({
   const toast = useToast();
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [mutationOperation, setMutationOperation] = useState(() =>
-    Crypto.randomUUID(),
-  );
+  const [mutationOperation, setMutationOperation] = useState(() => Crypto.randomUUID());
   const [error, setError] = useState("");
   const [note, setNote] = useState("");
   const forms = useQuery({
@@ -1810,32 +1595,15 @@ export function RecordDetail({
   });
   const owner = permissions.data?.owner;
   const author = useQuery({
-    queryKey: [user, vehicle, "fuel-author", id],
-    enabled: !!user && !!vehicle && !!row && kind === "fuel",
+    queryKey: [user, vehicle, "record-author", kind, id],
+    enabled: !!user && !!vehicle && !!row && kind !== "progress",
     queryFn: async () => {
-      if (development) return { display_name: "Developer", email: null };
-      const { data, error } = await client().rpc("fuel_record_author", {
-        p_vehicle: vehicle!,
-        p_record: id!,
-      });
+      if (kind !== "fuel") return recordAuthorName(kind, vehicle!, id!, development);
+      if (development) return recordAuthorName(kind, vehicle!, id!, true);
+      const { data, error } = await client().rpc("fuel_record_author", { p_vehicle: vehicle!, p_record: id! });
       if (error) throw error;
-      return (data?.[0] ?? null) as {
-        display_name: string | null;
-        email: string | null;
-      } | null;
+      return data?.[0]?.display_name ?? null;
     },
-  });
-  const audit = useQuery({
-    queryKey: [user, vehicle, "record-audit", id],
-    enabled:
-      !!vehicle &&
-      !!id &&
-      kind !== "fuel" &&
-      releaseFeatures.advancedTools &&
-      owner === true &&
-      !development &&
-      !!row,
-    queryFn: () => recordAudit(vehicle!, id!),
   });
   const mutate = async (status: string, payload = row?.payload) => {
     if (!row || !user || !payload || busy) return;
@@ -1850,7 +1618,7 @@ export function RecordDetail({
         mutationOperation,
         row.id,
         row.revision,
-        status,
+        status
       );
       setMutationOperation(Crypto.randomUUID());
       await qc.invalidateQueries();
@@ -1869,14 +1637,7 @@ export function RecordDetail({
     if (!row || !user) return;
     setBusy(true);
     try {
-      await reviewProgress(
-        user,
-        row.vehicle_id,
-        row,
-        decision,
-        note,
-        development,
-      );
+      await reviewProgress(user, row.vehicle_id, row, decision, note, development);
       await qc.invalidateQueries();
       toast(r("saved"), "success");
     } catch (e) {
@@ -1895,16 +1656,10 @@ export function RecordDetail({
   // Confirm inside the existing popup: a second native Modal can sit behind it.
   if (confirmDelete) {
     return (
-      <DetailContainer
-        embedded={!!context}
-        title={r("deleteRecord")}
-        loading={busy}
-      >
+      <DetailContainer embedded={!!context} title={r("deleteRecord")} loading={busy}>
         <AppText>{r("deleteRecordBody")}</AppText>
         {row && <RecordCard row={row} kind={kind} timezone={timezone} />}
-        {!!error && (
-          <ErrorState message={error} retry={() => void mutate("ARCHIVED")} />
-        )}
+        {!!error && <ErrorState message={error} retry={() => void mutate("ARCHIVED")} />}
         <AppButton
           label={r("deleteRecord")}
           disabled={busy || !owner || !row || row.status === "ARCHIVED"}
@@ -1930,75 +1685,58 @@ export function RecordDetail({
       loading={query.isPending || busy}
     >
       {query.error ? (
-        <ErrorState
-          message={query.error.message}
-          retry={() => void query.refetch()}
-        />
+        <ErrorState message={query.error.message} retry={() => void query.refetch()} />
       ) : row ? (
         <>
-          {!context && (
-            <VehicleHeader vehicleId={row.vehicle_id} allowSwitch={false} />
+          {!context && <VehicleHeader vehicleId={row.vehicle_id} allowSwitch={false} />}
+          {kind === "fuel" && (editAllowed || (owner && row.status !== "ARCHIVED")) && (
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "flex-end",
+                gap: 8,
+              }}
+            >
+              {editAllowed && (
+                <MotionPress
+                  label={r("edit")}
+                  onPress={() => {
+                    onClose?.();
+                    router.push({
+                      pathname: "/records/[kind]/[action]",
+                      params: {
+                        kind,
+                        action: "edit",
+                        id: row.id,
+                        vehicle: row.vehicle_id,
+                      },
+                    });
+                  }}
+                >
+                  <View style={{ padding: 10 }}>
+                    <Ionicons name="create-outline" size={23} color={colors.primary} />
+                  </View>
+                </MotionPress>
+              )}
+              {owner && row.status !== "ARCHIVED" && (
+                <MotionPress
+                  label={r("deleteRecord")}
+                  disabled={busy}
+                  onPress={() => {
+                    setError("");
+                    setConfirmDelete(true);
+                  }}
+                >
+                  <View style={{ padding: 10 }}>
+                    <Ionicons name="trash-outline" size={23} color={colors.danger} />
+                  </View>
+                </MotionPress>
+              )}
+            </View>
           )}
-          {kind === "fuel" &&
-            (editAllowed || (owner && row.status !== "ARCHIVED")) && (
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "flex-end",
-                  gap: 8,
-                }}
-              >
-                {editAllowed && (
-                  <MotionPress
-                    label={r("edit")}
-                    onPress={() => {
-                      onClose?.();
-                      router.push({
-                        pathname: "/records/[kind]/[action]",
-                        params: {
-                          kind,
-                          action: "edit",
-                          id: row.id,
-                          vehicle: row.vehicle_id,
-                        },
-                      });
-                    }}
-                  >
-                    <View style={{ padding: 10 }}>
-                      <Ionicons
-                        name="create-outline"
-                        size={23}
-                        color={colors.primary}
-                      />
-                    </View>
-                  </MotionPress>
-                )}
-                {owner && row.status !== "ARCHIVED" && (
-                  <MotionPress
-                    label={r("deleteRecord")}
-                    disabled={busy}
-                    onPress={() => {
-                      setError("");
-                      setConfirmDelete(true);
-                    }}
-                  >
-                    <View style={{ padding: 10 }}>
-                      <Ionicons
-                        name="trash-outline"
-                        size={23}
-                        color={colors.danger}
-                      />
-                    </View>
-                  </MotionPress>
-                )}
-              </View>
-            )}
           <RecordCard row={row} kind={kind} timezone={timezone} />
-          {kind === "fuel" && author.error && (
-            <ErrorState
-              message={errorMessage(author.error)}
-              retry={() => void author.refetch()}
-            />
+          {author.error && (
+            <ErrorState message={errorMessage(author.error)} retry={() => void author.refetch()} />
           )}
           <Card style={{ padding: 16, gap: 8 }}>
             <SectionHeading title={t("uiRecordInfo")} />
@@ -2015,7 +1753,7 @@ export function RecordDetail({
                               : "partialCharge"
                             : row.payload.is_full_tank
                               ? "full"
-                              : "partial",
+                              : "partial"
                         ),
                       },
                       ...(row.payload.unit_price_paise != null
@@ -2028,52 +1766,27 @@ export function RecordDetail({
                         : []),
                     ]
                   : []),
-                ...(kind === "fuel"
-                  ? author.data
-                    ? [
-                        {
-                          label: r("author"),
-                          value:
-                            [author.data.display_name, author.data.email]
-                              .filter(Boolean)
-                              .join(" · ") || t("authorUnavailable"),
-                        },
-                      ]
-                    : []
-                  : [{ label: r("author"), value: row.created_by }]),
+                ...(kind !== "progress" ? [{ label: r("author"), value: author.isPending ? t("loading") : author.data || t("authorUnavailable") }] : []),
                 ...(row.payload.reading_at
                   ? [
                       {
                         label: r("observed"),
-                        value: readableDateTime(
-                          String(row.payload.reading_at),
-                          timezone,
-                        ),
+                        value: readableDateTime(String(row.payload.reading_at), timezone),
                       },
                     ]
                   : []),
                 ...(row.payload.km !== null && row.payload.km !== undefined
                   ? [{ label: r("distance"), value: `${row.payload.km} KM` }]
                   : []),
-                ...(row.payload.hours !== null &&
-                row.payload.hours !== undefined
+                ...(row.payload.hours !== null && row.payload.hours !== undefined
                   ? [{ label: r("hours"), value: `${row.payload.hours} HOURS` }]
                   : []),
-                ...[
-                  "station_name",
-                  "vendor",
-                  "payment_method",
-                  "reference",
-                  "notes",
-                ]
+                ...["station_name", "vendor", "payment_method", "reference", "notes"]
                   .filter((key) => row.payload[key])
                   .map((key) => ({
                     label:
-                      r(
-                        (key === "payment_method"
-                          ? "payment"
-                          : key) as keyof typeof recordCopy,
-                      ) ?? key,
+                      r((key === "payment_method" ? "payment" : key) as keyof typeof recordCopy) ??
+                      key,
                     value: String(row.payload[key]),
                   })),
               ]}
@@ -2102,32 +1815,24 @@ export function RecordDetail({
                         },
                       ]
                     : []),
-                  ...Object.entries(
-                    (row.payload.metadata as Record<string, unknown>) ?? {},
-                  )
+                  ...Object.entries((row.payload.metadata as Record<string, unknown>) ?? {})
                     .filter(
-                      ([key, value]) =>
-                        key !== "expense_id" && value !== null && value !== "",
+                      ([key, value]) => key !== "expense_id" && value !== null && value !== ""
                     )
                     .map(([key, value]) => ({
                       label:
-                        r(
-                          (metadataLabels[key] ??
-                            key) as keyof typeof recordCopy,
-                        ) ?? key.replaceAll("_", " "),
+                        r((metadataLabels[key] ?? key) as keyof typeof recordCopy) ??
+                        key.replaceAll("_", " "),
                       value:
-                        typeof value === "string" &&
-                        /^\d{4}-\d{2}-\d{2}(T|$)/.test(value)
+                        typeof value === "string" && /^\d{4}-\d{2}-\d{2}(T|$)/.test(value)
                           ? readableDateTime(value, timezone)
                           : String(value),
                     })),
                   ...(Array.isArray(row.payload.items)
-                    ? row.payload.items.map(
-                        (item: { title: string; amount_paise: number }) => ({
-                          label: item.title,
-                          value: money(item.amount_paise),
-                        }),
-                      )
+                    ? row.payload.items.map((item: { title: string; amount_paise: number }) => ({
+                        label: item.title,
+                        value: money(item.amount_paise),
+                      }))
                     : []),
                 ]}
               />
@@ -2137,8 +1842,8 @@ export function RecordDetail({
             <>
               <DynamicFields
                 fields={
-                  forms.data?.find((f) => f.id === row.payload.form_version_id)
-                    ?.definition.fields ?? []
+                  forms.data?.find((f) => f.id === row.payload.form_version_id)?.definition
+                    .fields ?? []
                 }
                 answers={(row.payload.answers as Record<string, unknown>) ?? {}}
                 owner={!!owner}
@@ -2149,11 +1854,7 @@ export function RecordDetail({
                 <AppText>{String(row.payload.review_note)}</AppText>
               )}
               {owner &&
-                [
-                  "PENDING_REVIEW",
-                  "SUBMITTED",
-                  "CORRECTION_REQUESTED",
-                ].includes(row.status) && (
+                ["PENDING_REVIEW", "SUBMITTED", "CORRECTION_REQUESTED"].includes(row.status) && (
                   <>
                     <InputField
                       label={r("reviewNote")}
@@ -2162,18 +1863,16 @@ export function RecordDetail({
                       value={note}
                       onChangeText={setNote}
                     />
-                    {(
-                      ["APPROVED", "REJECTED", "CORRECTION_REQUESTED"] as const
-                    ).map((decision, index) => (
-                      <AppButton
-                        key={decision}
-                        disabled={busy}
-                        label={r(
-                          (["approve", "reject", "correction"] as const)[index],
-                        )}
-                        onPress={() => void review(decision)}
-                      />
-                    ))}
+                    {(["APPROVED", "REJECTED", "CORRECTION_REQUESTED"] as const).map(
+                      (decision, index) => (
+                        <AppButton
+                          key={decision}
+                          disabled={busy}
+                          label={r((["approve", "reject", "correction"] as const)[index])}
+                          onPress={() => void review(decision)}
+                        />
+                      )
+                    )}
                   </>
                 )}
             </>
@@ -2196,25 +1895,20 @@ export function RecordDetail({
               }}
             />
           )}
-          {owner &&
-            row.status !== "ARCHIVED" &&
-            kind !== "progress" &&
-            kind !== "fuel" && (
-              <TextAction
-                icon="trash-outline"
-                disabled={busy}
-                label={r("deleteRecord")}
-                onPress={() => {
-                  setError("");
-                  setConfirmDelete(true);
-                }}
-              />
-            )}
+          {owner && row.status !== "ARCHIVED" && kind !== "progress" && kind !== "fuel" && (
+            <TextAction
+              icon="trash-outline"
+              disabled={busy}
+              label={r("deleteRecord")}
+              onPress={() => {
+                setError("");
+                setConfirmDelete(true);
+              }}
+            />
+          )}
           {releaseFeatures.advancedTools &&
             kind === "expenses" &&
-            ["SERVICE", "REPAIR", "INSURANCE", "EMI"].includes(
-              String(row.payload.category),
-            ) && (
+            ["SERVICE", "REPAIR", "INSURANCE", "EMI"].includes(String(row.payload.category)) && (
               <AppButton
                 secondary
                 label={r("reminders")}
@@ -2239,14 +1933,11 @@ export function RecordDetail({
                 onPress={() => {
                   const next =
                     row.payload.due_at && row.payload.recurrence !== "NONE"
-                      ? nextRecurrence(
-                          String(row.payload.due_at),
-                          String(row.payload.recurrence),
-                        )
+                      ? nextRecurrence(String(row.payload.due_at), String(row.payload.recurrence))
                       : null;
                   void mutate(
                     next ? "ACTIVE" : "COMPLETED",
-                    next ? { ...row.payload, due_at: next } : row.payload,
+                    next ? { ...row.payload, due_at: next } : row.payload
                   );
                 }}
               />
@@ -2271,12 +1962,7 @@ export function RecordDetail({
                         toast(r("notificationDenied"));
                         return;
                       }
-                      await reconcileReminders(
-                        user!,
-                        row.vehicle_id,
-                        [row],
-                        {},
-                      );
+                      await reconcileReminders(user!, row.vehicle_id, [row], {});
                       toast(r("notificationScheduled"));
                     })
                     .catch((e) => setError(String(e)));
@@ -2284,46 +1970,6 @@ export function RecordDetail({
               />
             </>
           )}
-          {releaseFeatures.advancedTools &&
-            kind !== "fuel" &&
-            owner &&
-            !development && (
-              <Card>
-                <AppText large>{r("audit")}</AppText>
-                <AppText muted>{r("auditLatest")}</AppText>
-                {audit.error ? (
-                  <ErrorState
-                    message={audit.error.message}
-                    retry={() => void audit.refetch()}
-                  />
-                ) : audit.isPending ? (
-                  <Skeleton />
-                ) : audit.data?.length ? (
-                  audit.data.map((event) => (
-                    <View key={String(event.id)} style={{ gap: 4 }}>
-                      <AppText>
-                        {String(event.action).replaceAll("_", " ")}
-                      </AppText>
-                      <Timestamp value={event.created_at} timezone={timezone} />
-                      <AppText muted>{event.actor_id ?? "—"}</AppText>
-                      <AppText>
-                        {JSON.stringify(
-                          event.context,
-                          (_key, value) =>
-                            typeof value === "string" &&
-                            /^\d{4}-\d{2}-\d{2}(T|$)/.test(value)
-                              ? readableDateTime(value, timezone)
-                              : value,
-                          2,
-                        )}
-                      </AppText>
-                    </View>
-                  ))
-                ) : (
-                  <AppText>{r("auditEmpty")}</AppText>
-                )}
-              </Card>
-            )}
           {kind === "documents" && (
             <>
               <AppText>{r("legal")}</AppText>
@@ -2332,8 +1978,8 @@ export function RecordDetail({
                 secondary
                 label={r("official")}
                 onPress={() =>
-                  void Linking.openURL("https://www.digilocker.gov.in/").catch(
-                    (e) => setError(String(e)),
+                  void Linking.openURL("https://www.digilocker.gov.in/").catch((e) =>
+                    setError(String(e))
                   )
                 }
               />
@@ -2361,16 +2007,10 @@ export function RecordAnalytics() {
     enabled: !!v && permissions.data?.["meters.read"] === true,
     queryFn: () => loadObservations(user!, v!.id, development),
   });
-  const rows = filterRecords(
-    query.data ?? [],
-    period,
-    v?.timezone ?? "Asia/Kolkata",
-    kind,
-  ).filter((row) => row.status !== "ARCHIVED");
-  const total = rows.reduce(
-    (sum, row) => sum + Number(row.payload.amount_paise ?? 0),
-    0,
+  const rows = filterRecords(query.data ?? [], period, v?.timezone ?? "Asia/Kolkata", kind).filter(
+    (row) => row.status !== "ARCHIVED"
   );
+  const total = rows.reduce((sum, row) => sum + Number(row.payload.amount_paise ?? 0), 0);
   const operating = rows.reduce(
     (sum, row) =>
       sum +
@@ -2378,15 +2018,15 @@ export function RecordAnalytics() {
         Number(row.payload.amount_paise ?? 0),
         String(row.payload.category),
         row.payload.principal_paise as number | null,
-        row.payload.interest_paise as number | null,
+        row.payload.interest_paise as number | null
       ).operating,
-    0,
+    0
   );
   const intervals =
     kind === "fuel" && permissions.data?.["meters.read"]
       ? fuelIntervals(
           rows.map((row) => ({ id: row.id, ...row.payload }) as FuelPoint),
-          observations.data ?? [],
+          observations.data ?? []
         )
       : [];
   const grouped = (key: "category" | "month") =>
@@ -2397,12 +2037,11 @@ export function RecordAnalytics() {
             ? String(row.payload.category ?? "OTHER")
             : dateInZone(
                 new Date(String(row.payload.event_at ?? row.created_at)),
-                v?.timezone ?? "Asia/Kolkata",
+                v?.timezone ?? "Asia/Kolkata"
               ).slice(0, 7);
-        result[name] =
-          (result[name] ?? 0) + Number(row.payload.amount_paise ?? 0);
+        result[name] = (result[name] ?? 0) + Number(row.payload.amount_paise ?? 0);
         return result;
-      }, {}),
+      }, {})
     );
   return (
     <Screen
@@ -2424,10 +2063,7 @@ export function RecordAnalytics() {
             onChange={setPeriod}
           />
           {query.error ? (
-            <ErrorState
-              message={query.error.message}
-              retry={() => void query.refetch()}
-            />
+            <ErrorState message={query.error.message} retry={() => void query.refetch()} />
           ) : (
             <>
               <Card>
@@ -2463,16 +2099,11 @@ export function RecordAnalytics() {
                             ? r("unknown")
                             : `${interval.distance} KM · ${interval.kmPerUnit?.toFixed(2)} KM/${interval.unit}`}
                         </AppText>
-                        {interval.unit === "KWH" &&
-                          interval.distance !== null && (
-                            <AppText>
-                              {(
-                                (interval.quantity / interval.distance) *
-                                100
-                              ).toFixed(2)}{" "}
-                              KWH/100 KM
-                            </AppText>
-                          )}
+                        {interval.unit === "KWH" && interval.distance !== null && (
+                          <AppText>
+                            {((interval.quantity / interval.distance) * 100).toFixed(2)} KWH/100 KM
+                          </AppText>
+                        )}
                         {interval.unitsPerHour !== null && (
                           <AppText>
                             {interval.unitsPerHour.toFixed(2)} {interval.unit}
@@ -2496,9 +2127,7 @@ export function RecordAnalytics() {
                   <AppText large>{r("byCategory")}</AppText>
                   {grouped("category").map(([category, value]) => (
                     <Card key={category}>
-                      <AppText>
-                        {r(category as keyof typeof recordCopy) ?? category}
-                      </AppText>
+                      <AppText>{r(category as keyof typeof recordCopy) ?? category}</AppText>
                       <AppText>{money(value)}</AppText>
                       <View
                         accessible={false}

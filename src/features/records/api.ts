@@ -407,14 +407,22 @@ export async function addExpenseCategory(
   if (error) throw new Error(error.message);
 }
 
-export async function recordAudit(vehicle: string, id: string) {
-  const { data, error } = await client()
-    .from("audit_events")
-    .select("id,actor_id,action,context,created_at")
-    .eq("vehicle_id", vehicle)
-    .contains("context", { id })
-    .order("created_at", { ascending: false })
-    .limit(100);
-  if (error) throw new Error(error.message);
-  return data ?? [];
+export async function recordAuthorName(
+  kind: Kind,
+  vehicle: string,
+  id: string,
+  development: boolean,
+) {
+  if (development) {
+    const { developmentProfile } =
+      await import("@/src/features/development/repository");
+    return (await developmentProfile()).display_name || null;
+  }
+  const { data, error } = await client().rpc("record_author_name", {
+    p_kind: kind,
+    p_vehicle: vehicle,
+    p_record: id,
+  });
+  if (error) throw error;
+  return data?.[0]?.display_name ?? null;
 }

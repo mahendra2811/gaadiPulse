@@ -23,8 +23,6 @@ export const recordCopy = {
 
   addMeter: "Add meter reading",
   addMaintenance: "Add maintenance",
-  auditLatest: "Latest 100 changes",
-  auditEmpty: "No recorded changes found.",
 
   memberSummary: "Submission and review summary",
   member: "Member",
@@ -83,8 +81,7 @@ export const recordCopy = {
   deletionWorkflow:
     "Account deletion is a tracked operator process. Historical financial attribution is retained until the configured retention review completes. Your access is revoked when the request is accepted.",
   authorizedScope: "Only records you are permitted to read are included.",
-  fillConfirmation:
-    "I actually observed this reading at the original fill time.",
+  fillConfirmation: "I actually observed this reading at the original fill time.",
   vehicleChanged:
     "Vehicle changed. Readings that do not apply to its meter mode have been cleared.",
   defaultsLabel: "Default answer",
@@ -123,7 +120,7 @@ export const recordCopy = {
   quantity: "Quantity",
   price: "Price per unit (₹)",
   event: "Date and time",
-  observed: "Actual meter observation date and time (ISO)",
+  observed: "Reading date and time",
   readingHelp:
     "A later reading may be linked only when you actually observed it at the original event time. Do not infer or backdate a reading.",
   pendingReading: "Reading pending",
@@ -227,8 +224,7 @@ export const recordCopy = {
   hoursRequired: "Require HOURS for progress",
   versionHistory: "Past submissions retain their original form version.",
   answers: "Custom answers",
-  formChanged:
-    "The progress form changed. Review the current form before submitting.",
+  formChanged: "The progress form changed. Review the current form before submitting.",
   grant: "Grant access by verified email",
   email: "Email",
   role: "Role",
@@ -247,8 +243,7 @@ export const recordCopy = {
   permissionHelp:
     "Read and create permissions are independent. Disabling read also hides amounts from database queries and exports.",
   sync: "Connection",
-  conflict:
-    "Conflicting observations — review the latest server record before changing them.",
+  conflict: "Conflicting observations — review the latest server record before changing them.",
   deleteAccount: "Account deletion",
   deleteAccountBody:
     "Delete your own account data only after transferring protected administration or archiving all vehicles you administer. This action is irreversible.",
@@ -319,11 +314,9 @@ export const recordCopy = {
   addCategory: "Add category",
   author: "Submitted by",
   status: "Status",
-  audit: "Audit history",
   noAttachment: "No file attached",
   readOnly: "Read-only",
-  development:
-    "Frontend preview: temporary test data, cleared on reload or exit. Never uploaded.",
+  development: "Frontend preview: temporary test data, cleared on reload or exit. Never uploaded.",
 } as const;
 export function r(key: keyof typeof recordCopy) {
   return recordCopy[key];

@@ -1,6 +1,6 @@
 import { releaseFeatures, supportsRecord } from "@/src/features/release/scope";
 import { DeferredFeature } from "@/src/features/release/DeferredFeature";
-import { useLocalSearchParams } from "expo-router";
+import { Redirect, useLocalSearchParams } from "expo-router";
 import {
   RecordForm,
   RecordDetail,
@@ -11,6 +11,7 @@ export default function RecordAction() {
     action: string;
     kind: string;
   }>();
+  if (kind === "progress") return <Redirect href="/(tabs)" />;
   if (
     !supportsRecord(kind) ||
     (action === "analytics" && !releaseFeatures.advancedTools)

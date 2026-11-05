@@ -1,6 +1,7 @@
 import { AuthLayout } from "./AuthLayout";
 import { releaseFeatures } from "@/src/features/release/scope";
 import { AdditionalOptions } from "@/src/components/ui/AdditionalOptions";
+import { TimezoneField } from "@/src/features/garage/TimezoneField";
 import { errorMessage } from "@/src/lib/errors";
 import {
   MenuRow,
@@ -90,6 +91,12 @@ export function Settings() {
           icon="document-text"
           tone="amber"
           onPress={() => router.push("/auth/legal")}
+        />
+        <MenuRow
+          label={r("help")}
+          icon="help-buoy"
+          tone="amber"
+          onPress={() => router.push("/settings/help")}
         />
         <MenuRow
           label={t("about")}
@@ -195,17 +202,21 @@ export function Profile() {
         value={name}
         onChangeText={setName}
       />
+      {!auth.development && !!auth.session?.user.email && (
+        <InfoRows
+          items={[{ label: t("email"), value: auth.session.user.email }]}
+        />
+      )}
+      <TimezoneField
+        value={timezone}
+        onChange={setTimezone}
+        disabled={busy || !initialized}
+        account
+      />
       <AdditionalOptions
         open={additionalOpen}
         onToggle={() => setAdditionalOpen((value) => !value)}
       >
-        <InputField
-          label={t("timezone")}
-          required
-          maxLength={100}
-          value={timezone}
-          onChangeText={setTimezone}
-        />
         <AppText>{t("appearance")}</AppText>
         <Choice
           compact

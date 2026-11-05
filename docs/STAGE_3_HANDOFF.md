@@ -476,3 +476,71 @@ After the full checks, shortened the event field label in `src/features/records/
 Updated the shared `src/components/navigation/VehicleHeader.tsx` card used on Home, Fuel, Expenses and other screens: removed the Active Vehicle label and current reading, increased text and artwork sizing, and arranged the image, vehicle identity and available make/model, energy and role in three columns. Role uses a contrasting badge; make/model is omitted when unavailable or redundant. Latest observations on Home remain separate and unchanged.
 
 Validation: `npx prettier --write src/components/navigation/VehicleHeader.tsx`, `npm run typecheck`, `npx eslint src/components/navigation/VehicleHeader.tsx --max-warnings=0`, `git diff --check`, and `npx expo config --type public` PASS. Inspected the running browser Fuel screen with the real vehicle's name, registration, make/model, energy and role visible. No database changes, automated unit suite, native build or physical-device checks were run for this presentation-only update.
+
+## Vehicle setup time zone and fuel guidance — 2026-11-05
+
+Added `src/features/garage/TimezoneField.tsx`, `timezone.ts`, `timezones.json` and `tests/vehicleSetup.test.ts`; updated `VehicleForm.tsx`, `src/lib/i18n.ts`, `docs/DECISIONS.md` and `docs/FUEL_CONFIGURATION.md`. Vehicle create/edit use a searchable IANA-zone selector defaulting to India (IST, UTC+05:30), preserve existing zone aliases, show current offsets and explain seasonal changes. The picker filters time zones unsupported by the device. Starting readings, their actual time, conditional vehicle identity, fuel/unit compatibility, fuel-profile edits and limited Other fuel support are explained. Review now includes supplied starting readings. Changing meter mode asks before clearing an incompatible unsaved reading; changing an edited vehicle category retains a compatible existing meter mode. No database migration or remote data change.
+
+Validation: `npm run typecheck`, `npm run lint`, `npm run format:check`, `git diff --check`, `npm test -- --maxWorkers=1` (65 tests), `npx expo config --type public`, `npx expo export --platform android --output-dir /tmp/gaadipulse-vehicle-setup-export`, and `cd android && ./gradlew :app:assembleDebug -PreactNativeArchitectures=arm64-v8a --offline` PASS before the final device-supported-zone filter; targeted final checks are recorded below. In the live browser add wizard, verified optional make/model labels, the conditional identity hint, Petrol+CNG fuel/units and India default. The browser changed pages while opening the picker, so selection/search, edit flow and physical Android were not interaction-tested. No hosted writes or SQL/RLS migrations were run; the existing server fuel policy was reviewed and tested by the existing suite. The native build is debug-only.
+
+After the device-supported-zone filter: Prettier for `timezone.ts`, `npm run typecheck`, targeted ESLint for the setup components and test, `npx vitest run tests/vehicleSetup.test.ts --maxWorkers=1` (3 tests), and `git diff --check` PASS. Expo export and Android build above preceded this final TypeScript-only filter.
+
+## Account onboarding and currency request — partial, 2026-11-05
+
+Updated `src/features/auth/settings.tsx`, `src/features/garage/VehicleForm.tsx`, `src/features/garage/TimezoneField.tsx` and `src/lib/i18n.ts`: profile setup shows the authenticated account's email and asks for the account time zone using the existing zone picker; new vehicles initialize their time zone from the account profile, with a visible retry on profile-load failure. Existing vehicle time zones remain unchanged. Existing display-name onboarding and profile persistence are reused. Separate username and currency onboarding are NOT implemented. The user chose to retain each record's original currency; see `docs/DECISIONS.md` for the required record-level, mixed-currency and legacy-client work. The app still uses INR/paise throughout; no alternative currency selector, database change, currency relabeling or conversion was introduced.
+
+Validation: `npm run typecheck`, `npm run lint`, `npm run format:check`, `git diff --check`, `npm test -- --maxWorkers=1` (65 tests), `npx expo config --type public`, and `npx expo export --platform android --output-dir /tmp/gaadipulse-account-timezone-export` PASS. Browser/device interaction, native build and hosted signup checks for this partial follow-up were NOT RUN; no server migration/deployment was performed.
+
+## Meter history and More menu — 2026-11-05
+
+Added `src/components/ui/HistoryRow.tsx` and reused it for fuel, expense and meter history. Updated `src/features/meters/History.tsx`, `src/features/records/RecordCard.tsx` and `src/features/navigation/MoreMenu.tsx`: compact observation rows open a details sheet with the existing owner correction/retraction flow, type filters are conditional, and the redundant Add maintenance shortcut is removed. Readings and correction provenance remain separate; no migration or server data was changed. `docs/DECISIONS.md` records the history and time-zone presentation decisions.
+
+Validation: `npm run typecheck`, `npm run lint`, `npm run format:check`, `npm test -- --maxWorkers=1` (65 tests), `npx expo config --type public` and `git diff --check` PASS before a final addition of retry states; targeted final checks are recorded below. Browser visual/interaction testing was not completed because no browser automation surface was available; Android device and native build were not run for this UI change. Local Supabase/RLS and hosted writes were not run; no SQL changed.
+
+Final retry-state checks: targeted ESLint and Prettier, `npm run typecheck`, and `git diff --check` PASS.
+
+Follow-up: removed the measured intervals section from meter history at the user's request; insights are planned separately. Targeted Prettier and ESLint, `npm run typecheck`, and `git diff --check` PASS. No browser/device testing or native build was run for this removal.
+
+## Fuel form meter readings — 2026-11-05
+
+Updated `src/features/records/screens.tsx`, `schema.ts`, `copy.ts`, and `src/lib/i18n.ts` to load authorized active observations for entry forms, show the latest reading and observation date for each configured meter, and display fuel meter fields directly. The fuel form explains the existing confirmation when the observation and fill times match, resets that confirmation when the reading, time or vehicle changes, and reports an actionable validation message. Latest readings are informational and are never copied as new observations; server chronology validation remains authoritative. No SQL or hosted data was changed.
+
+Validation: `npm run typecheck`, full `npm run lint`, `npm run format:check`, `npm test -- --maxWorkers=1` (65 tests), `npx expo config --type public`, and `git diff --check` PASS. After the final validation-message change, targeted ESLint/Prettier, typecheck and diff check PASS. In the running browser, verified that the selected vehicle's latest KM and HOURS values and dates appear above the fuel meter fields. No record was submitted, and no Android device/build or hosted write test was performed.
+
+## Compact time-zone selector — 2026-11-05
+
+Updated `src/features/garage/TimezoneField.tsx` for account and vehicle setup: a compact searchable input opens a fixed-height scrollable list directly below it; selection retains existing IANA-zone and offset handling. Targeted ESLint and Prettier, `npm run typecheck`, `npx vitest run tests/vehicleSetup.test.ts --maxWorkers=1` (3 tests), and `git diff --check` PASS. The tests ran before the final input-blur adjustment, which received targeted lint/format/type checks. Browser and Android interaction were not tested; no native build or backend changes were made.
+
+## Garage meter labels — 2026-11-05
+
+Updated garage vehicle card meter-mode labels to KM, hrs and KM & hrs in `src/features/garage/screens.tsx` and `src/lib/i18n.ts`. Targeted Prettier and ESLint, `npm run typecheck`, and `git diff --check` PASS. Browser/device testing and a native build were not run for this copy-only presentation change.
+
+## Section heading size — 2026-11-05
+
+Reduced the shared `SectionHeading` title from 28/36 to 20/27 points and marked it as an accessibility heading in `src/components/ui/premium.tsx`. This affects all screens using the shared component. Targeted Prettier and ESLint, `npm run typecheck`, and `git diff --check` PASS. Browser/device testing and a native build were not run for this presentation change.
+
+## Retire Daily Progress — 2026-11-05
+
+Plan: `docs/DAILY_PROGRESS_REMOVAL_PLAN.md`. Removed progress, approvals and form-builder actions from Home, More and garage, removed member permission controls and progress reports/export content, removed dedicated routes, and redirect legacy record links. Added `supabase/migrations/202611050013_remove_daily_progress.sql` to revoke authenticated progress RPC/table access and stop automatic form creation/adaptation; historical data, audit events and meter observations are retained. Some unreachable legacy implementation remains in source. The migration is NOT deployed; older clients retain backend access until it is applied. Existing client builds must be updated alongside the migration.
+
+Validation: `npm run typecheck`, `npm run lint`, targeted Prettier, `git diff --check`, `npm test -- --maxWorkers=1` (65 tests), `npx expo config --type public`, `npx expo export --platform android --output-dir /tmp/gaadipulse-remove-progress`, and `cd android && ./gradlew :app:assembleDebug -PreactNativeArchitectures=arm64-v8a --offline` PASS. PGlite migration test verifies the complete chain, revoked read/submit RPC privileges, and removed triggers; previous pilot test continues to exercise the historical 001–012 state. `npx supabase db push --dry-run` PASS and lists only 013; no hosted change was made. Full `npm run format:check` FAIL on pre-existing formatting in eight unrelated files; targeted formatting for this change PASS. Full local Supabase/RLS tests remain BLOCKED by unavailable Docker. No hosted authenticated, browser or physical device interactions were run; debug build is not a release build.
+
+## Remove separate Maintenance page — 2026-11-05
+
+Removed the separate maintenance list and its More and garage shortcuts; `/maintenance` redirects to Expenses for old links. Existing maintenance expense data, categories, linked reminders and database records remain intact. Modified `app/maintenance/index.tsx`, `src/features/navigation/MoreMenu.tsx`, `src/features/garage/screens.tsx`, `src/features/reports/screens.tsx`, `src/features/release/scope.ts`, and `tests/releaseScope.test.ts`. Targeted ESLint and Prettier, `npm run typecheck`, `npx vitest run tests/releaseScope.test.ts tests/navigation.test.ts --maxWorkers=1` (8 tests), and `git diff --check` PASS. No database migration, native build or browser/device interaction was performed for this change.
+
+## Contextual empty states — 2026-11-05
+
+Replaced generic empty-state photos with compact colored Ionicons in `src/components/ui/index.tsx`. Added contextual copy and visuals for fuel, charging, expenses, documents, reminders, meters, garage and search in `src/features/records/screens.tsx`, `src/features/meters/History.tsx`, `src/features/garage/screens.tsx` and `src/lib/i18n.ts`. Filtered lists give filter guidance; empty vehicle search offers a working clear action. Existing permissions and data queries are unchanged.
+
+Validation: `npm run typecheck`, targeted ESLint on changed source, Prettier for the shared component and garage screen, `npm test -- --maxWorkers=1` (65 tests), `npx expo config --type public`, and `git diff --check` PASS. Other changed source files retain their existing formatting; full formatting check was not rerun. Browser/Android visual and interaction testing and a native build were not performed for this presentation change.
+
+## Remove audit history from record details — 2026-11-05
+
+Removed the shared audit panel and its client-side query/service from non-fuel record details in `src/features/records/screens.tsx` and `src/features/records/api.ts`, and removed unused panel labels from `src/features/records/copy.ts`. Fuel details already had no panel. Server audit logging, existing audit records, deletion disclosures and security policies remain intact. `npm run typecheck`, targeted ESLint, `git diff --check`, and `npx vitest run tests/security.test.ts tests/recordDeletion.test.ts --maxWorkers=1` (15 tests) PASS. Browser/device testing, full formatting checks and native build were not run for this UI change. No database migration was made.
+
+## Record submitter names — 2026-11-05
+
+Updated `src/features/records/screens.tsx`, `src/features/records/api.ts` and `src/types/database.ts` to display the submitter's name, loading/unavailable states and retry on lookup errors, without displaying raw IDs. Fuel uses its existing authorized author RPC; expenses, meter events, documents and reminders use new `supabase/migrations/202611050014_record_author_name.sql`. The new RPC returns only a name for the specified authorized record and enforces vehicle permissions and Pilot history restrictions. Development mode reads its profile. `tests/pilotAccess.test.ts` verifies owner, pilot, outsider, cross-vehicle, old-record and revoked-access cases. Existing prior-migration fixture adds 014 while intentionally preserving the historical progress tests; the migration-chain test also applies 013 and 014 in order.
+
+Validation: `npm run typecheck`, targeted ESLint, `npm test -- --maxWorkers=1` (65 tests), `npx expo config --type public`, `git diff --check`, and `npx supabase db push --dry-run` PASS. The dry run lists pending 013 and 014. Neither migration was deployed; non-fuel name lookup will show a recoverable setup error until 014 is applied. No hosted authenticated, browser or device testing or native build was performed. PGlite does not replace hosted RLS/PostgREST verification.

@@ -1,6 +1,6 @@
 import { isPilotHistoryVisible } from "@/src/features/members/history";
 import { useCurrentTime } from "@/src/hooks/useCurrentTime";
-import { releaseFeatures, supportsRecord } from "@/src/features/release/scope";
+import { supportsRecord } from "@/src/features/release/scope";
 import { SquareArtwork } from "@/src/components/ui/SquareArtwork";
 import { Timestamp } from "@/src/components/ui/Timestamp";
 import { recordVisuals } from "@/src/features/records/RecordCard";
@@ -61,23 +61,8 @@ export function Garage() {
     ) ?? [];
   return (
     <Screen title={t("garage")} loading={query.isPending} compact>
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 12,
-        }}
-      >
-        <View style={{ flex: 1 }}>
-          <AppText muted>{t("uiGarageHint")}</AppText>
-        </View>
-        <TextAction
-          label={t("add")}
-          icon="add-circle"
-          onPress={() => router.push("/garage/add")}
-        />
-      </View>
+      <AppText muted>{t("uiGarageHint")}</AppText>
+      <AppButton label={t("add")} onPress={() => router.push("/garage/add")} />
       <SearchField value={search} onChange={setSearch} />
       {query.error ? (
         <ErrorState
@@ -85,20 +70,22 @@ export function Garage() {
           retry={() => void query.refetch()}
         />
       ) : !query.isPending && query.data?.length === 0 ? (
-        <EmptyState
-          title={t("empty")}
-          body={t("emptyBody")}
-          action={
-            <AppButton
-              label={t("add")}
-              onPress={() => router.push("/garage/add")}
-            />
-          }
-        />
+        <EmptyState title={t("empty")} body={t("emptyBody")} />
       ) : (
         <>
           {!query.isPending && !vehicles.length && (
-            <AppText muted>{t("uiNoSearchResults")}</AppText>
+            <EmptyState
+              kind="search"
+              title={t("emptySearchTitle")}
+              body={t("uiNoSearchResults")}
+              action={
+                <AppButton
+                  secondary
+                  label={t("uiClearSearch")}
+                  onPress={() => setSearch("")}
+                />
+              }
+            />
           )}
           <View
             onLayout={(event) => setGridWidth(event.nativeEvent.layout.width)}
@@ -186,7 +173,13 @@ export function Garage() {
                           }}
                         >
                           {t(v.role === "OWNER" ? "owner" : "pilot")} ·{" "}
-                          {t(v.meter_mode)}
+                          {t(
+                            v.meter_mode === "KM"
+                              ? "meterModeShortKm"
+                              : v.meter_mode === "HOURS"
+                                ? "meterModeShortHours"
+                                : "meterModeShortBoth",
+                          )}
                         </Text>
                         {v.archived_at && (
                           <Text
@@ -268,21 +261,9 @@ export function VehicleDetails() {
           <AppText muted>{t("roleInfo")}</AppText>
           <AppText muted>{t("noPhoto")}</AppText>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-            {(
-              [
-                "fuel",
-                "expenses",
-                "progress",
-                "documents",
-                "reminders",
-              ] as const
-            )
+            {(["fuel", "expenses", "documents", "reminders"] as const)
               .filter(
-                (kind) =>
-                  supportsRecord(kind) &&
-                  access.data?.[
-                    kind === "progress" ? "progress.view" : `${kind}.read`
-                  ],
+                (kind) => supportsRecord(kind) && access.data?.[`${kind}.read`],
               )
               .map((kind) => (
                 <ActionTile
@@ -322,23 +303,18 @@ export function VehicleDetails() {
               }
             />
           )}
-          {releaseFeatures.advancedTools &&
-            access.data?.["expenses.create"] && (
-              <AppButton
-                label={r("addMaintenance")}
-                onPress={() =>
-                  router.push({
-                    pathname: "/records/[kind]/[action]",
-                    params: {
-                      kind: "expenses",
-                      action: "add",
-                      vehicle: id,
-                      category: "SERVICE",
-                    },
-                  })
-                }
-              />
-            )}
+          {vehicle.role === "OWNER" && !vehicle.archived_at && (
+            <AppButton
+              secondary
+              label={t("addVehicleMember")}
+              onPress={() =>
+                router.push({
+                  pathname: "/owner/members",
+                  params: { vehicle: id, add: "1" },
+                })
+              }
+            />
+          )}
           {vehicle.role === "OWNER" && (
             <>
               <AppButton
@@ -492,7 +468,11 @@ export function Home() {
                     ))}
                   </Card>
                 ) : !readings.isPending ? (
-                  <AppText muted>{t("noReadings")}</AppText>
+                  <EmptyState
+                    kind="meters"
+                    title={t("emptyMetersTitle")}
+                    body={t("emptyMeterReadOnlyBody")}
+                  />
                 ) : null}
               </>
             )

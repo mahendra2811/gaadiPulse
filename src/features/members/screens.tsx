@@ -15,7 +15,7 @@ import { Switch, View } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { useQuery } from "@/src/lib/query";
 import { z } from "zod";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import {
   Screen,
   AppText,
@@ -60,9 +60,6 @@ export function PermissionEditor({
             "expenses.create",
             "meters.read",
             "meters.create",
-            ...(releaseFeatures.advancedTools
-              ? ["progress.view", "progress.submit"]
-              : []),
           ].includes(key),
         )
         .map((key) => (
@@ -78,11 +75,7 @@ export function PermissionEditor({
             <AppText>{permissionLabel(key)}</AppText>
             <Switch
               accessibilityLabel={permissionLabel(key)}
-              value={
-                key.startsWith("progress.")
-                  ? value[key] === true
-                  : value[key] !== false
-              }
+              value={value[key] !== false}
               onValueChange={(enabled) =>
                 onChange({ ...value, [key]: enabled })
               }
@@ -93,13 +86,38 @@ export function PermissionEditor({
   );
 }
 export default function Members() {
-  const { vehicle } = useActiveVehicle();
-  return <MembersForVehicle key={vehicle?.id ?? "none"} />;
-}
-
-function MembersForVehicle() {
+  const { vehicle: vehicleId, add } = useLocalSearchParams<{
+    vehicle?: string;
+    add?: string;
+  }>();
   const active = useActiveVehicle();
-  const v = active.vehicle;
+  const vehicle = vehicleId
+    ? active.data?.find((item) => item.id === vehicleId)
+    : active.vehicle;
+  return (
+    <MembersForVehicle
+      key={`${vehicleId ?? vehicle?.id ?? "none"}:${add ?? ""}`}
+      vehicle={vehicle}
+      loading={active.isPending}
+      vehicleError={active.error}
+      retryVehicle={() => void active.refetch()}
+      openGrant={add === "1"}
+    />
+  );
+}
+function MembersForVehicle({
+  vehicle: v,
+  loading,
+  vehicleError,
+  retryVehicle,
+  openGrant,
+}: {
+  vehicle: ReturnType<typeof useActiveVehicle>["vehicle"];
+  loading: boolean;
+  vehicleError: Error | null;
+  retryVehicle: () => void;
+  openGrant: boolean;
+}) {
   const user = useAccountId();
   const { development } = useSession();
   const access = usePermissions(v?.id);
@@ -127,7 +145,7 @@ function MembersForVehicle() {
   const [selected, setSelected] = useState<Member | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [showGrant, setShowGrant] = useState(false);
+  const [showGrant, setShowGrant] = useState(openGrant);
   const [showOverrides, setShowOverrides] = useState(false);
   const [showDefaults, setShowDefaults] = useState(false);
   const run = async (action: () => Promise<void>, message = r("saved")) => {
@@ -143,6 +161,19 @@ function MembersForVehicle() {
       setBusy(false);
     }
   };
+  if (vehicleError)
+    return (
+      <Screen title={r("members")}>
+        <ErrorState message={vehicleError.message} retry={retryVehicle} />
+      </Screen>
+    );
+  if (!v && !loading)
+    return (
+      <Screen title={r("members")}>
+        <AppText>{r("noVehicle")}</AppText>
+        <AppButton secondary label={r("back")} onPress={() => router.back()} />
+      </Screen>
+    );
   if (access.error)
     return (
       <Screen title={r("members")}>
@@ -157,12 +188,17 @@ function MembersForVehicle() {
     <Screen
       compact
       title={r("members")}
-      loading={(query.isPending && !!access.data?.owner) || busy}
+      loading={
+        loading ||
+        (!!v && access.isPending) ||
+        (query.isPending && !!access.data?.owner) ||
+        busy
+      }
     >
-      <VehicleHeader />
+      <VehicleHeader vehicleId={v?.id} />
       {access.data && !access.data.owner ? (
         <AppText>{r("permission")}</AppText>
-      ) : (
+      ) : access.data?.owner && v ? (
         <>
           {pilotPolicy.error && (
             <ErrorState
@@ -329,7 +365,7 @@ function MembersForVehicle() {
             </>
           )}
         </>
-      )}
+      ) : null}
       {error && <ErrorState message={error} retry={() => setError("")} />}
       <AppButton secondary label={r("back")} onPress={() => router.back()} />
       <Sheet visible={!!selected} onClose={() => setSelected(null)}>

@@ -29,6 +29,19 @@ it("applies every authoritative migration in order on PostgreSQL", async () => {
     for (const file of migrations) {
       await db.exec(readFileSync(`supabase/migrations/${file}`, "utf8"));
     }
+    const retired = await db.query<{
+      read_access: boolean;
+      submit_access: boolean;
+      trigger_count: number;
+    }>(`select
+      has_function_privilege('authenticated', 'public.read_progress_records(uuid,integer,integer)', 'execute') as read_access,
+      has_function_privilege('authenticated', 'public.submit_progress(uuid,jsonb,uuid,uuid,integer)', 'execute') as submit_access,
+      (select count(*)::int from pg_trigger where tgrelid = 'public.vehicles'::regclass and tgname in ('initial_progress_form', 'adapt_progress_meter') and not tgisinternal) as trigger_count`);
+    expect(retired.rows[0]).toEqual({
+      read_access: false,
+      submit_access: false,
+      trigger_count: 0,
+    });
   } finally {
     await db.close();
   }

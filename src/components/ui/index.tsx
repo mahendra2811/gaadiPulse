@@ -23,7 +23,6 @@ import {
   Animated,
   Easing,
   ActivityIndicator,
-  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -43,7 +42,7 @@ import {
 import { addEventListener } from "@react-native-community/netinfo";
 import { useTheme } from "@/src/lib/theme";
 import { t, type TranslationKey } from "@/src/lib/i18n";
-import { artwork } from "@/src/lib/assets";
+import Ionicons from "@expo/vector-icons/Ionicons";
 export type { ToastType } from "@/src/lib/toast";
 export function AppText({
   children,
@@ -359,26 +358,103 @@ export function Screen({
     </SafeAreaView>
   );
 }
+const emptyVisuals = {
+  garage: {
+    icon: "car-sport-outline",
+    color: "#087565",
+    background: "#D9F5EB",
+  },
+  fuel: { icon: "water-outline", color: "#3157BF", background: "#E5ECFF" },
+  charging: { icon: "flash-outline", color: "#087565", background: "#D9F5EB" },
+  expenses: {
+    icon: "receipt-outline",
+    color: "#9B5A0A",
+    background: "#FFF0D1",
+  },
+  meters: {
+    icon: "speedometer-outline",
+    color: "#087B91",
+    background: "#DDF5FA",
+  },
+  documents: {
+    icon: "document-text-outline",
+    color: "#78501E",
+    background: "#FFF0D1",
+  },
+  reminders: {
+    icon: "notifications-outline",
+    color: "#B44752",
+    background: "#FFE7E8",
+  },
+  progress: {
+    icon: "checkbox-outline",
+    color: "#7750B7",
+    background: "#F0E7FF",
+  },
+  search: { icon: "search-outline", color: "#3157BF", background: "#E5ECFF" },
+  offline: {
+    icon: "cloud-offline-outline",
+    color: "#3157BF",
+    background: "#E5ECFF",
+  },
+  error: {
+    icon: "alert-circle-outline",
+    color: "#B44752",
+    background: "#FFE7E8",
+  },
+} as const;
 export function EmptyState({
   kind = "garage",
   title,
   body,
   action,
 }: {
-  kind?: "garage" | "fuel" | "expenses" | "progress" | "offline" | "error";
+  kind?: keyof typeof emptyVisuals;
   title: string;
   body?: string;
   action?: ReactNode;
 }) {
+  const colors = useTheme();
+  const visual = emptyVisuals[kind];
   return (
-    <Card>
-      <Image
-        source={artwork[kind]}
-        accessibilityIgnoresInvertColors
-        style={{ width: "100%", height: 160, resizeMode: "contain" }}
-      />
-      <AppText large>{title}</AppText>
-      {body && <AppText muted>{body}</AppText>}
+    <Card style={{ padding: 20, alignItems: "center", gap: 10 }}>
+      <View
+        accessible={false}
+        style={{
+          width: 56,
+          height: 56,
+          borderRadius: 18,
+          backgroundColor: visual.background,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Ionicons name={visual.icon} size={27} color={visual.color} />
+      </View>
+      <Text
+        accessibilityRole="header"
+        style={{
+          color: colors.ink,
+          fontSize: 17,
+          lineHeight: 23,
+          fontWeight: "700",
+          textAlign: "center",
+        }}
+      >
+        {title}
+      </Text>
+      {body && (
+        <Text
+          style={{
+            color: colors.muted,
+            fontSize: 14,
+            lineHeight: 21,
+            textAlign: "center",
+          }}
+        >
+          {body}
+        </Text>
+      )}
       {action}
     </Card>
   );

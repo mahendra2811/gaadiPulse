@@ -2,18 +2,10 @@ import { canonicalDeadline } from "./linkedReminder";
 import { recordFormIssues, type RecordFormContext } from "./formRules";
 import { fuelTypes, fuelUnit } from "@/src/features/garage/energy";
 import { t } from "@/src/lib/i18n";
-import { r } from "./copy";
 import { domainCopy as c } from "@/src/lib/domainCopy";
 import { z } from "zod";
 import { solveFuel, paise, nonnegativePaise } from "@/src/utils/money";
-export const kinds = [
-  "fuel",
-  "expenses",
-  "meters",
-  "reminders",
-  "documents",
-  "progress",
-] as const;
+export const kinds = ["fuel", "expenses", "meters", "reminders", "documents", "progress"] as const;
 export type Kind = (typeof kinds)[number];
 export const expenseCategories = [
   "SERVICE",
@@ -44,10 +36,7 @@ export const recordSchema = z.object({
 });
 export type RecordEntry = z.infer<typeof recordSchema>;
 const positive = z.coerce.number().positive().finite();
-const optionalReading = z.union([
-  z.literal(""),
-  z.string().regex(/^\d+(\.\d{1,3})?$/),
-]);
+const optionalReading = z.union([z.literal(""), z.string().regex(/^\d+(\.\d{1,3})?$/)]);
 export const baseFormSchema = z.object({
   event_at: z.iso.datetime({ offset: true }),
   title: z.string().trim().max(160),
@@ -130,7 +119,7 @@ export function recordInputSchema(kind: Kind, context: RecordFormContext = {}) {
 export function entryPayload(
   kind: Kind,
   input: EntryForm,
-  context: RecordFormContext = {},
+  context: RecordFormContext = {}
 ): Payload {
   const v = recordInputSchema(kind, context).parse(input);
   let metadata: Payload;
@@ -141,12 +130,8 @@ export function entryPayload(
       .array(
         z.object({
           title: z.string().trim().min(1).max(160),
-          amount_paise: z
-            .number()
-            .int()
-            .positive()
-            .max(Number.MAX_SAFE_INTEGER),
-        }),
+          amount_paise: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+        })
       )
       .parse(JSON.parse(v.items));
   } catch {
@@ -173,12 +158,9 @@ export function entryPayload(
     Date.parse(v.observed_at) === Date.parse(v.event_at) &&
     !v.confirmed_observation
   )
-    throw new Error(r("fillConfirmation"));
+    throw new Error(t("fillConfirmationRequired"));
   if (kind === "fuel") {
-    if (
-      !fuelTypes.some((type) => type === v.energy_type) ||
-      v.unit !== fuelUnit(v.energy_type)
-    )
+    if (!fuelTypes.some((type) => type === v.energy_type) || v.unit !== fuelUnit(v.energy_type))
       throw new Error(t("fuelMismatch"));
     Object.assign(payload, solveFuel(v.amount, v.quantity, v.unit_price));
   }
@@ -189,43 +171,32 @@ export function entryPayload(
       principal_paise: v.principal ? nonnegativePaise(v.principal) : null,
       interest_paise: v.interest ? nonnegativePaise(v.interest) : null,
     });
-    if (
-      items.length &&
-      items.reduce((s, i) => s + i.amount_paise, 0) !== payload.amount_paise
-    )
+    if (items.length && items.reduce((s, i) => s + i.amount_paise, 0) !== payload.amount_paise)
       throw new Error(c.items);
     if (
       v.category === "EMI" &&
-      Number(payload.principal_paise ?? 0) +
-        Number(payload.interest_paise ?? 0) >
+      Number(payload.principal_paise ?? 0) + Number(payload.interest_paise ?? 0) >
         Number(payload.amount_paise)
     )
       throw new Error(c.emi);
   }
   if (kind === "meters" && payload.km === null && payload.hours === null)
     throw new Error(c.reading);
-  if (["documents", "reminders"].includes(kind) && !v.title.trim())
-    throw new Error(c.title);
+  if (["documents", "reminders"].includes(kind) && !v.title.trim()) throw new Error(c.title);
   if (v.due_at && !z.iso.datetime({ offset: true }).safeParse(v.due_at).success)
     throw new Error(c.due);
   for (const key of ["threshold_km", "threshold_hours"] as const)
-    if (v[key] && !positive.safeParse(v[key]).success)
-      throw new Error(c.threshold);
+    if (v[key] && !positive.safeParse(v[key]).success) throw new Error(c.threshold);
   return payload;
 }
-export function formFromRecord(
-  record: RecordEntry,
-  timezone = "Asia/Kolkata",
-): EntryForm {
+export function formFromRecord(record: RecordEntry, timezone = "Asia/Kolkata"): EntryForm {
   const p = record.payload;
   return {
     ...defaultEntry(),
     ...p,
     due_at: p.due_at ? canonicalDeadline(String(p.due_at), timezone) : "",
     amount: p.amount_paise ? String(Number(p.amount_paise) / 100) : "",
-    unit_price: p.unit_price_paise
-      ? String(Number(p.unit_price_paise) / 100)
-      : "",
+    unit_price: p.unit_price_paise ? String(Number(p.unit_price_paise) / 100) : "",
     quantity: p.quantity ? String(p.quantity) : "",
     km: p.km === null ? "" : String(p.km ?? ""),
     hours: p.hours === null ? "" : String(p.hours ?? ""),

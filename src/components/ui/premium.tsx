@@ -144,6 +144,7 @@ export function SectionHeading({
   action?: string;
   onAction?: () => void;
 }) {
+  const colors = useTheme();
   return (
     <View
       style={{
@@ -154,7 +155,18 @@ export function SectionHeading({
       }}
     >
       <View style={{ flex: 1 }}>
-        <AppText large>{title}</AppText>
+        <Text
+          accessibilityRole="header"
+          style={{
+            color: colors.ink,
+            fontSize: 20,
+            lineHeight: 27,
+            fontWeight: "700",
+            flexShrink: 1,
+          }}
+        >
+          {title}
+        </Text>
       </View>
       {action && onAction && <TextAction label={action} onPress={onAction} />}
     </View>

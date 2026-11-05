@@ -5,7 +5,10 @@ import { supportsVehicle, releaseFeatures } from "@/src/features/release/scope";
 import { VehicleComingSoon } from "@/src/features/release/DeferredFeature";
 import { SquareArtwork } from "@/src/components/ui/SquareArtwork";
 import { AdditionalOptions } from "@/src/components/ui/AdditionalOptions";
-import { vehicleEnergyTypes } from "./energy";
+import { allowedFuelTypes, fuelUnit, vehicleEnergyTypes } from "./energy";
+import { TimezoneField } from "./TimezoneField";
+import { defaultVehicleTimezone, timezoneLabel } from "./timezone";
+import { readableDateTime } from "@/src/utils/dateDisplay";
 import { DateTimeInput } from "@/src/components/ui/fields";
 import { useEffect, useState } from "react";
 import { BackHandler, View, Text } from "react-native";
@@ -24,6 +27,7 @@ import {
 import { useVehicles } from "./hooks";
 import { saveVehicle } from "./api";
 import { useSession, useAccountId } from "@/src/features/auth/session";
+import { useProfile } from "@/src/features/auth/profile";
 import { VehicleSubtypeSelector } from "./VehicleSubtypeSelector";
 import { subtypeOptions, subtypeLabel } from "./subtypes";
 import { VehicleChoiceGrid } from "./VehicleChoiceGrid";
@@ -58,7 +62,7 @@ const initial: VehicleInput = {
   model: "",
   energy_type: "PETROL",
   meter_mode: "KM",
-  timezone: "Asia/Kolkata",
+  timezone: defaultVehicleTimezone,
   km: "",
   hours: "",
   observed_at: new Date().toISOString(),
@@ -66,6 +70,7 @@ const initial: VehicleInput = {
 export default function VehicleForm() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const query = useVehicles();
+  const profile = useProfile();
   const vehicle = query.data?.find((v) => v.id === id);
   const { development } = useSession();
   const user = useAccountId();
@@ -82,11 +87,17 @@ export default function VehicleForm() {
   const [operation] = useState(() => Crypto.randomUUID());
   const form = useForm<VehicleInput>({
     resolver: zodResolver(vehicleSchema),
-    defaultValues: initial,
+    defaultValues: { ...initial, observed_at: new Date().toISOString() },
   });
   const values = useWatch({ control: form.control }) as VehicleInput;
   useEffect(() => {
-    if (ready || !user || (id && (query.isPending || query.error))) return;
+    if (
+      ready ||
+      !user ||
+      (id && (query.isPending || query.error)) ||
+      (!id && (profile.isPending || profile.error || !profile.data))
+    )
+      return;
     if (vehicle)
       form.reset({
         ...initial,
@@ -94,10 +105,23 @@ export default function VehicleForm() {
         registration_number: vehicle.registration_number ?? "",
         observed_at: new Date().toISOString(),
       });
+    else if (!id && profile.data)
+      form.setValue("timezone", profile.data.timezone);
     // Initialize this editable form once from the confirmed server response.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setReady(true);
-  }, [user, id, query.isPending, query.error, ready, form, vehicle]);
+  }, [
+    user,
+    id,
+    query.isPending,
+    query.error,
+    ready,
+    form,
+    vehicle,
+    profile.isPending,
+    profile.error,
+    profile.data,
+  ]);
   const disablePrevention = usePreventRemove(
     form.formState.isDirty && !allowExit,
     ({ repeat }) => {
@@ -139,11 +163,10 @@ export default function VehicleForm() {
         ) : (
           <InputField
             editable={!busy && ready}
-            label={label}
+            label={label.replace(/\s*\(optional\)$/i, "")}
             value={String(value ?? "")}
             onChangeText={onChange}
-            required={name === "timezone"}
-            optional={name !== "timezone"}
+            optional
             numeric={numeric ? { scale: 3 } : undefined}
             maxLength={
               name === "registration_number"
@@ -244,12 +267,66 @@ export default function VehicleForm() {
     t("meterStep"),
     t("reviewStep"),
   ];
+  const timezoneField = (
+    <TimezoneField
+      value={values.timezone}
+      disabled={busy || !ready}
+      error={form.formState.errors.timezone?.message}
+      onChange={(timezone) =>
+        form.setValue("timezone", timezone, {
+          shouldDirty: true,
+          shouldValidate: true,
+        })
+      }
+    />
+  );
+  const fuelOptions = allowedFuelTypes(values.energy_type)
+    .map(
+      (fuel) =>
+        `${t(fuel)} (${fuelUnit(fuel) === "KWH" ? "kWh" : fuelUnit(fuel) === "KG" ? "kg" : "L"})`,
+    )
+    .join(", ");
+  const fuelHelp = (
+    <View style={{ gap: 6 }}>
+      <AppText muted>
+        {t("vehicleFuelEntries").replace("{fuels}", fuelOptions)}
+      </AppText>
+      {values.energy_type === "OTHER" && (
+        <AppText muted>{t("vehicleFuelOtherHelp")}</AppText>
+      )}
+      {values.energy_type === "HYBRID" && (
+        <AppText muted>{t("fuelHybridHelp")}</AppText>
+      )}
+      {id && <AppText muted>{t("vehicleFuelChangeHelp")}</AppText>}
+    </View>
+  );
+  const selectMeterMode = (mode: VehicleInput["meter_mode"]) => {
+    const clearKm = mode === "HOURS" && !!values.km;
+    const clearHours = mode === "KM" && !!values.hours;
+    const apply = () => {
+      if (clearKm) form.setValue("km", "", { shouldDirty: true });
+      if (clearHours) form.setValue("hours", "", { shouldDirty: true });
+      form.setValue("meter_mode", mode, { shouldDirty: true });
+    };
+    if (clearKm || clearHours)
+      ConfirmDialog(t("meterStep"), t("meterModeClearHelp"), apply);
+    else apply();
+  };
   if (id && query.error)
     return (
       <Screen title={t("edit")}>
         <ErrorState
           message={query.error.message}
           retry={() => void query.refetch()}
+        />
+      </Screen>
+    );
+  if (!id && profile.error)
+    return (
+      <Screen title={t("add")}>
+        <ErrorState
+          message={profile.error.message}
+          retry={() => void profile.refetch()}
         />
       </Screen>
     );
@@ -266,6 +343,7 @@ export default function VehicleForm() {
         <View
           style={{ width: "100%", maxWidth: 640, alignSelf: "center", gap: 18 }}
         >
+          <AppText muted>{t("vehicleIdentityHelp")}</AppText>
           {field("nickname", t("nickname"))}
           {field("registration_number", t("registration"))}
           <DropdownField
@@ -283,9 +361,14 @@ export default function VehicleForm() {
                 ? values.subtype
                 : "";
               form.setValue("subtype", subtype, { shouldDirty: true });
-              form.setValue("meter_mode", defaultMeter(category, subtype), {
-                shouldDirty: true,
-              });
+              if (
+                !allowedMeterModes(category, subtype).includes(
+                  values.meter_mode,
+                )
+              )
+                form.setValue("meter_mode", defaultMeter(category, subtype), {
+                  shouldDirty: true,
+                });
             }}
           />
           <DropdownField
@@ -322,6 +405,7 @@ export default function VehicleForm() {
                 form.setValue("energy_type", energy, { shouldDirty: true });
             }}
           />
+          {fuelHelp}
           <DropdownField
             label={t("meterStep")}
             disabled={busy || !ready || !values.subtype}
@@ -346,7 +430,7 @@ export default function VehicleForm() {
               })
             }
           />
-          {field("timezone", t("timezone"))}
+          {timezoneField}
           {!!error && <ErrorState message={error} retry={() => setError("")} />}
           <AppButton
             label={t("save")}
@@ -453,7 +537,8 @@ export default function VehicleForm() {
                 )
               ) {
                 form.setValue("subtype", "", { shouldDirty: true });
-                form.setValue("meter_mode", defaultMeter(category, ""));
+                if (!values.km && !values.hours)
+                  form.setValue("meter_mode", defaultMeter(category, ""));
               }
             }}
           />
@@ -466,7 +551,8 @@ export default function VehicleForm() {
             value={values.subtype}
             onChange={(v) => {
               form.setValue("subtype", v, { shouldDirty: true });
-              form.setValue("meter_mode", defaultMeter(values.category, v));
+              if (!values.km && !values.hours)
+                form.setValue("meter_mode", defaultMeter(values.category, v));
             }}
           />
         )}
@@ -530,6 +616,7 @@ export default function VehicleForm() {
             <AppText muted>{t("vehicleIdentityHelp")}</AppText>
             {field("nickname", t("nickname"))}
             {field("registration_number", t("registration"))}
+            <AppText>{t("editEnergyLabel")}</AppText>
             <Choice
               compact
               values={vehicleEnergyTypes}
@@ -538,13 +625,15 @@ export default function VehicleForm() {
                 form.setValue("energy_type", v, { shouldDirty: true })
               }
             />
+            {fuelHelp}
+            <AppText muted>{t("timezoneDefaultHint")}</AppText>
             <AdditionalOptions
               open={additionalStep === step}
               onToggle={() =>
                 setAdditionalStep((value) => (value === step ? null : step))
               }
             >
-              {field("timezone", t("timezone"))}
+              {timezoneField}
             </AdditionalOptions>
           </>
         )}
@@ -555,9 +644,7 @@ export default function VehicleForm() {
               compact
               values={releaseFeatures.advancedTools ? meterModes : ["KM"]}
               value={values.meter_mode}
-              onChange={(v) =>
-                form.setValue("meter_mode", v, { shouldDirty: true })
-              }
+              onChange={selectMeterMode}
             />
             {!id && (
               <AdditionalOptions
@@ -566,6 +653,7 @@ export default function VehicleForm() {
                   setAdditionalStep((value) => (value === step ? null : step))
                 }
               >
+                <AppText muted>{t("initialReadingHelp")}</AppText>
                 {values.meter_mode !== "HOURS" && field("km", t("km"), true)}
                 {values.meter_mode !== "KM" && field("hours", t("hours"), true)}
                 {values.km || values.hours ? (
@@ -605,7 +693,19 @@ export default function VehicleForm() {
                 ],
                 [t("uiEnergyType"), t(values.energy_type)],
                 [t("meters"), t(values.meter_mode)],
-                [t("timezone"), values.timezone],
+                [t("timezone"), timezoneLabel(values.timezone)],
+                ...(!id && values.km ? [[t("km"), `${values.km} km`]] : []),
+                ...(!id && values.hours
+                  ? [[t("hours"), `${values.hours} hrs`]]
+                  : []),
+                ...(!id && (values.km || values.hours)
+                  ? [
+                      [
+                        t("observed"),
+                        readableDateTime(values.observed_at, values.timezone),
+                      ],
+                    ]
+                  : []),
               ].map(([label, value]) => (
                 <View
                   key={label}

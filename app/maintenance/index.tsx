@@ -1,6 +1,5 @@
-import { releaseFeatures } from "@/src/features/release/scope";
-import { DeferredFeature } from "@/src/features/release/DeferredFeature";
-import { Maintenance as Advanced } from "@/src/features/reports/screens";
-export default function Route() {
-  return releaseFeatures.advancedTools ? <Advanced /> : <DeferredFeature />;
+import { Redirect } from "expo-router";
+
+export default function MaintenanceRedirect() {
+  return <Redirect href="/(tabs)/expenses" />;
 }

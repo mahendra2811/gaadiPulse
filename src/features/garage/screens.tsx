@@ -14,7 +14,6 @@ import { View, Text, useWindowDimensions } from "react-native";
 import {
   SectionHeading,
   MotionPress,
-  TextAction,
   ActionTile,
   InfoRows,
 } from "@/src/components/ui/premium";

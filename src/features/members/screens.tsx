@@ -195,7 +195,7 @@ function MembersForVehicle({
         busy
       }
     >
-      <VehicleHeader vehicleId={v?.id} />
+      {v && <VehicleHeader vehicleId={v.id} />}
       {access.data && !access.data.owner ? (
         <AppText>{r("permission")}</AppText>
       ) : access.data?.owner && v ? (

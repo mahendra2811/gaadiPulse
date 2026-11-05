@@ -14,14 +14,14 @@ export function usePermissions(vehicleId?: string) {
   });
   return { ...query, data: query.error ? undefined : query.data };
 }
-export function useRecords(kind: Kind, vehicleId?: string) {
+export function useRecords(kind: Kind, vehicleId?: string, enabled = true) {
   const active = useActiveVehicle();
   const vehicle = vehicleId ?? active.vehicle?.id;
   const user = useAccountId();
   const { development } = useSession();
   const query = useQuery({
     queryKey: [user, vehicle, "records", kind],
-    enabled: !!user && !!vehicle && supportsRecord(kind),
+    enabled: enabled && !!user && !!vehicle && supportsRecord(kind),
     queryFn: () => listRecords(user!, vehicle!, kind, development),
   });
   return { ...query, data: query.error ? undefined : query.data };

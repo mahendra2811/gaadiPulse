@@ -20,8 +20,6 @@ it("enforces per-vehicle pilot grants, two local days of history, and owner-only
       grant usage on schema auth,public to authenticated;
       grant execute on function auth.uid() to authenticated;
     `);
-    // Exercise the later migration behavior using a temporary in-memory syntax
-    // repair to 005; the authoritative full-chain test still checks the real file.
     for (const file of [
       "202610210001_foundation.sql",
       "202610210002_records.sql",
@@ -34,14 +32,9 @@ it("enforces per-vehicle pilot grants, two local days of history, and owner-only
       "202611040009_manual_meter_monotonic.sql",
       "202611040010_pilot_access.sql",
       "202611040011_pilot_progress.sql",
+      "202611050012_record_meter_chronology.sql",
     ]) {
-      let sql = readFileSync(`supabase/migrations/${file}`, "utf8");
-      if (file === "202610240005_vehicle_fuel_profiles.sql")
-        sql = sql.replace(
-          "if units is distinct from case when fuel='ELECTRIC' then 'KWH' when fuel in ('CNG','HYDROGEN') then 'KG' else 'L' end then",
-          "if units is distinct from (case when fuel='ELECTRIC' then 'KWH' when fuel in ('CNG','HYDROGEN') then 'KG' else 'L' end) then",
-        );
-      await db.exec(sql);
+      await db.exec(readFileSync(`supabase/migrations/${file}`, "utf8"));
     }
     await db.exec(`
       insert into auth.users values
@@ -87,6 +80,32 @@ it("enforces per-vehicle pilot grants, two local days of history, and owner-only
     `);
     const rows = await db.query("select id from public.fuel_logs order by id");
     expect(rows.rows).toHaveLength(2);
+    const page = await db.query<{ result: { rows: unknown[]; count: number } }>(
+      `select public.fuel_history_page('${vehicle}', null, null, null, null, '', 0, 1) as result`,
+    );
+    expect(page.rows[0].result.count).toBe(2);
+    expect(page.rows[0].result.rows).toHaveLength(1);
+    expect(
+      (
+        await db.query<{ result: { count: number } }>(
+          `select public.fuel_history_page('${vehicle}', null, null, 101, null, '', 0, 30) as result`,
+        )
+      ).rows[0].result.count,
+    ).toBe(0);
+    expect(
+      (
+        await db.query(
+          `select * from public.fuel_record_author('${vehicle}', '30000000-0000-4000-8000-000000000003')`,
+        )
+      ).rows,
+    ).toHaveLength(0);
+    expect(
+      (
+        await db.query<{ email: string | null }>(
+          `select * from public.fuel_record_author('${vehicle}', '30000000-0000-4000-8000-000000000001')`,
+        )
+      ).rows[0].email,
+    ).toBeNull();
     expect(
       (await db.query("select id from public.meter_readings")).rows,
     ).toHaveLength(1);
@@ -237,11 +256,32 @@ it("enforces per-vehicle pilot grants, two local days of history, and owner-only
       `reset role; select set_config('request.jwt.claim.sub','${other}',false); set role authenticated`,
     );
     expect(
+      (
+        await db.query<{ result: { count: number } }>(
+          `select public.fuel_history_page('${vehicle}') as result`,
+        )
+      ).rows[0].result.count,
+    ).toBe(0);
+    expect(
+      (
+        await db.query(
+          `select * from public.fuel_record_author('${vehicle}', '30000000-0000-4000-8000-000000000001')`,
+        )
+      ).rows,
+    ).toHaveLength(0);
+    expect(
       (await db.query("select id from public.fuel_logs")).rows,
     ).toHaveLength(0);
     await db.exec(
       `reset role; select set_config('request.jwt.claim.sub','${owner}',false); set role authenticated`,
     );
+    expect(
+      (
+        await db.query<{ email: string }>(
+          `select * from public.fuel_record_author('${vehicle}', '30000000-0000-4000-8000-000000000001')`,
+        )
+      ).rows[0].email,
+    ).toBe("owner@example.com");
     expect(
       (await db.query("select id from public.fuel_logs")).rows,
     ).toHaveLength(4);

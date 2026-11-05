@@ -16,14 +16,8 @@ The server limits pilot fuel, expense, meter and permitted progress history to *
 
 ## Deployment and verification
 
-`supabase/migrations/202611040010_pilot_access.sql` and `202611040011_pilot_progress.sql` are additive migrations and has **not** been deployed as part of this change. The linked project's read-only migration listing showed 001–004 applied and 005–011 pending. The existing 005 migration fails to compile in a clean PostgreSQL fixture; an additive migration cannot fix a migration that runs before it. Resolve and review that bootstrap issue without resetting or altering production data, validate the complete chronological chain in a disposable environment, then deploy through the normal migration process. No remote SQL changes were made here.
+On 2026-11-05, migrations 005–011, including the Pilot migrations 010 and 011, were applied to the linked project. Migration 005 was corrected before its first application on that project; the full migration chain compiled in the PGlite fixture. The linked migration list confirms 001–011 applied, and a database query returned `true` from `pilot_access_policy_ready()`. Other environments must verify their migration history before applying changes.
 
 After deployment, test verified Google and email sign-in, existing and newly registered grants, two vehicles with different roles, create operations, direct API/RLS attempts to read older rows or modify data, permission overrides, revocation and time-zone boundaries. Do not rely only on a hidden button or the local PGlite fixture. Physical-device UI and hosted Supabase tests remain required.
 
-The isolated compilation failure in `202610240005_vehicle_fuel_profiles.sql` is the conditional in `enforce_vehicle_fuel_profile`. The minimal proposed repair is to parenthesize its CASE expression:
-
-```sql
-if units is distinct from (case when fuel='ELECTRIC' then 'KWH' when fuel in ('CNG','HYDROGEN') then 'KG' else 'L' end) then raise exception 'FUEL_UNIT_INVALID';end if;
-```
-
-This is a proposed change, not an applied migration. The linked project reports migration 005 as pending, but other environments' histories must also be checked. The project contract asks that previous migrations be preserved; approval of an exception and a reviewed migration-history plan are needed before modifying that file.
+The migration 005 repair parenthesizes the CASE expression in `enforce_vehicle_fuel_profile`; no reset or manual migration-history repair was used.

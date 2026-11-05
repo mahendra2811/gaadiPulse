@@ -26,7 +26,7 @@ create function public.enforce_vehicle_fuel_profile() returns trigger language p
  begin
  select energy_type into profile from public.vehicles where id=new.vehicle_id for share;
  if not found then raise exception 'INVALID_VEHICLE';end if;
- if units is distinct from case when fuel='ELECTRIC' then 'KWH' when fuel in ('CNG','HYDROGEN') then 'KG' else 'L' end then raise exception 'FUEL_UNIT_INVALID';end if;
+ if units is distinct from (case when fuel='ELECTRIC' then 'KWH' when fuel in ('CNG','HYDROGEN') then 'KG' else 'L' end) then raise exception 'FUEL_UNIT_INVALID';end if;
  -- Existing transactions may retain their original physical fuel after a vehicle edit.
  -- Changing that type must comply with the current configuration.
  if TG_OP='UPDATE' then

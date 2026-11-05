@@ -8,10 +8,8 @@ import { SearchField } from "@/src/components/ui/SearchField";
 import { usePermissions } from "@/src/features/records/hooks";
 import { r } from "@/src/features/records/copy";
 import { Dashboard } from "@/src/features/dashboard/Dashboard";
-import { developmentReadings } from "@/src/features/development/repository";
-import { meterObservationSchema } from "@/src/lib/observations";
 import { useVehicleAccess } from "@/src/hooks/useVehicleAccess";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { View, Text, useWindowDimensions } from "react-native";
 import {
   SectionHeading,
@@ -21,10 +19,10 @@ import {
   InfoRows,
 } from "@/src/components/ui/premium";
 import { useTheme } from "@/src/lib/theme";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useQuery } from "@/src/lib/query";
 import { useVehicles, useActiveVehicle } from "./hooks";
+import { useLatestReadings } from "./useLatestReadings";
 import { archiveVehicle } from "./api";
 import {
   Screen,
@@ -40,7 +38,6 @@ import { VehicleHeader } from "@/src/components/navigation/VehicleHeader";
 import { subtypeLabel } from "./subtypes";
 import { vehicleArt } from "@/src/lib/assets";
 import { t } from "@/src/lib/i18n";
-import { client } from "@/src/lib/supabase";
 import { useSession, useAccountId } from "@/src/features/auth/session";
 export function Garage() {
   const query = useVehicles();
@@ -375,23 +372,21 @@ export function VehicleDetails() {
 }
 export function Home() {
   const query = useActiveVehicle();
-  const { development } = useSession();
   const user = useAccountId();
   const v = query.vehicle;
+  const vehicleId = v?.id;
   const access = useVehicleAccess(v?.id);
   const now = useCurrentTime();
-  const readings = useQuery({
-    queryKey: [user, v?.id, "latest-observations"],
-    enabled: !!v && access.data?.metersRead === true,
-    queryFn: async () => {
-      if (development) return developmentReadings(v!.id);
-      const { data, error } = await client().rpc("latest_meter_readings", {
-        p_vehicle: v!.id,
-      });
-      if (error) throw error;
-      return meterObservationSchema.array().parse(data);
-    },
-  });
+  const readings = useLatestReadings(v?.id);
+  const queryClient = useQueryClient();
+  useFocusEffect(
+    useCallback(() => {
+      if (user && vehicleId)
+        void queryClient.invalidateQueries({
+          queryKey: [user, vehicleId, "latest-observations"],
+        });
+    }, [queryClient, user, vehicleId]),
+  );
   const colors = useTheme();
   const latestReadings = (["KM", "HOURS"] as const)
     .filter((kind) => v?.meter_mode === "BOTH" || v?.meter_mode === kind)

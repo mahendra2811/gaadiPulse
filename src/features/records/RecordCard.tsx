@@ -188,7 +188,7 @@ export function RecordCard({
               </Text>
             </View>
           </View>
-          {kind === "expenses" && onPress && (
+          {onPress && (
             <Ionicons name="chevron-forward" size={20} color={c.primary} />
           )}
         </View>

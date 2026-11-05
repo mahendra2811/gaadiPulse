@@ -24,12 +24,16 @@ import {
   InfoRows,
   ColorIcon,
   GradientButton,
+  MotionPress,
 } from "@/src/components/ui/premium";
 import { t } from "@/src/lib/i18n";
 import { DateTimeInput } from "@/src/components/ui/fields";
 import { observations as loadObservations } from "@/src/features/meters/api";
 import { type ReactNode, useEffect, useState } from "react";
 import { Linking, View, Switch } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { useTheme } from "@/src/lib/theme";
+import { client } from "@/src/lib/supabase";
 import { router, useLocalSearchParams, usePreventRemove } from "expo-router";
 import * as Crypto from "expo-crypto";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -57,10 +61,12 @@ import { expenseAccounting } from "@/src/utils/expenseAccounting";
 import {
   recordAudit,
   saveRecord,
+  fuelRecord,
   expenseCategories as loadCategories,
   addExpenseCategory,
 } from "./api";
 import { useRecords, usePermissions } from "./hooks";
+import { useFuelHistory } from "./useFuelHistory";
 import {
   kinds,
   defaultEntry,
@@ -174,7 +180,7 @@ export function RecordsList({
   const v = contextVehicle
     ? active.data?.find((vehicle) => vehicle.id === contextVehicle)
     : active.vehicle;
-  const query = useRecords(kind, v?.id);
+  const otherQuery = useRecords(kind, v?.id, kind !== "fuel");
   const permissions = usePermissions(v?.id);
   const now = useCurrentTime();
   const [search, setSearch] = useState("");
@@ -186,6 +192,32 @@ export function RecordsList({
   const [showArchived, setShowArchived] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(!!initialStatus);
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [minimumAmount, setMinimumAmount] = useState("");
+  const [maximumAmount, setMaximumAmount] = useState("");
+  const fuelQuery = useFuelHistory(
+    v?.id,
+    kind === "fuel" && !!permissions.data,
+    !!permissions.data?.["fuel.read"],
+    {
+      start:
+        fromDate ||
+        (permissions.data?.owner === false
+          ? ""
+          : periodStart(period, v?.timezone ?? "Asia/Kolkata")
+        ).replace("0000-01-01", ""),
+      end: toDate,
+      min: minimumAmount ? Math.round(Number(minimumAmount) * 100) : null,
+      max: maximumAmount ? Math.round(Number(maximumAmount) * 100) : null,
+      search: search.trim(),
+      timezone: v?.timezone ?? "Asia/Kolkata",
+    },
+  );
+  const query =
+    kind === "fuel"
+      ? { ...fuelQuery, data: fuelQuery.error ? undefined : fuelQuery.rows }
+      : otherQuery;
   const canCreate =
     permissions.data?.[
       kind === "progress" ? "progress.submit" : `${kind}.create`
@@ -211,9 +243,27 @@ export function RecordsList({
           now,
         )) &&
       (statusFilter === "ALL" || row.status === statusFilter) &&
-      `${row.payload.title ?? ""} ${row.payload.notes ?? ""} ${row.payload.category ?? ""}`
-        .toLowerCase()
-        .includes(search.toLowerCase()),
+      (kind !== "fuel" ||
+        ((!fromDate ||
+          dateInZone(
+            new Date(String(row.payload.event_at)),
+            v?.timezone ?? "Asia/Kolkata",
+          ) >= fromDate) &&
+          (!toDate ||
+            dateInZone(
+              new Date(String(row.payload.event_at)),
+              v?.timezone ?? "Asia/Kolkata",
+            ) <= toDate) &&
+          (!minimumAmount ||
+            Number(row.payload.amount_paise) >=
+              Math.round(Number(minimumAmount) * 100)) &&
+          (!maximumAmount ||
+            Number(row.payload.amount_paise) <=
+              Math.round(Number(maximumAmount) * 100)))) &&
+      (kind === "fuel" ||
+        `${row.payload.title ?? ""} ${row.payload.notes ?? ""} ${row.payload.category ?? ""} ${row.payload.station_name ?? ""}`
+          .toLowerCase()
+          .includes(search.toLowerCase())),
   );
   const confirmed = rows.filter((row) => row.status !== "ARCHIVED");
   return (
@@ -276,14 +326,16 @@ export function RecordsList({
                   query.isPending || query.error
                     ? "—"
                     : money(
-                        confirmed.reduce(
-                          (sum, row) =>
-                            sum + Number(row.payload.amount_paise ?? 0),
-                          0,
-                        ),
+                        kind === "fuel"
+                          ? fuelQuery.total
+                          : confirmed.reduce(
+                              (sum, row) =>
+                                sum + Number(row.payload.amount_paise ?? 0),
+                              0,
+                            ),
                       )
                 }
-                subtitle={`${r("cash")} · ${r(period as keyof typeof recordCopy)} · ${confirmed.length} ${r("confirmed")}`}
+                subtitle={`${r("cash")} · ${r(period as keyof typeof recordCopy)} · ${kind === "fuel" ? fuelQuery.count : confirmed.length} ${r("confirmed")}`}
               />
             )}
           <SearchField
@@ -316,7 +368,7 @@ export function RecordsList({
             }}
           >
             <AppText muted>
-              {rows.length} {t("uiRecords")}
+              {kind === "fuel" ? fuelQuery.count : rows.length} {t("uiRecords")}
             </AppText>
             <TextAction
               label={t("uiFilters")}
@@ -326,6 +378,62 @@ export function RecordsList({
           </View>
           <Expandable expanded={showFilters}>
             <View style={{ gap: 10 }}>
+              {kind === "fuel" && (
+                <>
+                  <DateTimeInput
+                    mode="date"
+                    label={t("filterFromDate")}
+                    value={fromDate}
+                    onChange={(value) => {
+                      setFromDate(value);
+                      setPeriod("all");
+                      setLimit(30);
+                    }}
+                  />
+                  <DateTimeInput
+                    mode="date"
+                    label={t("filterToDate")}
+                    value={toDate}
+                    onChange={(value) => {
+                      setToDate(value);
+                      setPeriod("all");
+                      setLimit(30);
+                    }}
+                  />
+                  <InputField
+                    label={t("filterMinimumAmount")}
+                    value={minimumAmount}
+                    keyboardType="decimal-pad"
+                    onChangeText={(value) => {
+                      if (/^(?:\d+(?:\.\d{0,2})?)?$/.test(value)) {
+                        setMinimumAmount(value);
+                        setLimit(30);
+                      }
+                    }}
+                  />
+                  <InputField
+                    label={t("filterMaximumAmount")}
+                    value={maximumAmount}
+                    keyboardType="decimal-pad"
+                    onChangeText={(value) => {
+                      if (/^(?:\d+(?:\.\d{0,2})?)?$/.test(value)) {
+                        setMaximumAmount(value);
+                        setLimit(30);
+                      }
+                    }}
+                  />
+                  <TextAction
+                    label={t("filterClear")}
+                    onPress={() => {
+                      setFromDate("");
+                      setToDate("");
+                      setMinimumAmount("");
+                      setMaximumAmount("");
+                      setLimit(30);
+                    }}
+                  />
+                </>
+              )}
               {kind === "progress" && (
                 <FilterChips
                   items={[
@@ -380,16 +488,18 @@ export function RecordsList({
             />
           ) : kind === "fuel" || kind === "expenses" ? (
             <Card style={{ padding: 0, gap: 0, overflow: "hidden" }}>
-              {rows.slice(0, limit).map((row, index) => (
-                <RecordCard
-                  key={row.id}
-                  row={row}
-                  kind={kind}
-                  timezone={v.timezone}
-                  separated={index > 0}
-                  onPress={() => setDetailId(row.id)}
-                />
-              ))}
+              {rows
+                .slice(0, kind === "fuel" ? undefined : limit)
+                .map((row, index) => (
+                  <RecordCard
+                    key={row.id}
+                    row={row}
+                    kind={kind}
+                    timezone={v.timezone}
+                    separated={index > 0}
+                    onPress={() => setDetailId(row.id)}
+                  />
+                ))}
             </Card>
           ) : (
             rows
@@ -412,11 +522,20 @@ export function RecordsList({
               />
             </Sheet>
           )}
-          {rows.length > limit && (
+          {(kind === "fuel" ? fuelQuery.hasNextPage : rows.length > limit) && (
             <TextAction
-              label={r("more")}
+              label={
+                fuelQuery.isFetchingNextPage && kind === "fuel"
+                  ? t("loadingMore")
+                  : r("more")
+              }
               icon="chevron-down"
-              onPress={() => setLimit((value) => value + 30)}
+              disabled={kind === "fuel" && fuelQuery.isFetchingNextPage}
+              onPress={() =>
+                kind === "fuel"
+                  ? void fuelQuery.fetchNextPage()
+                  : setLimit((value) => value + 30)
+              }
             />
           )}
         </>
@@ -446,7 +565,16 @@ export function RecordForm() {
       ? vehicles.data?.find((v) => v.id === boundVehicle)
       : active.vehicle;
   const v = vehicle;
-  const query = useRecords(kind, v?.id);
+  const formRecords = useRecords(kind, v?.id, !!id && kind !== "fuel");
+  const formFuel = useQuery({
+    queryKey: [user, v?.id, "fuel-record", id],
+    enabled: !!user && !!v && !!id && kind === "fuel",
+    queryFn: () => fuelRecord(user!, v!.id, id!, development),
+  });
+  const query =
+    kind === "fuel"
+      ? { ...formFuel, data: formFuel.data ? [formFuel.data] : undefined }
+      : formRecords;
   const existing = query.data?.find((e) => e.id === id);
   const access = usePermissions(v?.id);
   const qc = useQueryClient();
@@ -947,7 +1075,7 @@ export function RecordForm() {
         values.quantity,
         values.unit_price,
       );
-      derived = `${money(solved.amount_paise)} · ${solved.quantity} ${values.unit} · ${money(solved.unit_price_paise)}/${values.unit}`;
+      derived = `${r("unit_price")}: ${money(solved.unit_price_paise)}/${values.unit}`;
     } catch {}
   }
   let metadata: Record<string, unknown> = {};
@@ -964,16 +1092,18 @@ export function RecordForm() {
       {["fuel", "expenses", "meters", "progress"].includes(kind) && (
         <Card style={{ padding: 16, gap: 12 }}>
           <SectionHeading title={r("meters")} />
-          <AppText muted>
-            {t(
-              kind === "meters"
-                ? "meterOnlyTime"
-                : kind === "progress" &&
-                    (definition.km_required || definition.hours_required)
-                  ? "progressMeterPolicy"
-                  : "optionalMeters",
-            )}
-          </AppText>
+          {kind !== "fuel" && (
+            <AppText muted>
+              {t(
+                kind === "meters"
+                  ? "meterOnlyTime"
+                  : kind === "progress" &&
+                      (definition.km_required || definition.hours_required)
+                    ? "progressMeterPolicy"
+                    : "optionalMeters",
+              )}
+            </AppText>
+          )}
           {existing &&
             ((v.meter_mode === "HOURS" && values.km !== "") ||
               (v.meter_mode === "KM" && values.hours !== "")) && (
@@ -1014,7 +1144,7 @@ export function RecordForm() {
           ) : (
             <AppText muted>{t("optionalObservation")}</AppText>
           )}
-          <AppText muted>{r("readingHelp")}</AppText>
+          {kind !== "fuel" && <AppText muted>{r("readingHelp")}</AppText>}
         </Card>
       )}
       {kind === "fuel" && (values.km !== "" || values.hours !== "") && (
@@ -1155,83 +1285,89 @@ export function RecordForm() {
       ) : null}
       {kind === "fuel" && (
         <>
-          <Card style={{ padding: 16, gap: 10 }}>
-            <AppText>
-              {t("uiEnergyType")}:{" "}
-              {r(values.energy_type as keyof typeof recordCopy) ??
-                values.energy_type}{" "}
-              · {values.unit}
-            </AppText>
-            {["HYBRID", "DIESEL_HYBRID"].includes(v.energy_type) && (
-              <AppText muted>{t("fuelHybridHelp")}</AppText>
-            )}
-            {allowedFuelTypes(v.energy_type).length > 1 && (
-              <FilterChips
-                items={allowedFuelTypes(v.energy_type).map((id) => ({
-                  id,
-                  label: r(id),
-                }))}
-                value={values.energy_type}
-                onChange={(type) => {
-                  if (
-                    type === values.energy_type ||
-                    !allowedFuelTypes(v.energy_type).some(
-                      (fuel) => fuel === type,
+          {(allowedFuelTypes(v.energy_type).length > 1 ||
+            !permittedFuel(v.energy_type, values.energy_type) ||
+            values.unit !== fuelUnit(values.energy_type)) && (
+            <Card style={{ padding: 12, gap: 8 }}>
+              <AppText>
+                {t("uiEnergyType")}:{" "}
+                {r(values.energy_type as keyof typeof recordCopy) ??
+                  values.energy_type}{" "}
+                · {values.unit}
+              </AppText>
+              {["HYBRID", "DIESEL_HYBRID"].includes(v.energy_type) && (
+                <AppText muted>{t("fuelHybridHelp")}</AppText>
+              )}
+              {allowedFuelTypes(v.energy_type).length > 1 && (
+                <FilterChips
+                  items={allowedFuelTypes(v.energy_type).map((id) => ({
+                    id,
+                    label: r(id),
+                  }))}
+                  value={values.energy_type}
+                  onChange={(type) => {
+                    if (
+                      type === values.energy_type ||
+                      !allowedFuelTypes(v.energy_type).some(
+                        (fuel) => fuel === type,
+                      )
                     )
-                  )
-                    return;
-                  const apply = () => {
-                    form.setValue("energy_type", type, { shouldDirty: true });
-                    form.setValue("unit", fuelUnit(type), {
+                      return;
+                    const apply = () => {
+                      form.setValue("energy_type", type, { shouldDirty: true });
+                      form.setValue("unit", fuelUnit(type), {
+                        shouldDirty: true,
+                      });
+                      form.setValue("quantity", "", { shouldDirty: true });
+                      form.setValue("unit_price", "", { shouldDirty: true });
+                      form.setValue("is_full_tank", false, {
+                        shouldDirty: true,
+                      });
+                    };
+                    if (values.quantity || values.unit_price)
+                      ConfirmDialog(
+                        t("uiEnergyType"),
+                        t("fuelSwitchAmounts"),
+                        apply,
+                      );
+                    else apply();
+                  }}
+                />
+              )}
+              {(!permittedFuel(
+                v.energy_type,
+                values.energy_type,
+                existing?.payload,
+              ) ||
+                values.unit !== fuelUnit(values.energy_type)) && (
+                <AppText>{t("fuelChanged")}</AppText>
+              )}
+              {existing &&
+                !allowedFuelTypes(v.energy_type).some(
+                  (fuel) => fuel === existing.payload.energy_type,
+                ) && <AppText muted>{t("fuelHistorical")}</AppText>}
+              {(!permittedFuel(
+                v.energy_type,
+                values.energy_type,
+                existing?.payload,
+              ) ||
+                values.unit !== fuelUnit(values.energy_type)) && (
+                <TextAction
+                  label={r("edit")}
+                  onPress={() => {
+                    const next = defaultFuel(v.energy_type);
+                    form.setValue("energy_type", next.energy_type, {
                       shouldDirty: true,
                     });
+                    form.setValue("unit", next.unit, { shouldDirty: true });
                     form.setValue("quantity", "", { shouldDirty: true });
                     form.setValue("unit_price", "", { shouldDirty: true });
-                    form.setValue("is_full_tank", false, { shouldDirty: true });
-                  };
-                  if (values.quantity || values.unit_price)
-                    ConfirmDialog(
-                      t("uiEnergyType"),
-                      t("fuelSwitchAmounts"),
-                      apply,
-                    );
-                  else apply();
-                }}
-              />
-            )}
-            {(!permittedFuel(
-              v.energy_type,
-              values.energy_type,
-              existing?.payload,
-            ) ||
-              values.unit !== fuelUnit(values.energy_type)) && (
-              <AppText>{t("fuelChanged")}</AppText>
-            )}
-            {existing &&
-              !allowedFuelTypes(v.energy_type).some(
-                (fuel) => fuel === existing.payload.energy_type,
-              ) && <AppText muted>{t("fuelHistorical")}</AppText>}
-            {(!permittedFuel(
-              v.energy_type,
-              values.energy_type,
-              existing?.payload,
-            ) ||
-              values.unit !== fuelUnit(values.energy_type)) && (
-              <TextAction
-                label={r("edit")}
-                onPress={() => {
-                  const next = defaultFuel(v.energy_type);
-                  form.setValue("energy_type", next.energy_type, {
-                    shouldDirty: true,
-                  });
-                  form.setValue("unit", next.unit, { shouldDirty: true });
-                  form.setValue("quantity", "", { shouldDirty: true });
-                  form.setValue("unit_price", "", { shouldDirty: true });
-                }}
-              />
-            )}
-          </Card>
-          <AppText muted>{t("fuelQuickHelp")}</AppText>
+                  }}
+                />
+              )}
+            </Card>
+          )}
+
           {field("amount", r("amount"), true)}
           {field(
             "quantity",
@@ -1297,9 +1433,6 @@ export function RecordForm() {
         definition.notes_visible &&
         definition.notes_required &&
         field("notes", r("notes"))}
-      {kind === "fuel" && !values.km && !values.hours && (
-        <AppText muted>{r("pendingReading")}</AppText>
-      )}
       <AdditionalOptions
         compact={["fuel", "expenses"].includes(kind)}
         open={additionalOpen}
@@ -1435,7 +1568,7 @@ export function RecordForm() {
                   value={itemAmounts[index] ?? String(item.amount_paise / 100)}
                   keyboardType="decimal-pad"
                   onChangeText={(text) => {
-                    if (/^\d*(\.\d{0,2})?$/.test(text)) {
+                    if (/^(?:\d+(?:\.\d{0,2})?)?$/.test(text)) {
                       setItemAmounts((amounts) => ({
                         ...amounts,
                         [index]: text,
@@ -1606,7 +1739,7 @@ export function RecordForm() {
           retry={() => void access.refetch()}
         />
       )}
-      {error && <ErrorState message={error} retry={() => void submit()} />}
+      {!!error && <ErrorState message={error} retry={() => void submit()} />}
     </Screen>
   );
 }
@@ -1644,13 +1777,23 @@ export function RecordDetail({
   const { kind, id, vehicle } = context ?? route;
   const user = useAccountId();
   const { development } = useSession();
-  const query = useRecords(kind, vehicle);
+  const otherRecords = useRecords(kind, vehicle, kind !== "fuel");
+  const singleFuel = useQuery({
+    queryKey: [user, vehicle, "fuel-record", id],
+    enabled: !!user && !!vehicle && !!id && kind === "fuel",
+    queryFn: () => fuelRecord(user!, vehicle!, id!, development),
+  });
+  const query =
+    kind === "fuel"
+      ? { ...singleFuel, data: singleFuel.data ? [singleFuel.data] : undefined }
+      : otherRecords;
   const vehicleQuery = useVehicles();
   const timezone =
     vehicleQuery.data?.find((item) => item.id === vehicle)?.timezone ??
     "Asia/Kolkata";
   const row = query.data?.find((e) => e.id === id);
   const permissions = usePermissions(vehicle);
+  const colors = useTheme();
   const qc = useQueryClient();
   const toast = useToast();
   const [busy, setBusy] = useState(false);
@@ -1666,11 +1809,28 @@ export function RecordDetail({
     queryFn: () => formVersions(vehicle!, development),
   });
   const owner = permissions.data?.owner;
+  const author = useQuery({
+    queryKey: [user, vehicle, "fuel-author", id],
+    enabled: !!user && !!vehicle && !!row && kind === "fuel",
+    queryFn: async () => {
+      if (development) return { display_name: "Developer", email: null };
+      const { data, error } = await client().rpc("fuel_record_author", {
+        p_vehicle: vehicle!,
+        p_record: id!,
+      });
+      if (error) throw error;
+      return (data?.[0] ?? null) as {
+        display_name: string | null;
+        email: string | null;
+      } | null;
+    },
+  });
   const audit = useQuery({
     queryKey: [user, vehicle, "record-audit", id],
     enabled:
       !!vehicle &&
       !!id &&
+      kind !== "fuel" &&
       releaseFeatures.advancedTools &&
       owner === true &&
       !development &&
@@ -1742,7 +1902,7 @@ export function RecordDetail({
       >
         <AppText>{r("deleteRecordBody")}</AppText>
         {row && <RecordCard row={row} kind={kind} timezone={timezone} />}
-        {error && (
+        {!!error && (
           <ErrorState message={error} retry={() => void mutate("ARCHIVED")} />
         )}
         <AppButton
@@ -1779,22 +1939,73 @@ export function RecordDetail({
           {!context && (
             <VehicleHeader vehicleId={row.vehicle_id} allowSwitch={false} />
           )}
+          {kind === "fuel" &&
+            (editAllowed || (owner && row.status !== "ARCHIVED")) && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "flex-end",
+                  gap: 8,
+                }}
+              >
+                {editAllowed && (
+                  <MotionPress
+                    label={r("edit")}
+                    onPress={() => {
+                      onClose?.();
+                      router.push({
+                        pathname: "/records/[kind]/[action]",
+                        params: {
+                          kind,
+                          action: "edit",
+                          id: row.id,
+                          vehicle: row.vehicle_id,
+                        },
+                      });
+                    }}
+                  >
+                    <View style={{ padding: 10 }}>
+                      <Ionicons
+                        name="create-outline"
+                        size={23}
+                        color={colors.primary}
+                      />
+                    </View>
+                  </MotionPress>
+                )}
+                {owner && row.status !== "ARCHIVED" && (
+                  <MotionPress
+                    label={r("deleteRecord")}
+                    disabled={busy}
+                    onPress={() => {
+                      setError("");
+                      setConfirmDelete(true);
+                    }}
+                  >
+                    <View style={{ padding: 10 }}>
+                      <Ionicons
+                        name="trash-outline"
+                        size={23}
+                        color={colors.danger}
+                      />
+                    </View>
+                  </MotionPress>
+                )}
+              </View>
+            )}
           <RecordCard row={row} kind={kind} timezone={timezone} />
+          {kind === "fuel" && author.error && (
+            <ErrorState
+              message={errorMessage(author.error)}
+              retry={() => void author.refetch()}
+            />
+          )}
           <Card style={{ padding: 16, gap: 8 }}>
             <SectionHeading title={t("uiRecordInfo")} />
             <InfoRows
               items={[
                 ...(kind === "fuel"
                   ? [
-                      {
-                        label: r("energy_type"),
-                        value:
-                          r(
-                            String(
-                              row.payload.energy_type,
-                            ) as keyof typeof recordCopy,
-                          ) ?? String(row.payload.energy_type),
-                      },
                       {
                         label: r("fuel"),
                         value: r(
@@ -1817,7 +2028,19 @@ export function RecordDetail({
                         : []),
                     ]
                   : []),
-                { label: r("author"), value: row.created_by },
+                ...(kind === "fuel"
+                  ? author.data
+                    ? [
+                        {
+                          label: r("author"),
+                          value:
+                            [author.data.display_name, author.data.email]
+                              .filter(Boolean)
+                              .join(" · ") || t("authorUnavailable"),
+                        },
+                      ]
+                    : []
+                  : [{ label: r("author"), value: row.created_by }]),
                 ...(row.payload.reading_at
                   ? [
                       {
@@ -1955,7 +2178,7 @@ export function RecordDetail({
                 )}
             </>
           )}
-          {editAllowed && (
+          {editAllowed && kind !== "fuel" && (
             <TextAction
               icon="create-outline"
               label={r("edit")}
@@ -1973,17 +2196,20 @@ export function RecordDetail({
               }}
             />
           )}
-          {owner && row.status !== "ARCHIVED" && kind !== "progress" && (
-            <TextAction
-              icon="trash-outline"
-              disabled={busy}
-              label={r("deleteRecord")}
-              onPress={() => {
-                setError("");
-                setConfirmDelete(true);
-              }}
-            />
-          )}
+          {owner &&
+            row.status !== "ARCHIVED" &&
+            kind !== "progress" &&
+            kind !== "fuel" && (
+              <TextAction
+                icon="trash-outline"
+                disabled={busy}
+                label={r("deleteRecord")}
+                onPress={() => {
+                  setError("");
+                  setConfirmDelete(true);
+                }}
+              />
+            )}
           {releaseFeatures.advancedTools &&
             kind === "expenses" &&
             ["SERVICE", "REPAIR", "INSURANCE", "EMI"].includes(
@@ -2058,43 +2284,46 @@ export function RecordDetail({
               />
             </>
           )}
-          {releaseFeatures.advancedTools && owner && !development && (
-            <Card>
-              <AppText large>{r("audit")}</AppText>
-              <AppText muted>{r("auditLatest")}</AppText>
-              {audit.error ? (
-                <ErrorState
-                  message={audit.error.message}
-                  retry={() => void audit.refetch()}
-                />
-              ) : audit.isPending ? (
-                <Skeleton />
-              ) : audit.data?.length ? (
-                audit.data.map((event) => (
-                  <View key={String(event.id)} style={{ gap: 4 }}>
-                    <AppText>
-                      {String(event.action).replaceAll("_", " ")}
-                    </AppText>
-                    <Timestamp value={event.created_at} timezone={timezone} />
-                    <AppText muted>{event.actor_id ?? "—"}</AppText>
-                    <AppText>
-                      {JSON.stringify(
-                        event.context,
-                        (_key, value) =>
-                          typeof value === "string" &&
-                          /^\d{4}-\d{2}-\d{2}(T|$)/.test(value)
-                            ? readableDateTime(value, timezone)
-                            : value,
-                        2,
-                      )}
-                    </AppText>
-                  </View>
-                ))
-              ) : (
-                <AppText>{r("auditEmpty")}</AppText>
-              )}
-            </Card>
-          )}
+          {releaseFeatures.advancedTools &&
+            kind !== "fuel" &&
+            owner &&
+            !development && (
+              <Card>
+                <AppText large>{r("audit")}</AppText>
+                <AppText muted>{r("auditLatest")}</AppText>
+                {audit.error ? (
+                  <ErrorState
+                    message={audit.error.message}
+                    retry={() => void audit.refetch()}
+                  />
+                ) : audit.isPending ? (
+                  <Skeleton />
+                ) : audit.data?.length ? (
+                  audit.data.map((event) => (
+                    <View key={String(event.id)} style={{ gap: 4 }}>
+                      <AppText>
+                        {String(event.action).replaceAll("_", " ")}
+                      </AppText>
+                      <Timestamp value={event.created_at} timezone={timezone} />
+                      <AppText muted>{event.actor_id ?? "—"}</AppText>
+                      <AppText>
+                        {JSON.stringify(
+                          event.context,
+                          (_key, value) =>
+                            typeof value === "string" &&
+                            /^\d{4}-\d{2}-\d{2}(T|$)/.test(value)
+                              ? readableDateTime(value, timezone)
+                              : value,
+                          2,
+                        )}
+                      </AppText>
+                    </View>
+                  ))
+                ) : (
+                  <AppText>{r("auditEmpty")}</AppText>
+                )}
+              </Card>
+            )}
           {kind === "documents" && (
             <>
               <AppText>{r("legal")}</AppText>
@@ -2114,7 +2343,7 @@ export function RecordDetail({
       ) : (
         !query.isPending && <AppText>{r("permission")}</AppText>
       )}
-      {error && <ErrorState message={error} retry={() => setError("")} />}
+      {!!error && <ErrorState message={error} retry={() => setError("")} />}
     </DetailContainer>
   );
 }

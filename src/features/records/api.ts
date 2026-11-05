@@ -10,6 +10,7 @@ import {
   writeDevelopment,
   DEVELOPMENT_USER,
   requireDevelopment,
+  developmentReadings,
 } from "@/src/features/development/repository";
 import {
   recordSchema,
@@ -111,6 +112,34 @@ export async function listRecords(
   return rows;
 }
 
+export async function fuelRecord(
+  user: string,
+  vehicle: string,
+  id: string,
+  development: boolean,
+) {
+  if (development)
+    return (
+      (await listRecords(user, vehicle, "fuel", true)).find(
+        (row) => row.id === id,
+      ) ?? null
+    );
+  const permissions = await access(vehicle, false);
+  if (!permissions["fuel.read"]) throw new Error("PERMISSION_DENIED");
+  const { data, error } = await client()
+    .from("fuel_logs")
+    .select(
+      "id,vehicle_id,created_by,revision,status,payload,created_at,updated_at",
+    )
+    .eq("vehicle_id", vehicle)
+    .eq("id", id)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+  const row = recordSchema.parse(data);
+  return { ...row, payload: validatePayload("fuel", row.payload) };
+}
+
 let localWrites: Promise<unknown> = Promise.resolve();
 async function saveLocal(
   kind: Kind,
@@ -143,6 +172,45 @@ async function saveLocal(
         throw new Error("VEHICLE_FUEL_MISMATCH");
     }
     if (id && (!old || old.revision !== expected)) throw new Error("CONFLICT");
+    if (
+      ["fuel", "expenses", "meters"].includes(kind) &&
+      status !== "ARCHIVED" &&
+      payload.reading_at
+    ) {
+      const stamp = Date.parse(String(payload.reading_at));
+      const history = (await developmentReadings(vehicle)).filter(
+        (reading) => !id || !reading.id.startsWith(`${id}.`),
+      );
+      for (const [key, type] of [
+        ["km", "KM"],
+        ["hours", "HOURS"],
+      ] as const) {
+        if (payload[key] === null || payload[key] === undefined) continue;
+        const value = Number(payload[key]);
+        const sameType = history.filter(
+          (reading) => reading.reading_type === type,
+        );
+        const same = sameType.find(
+          (reading) => Date.parse(reading.observed_at) === stamp,
+        );
+        if (same && same.value !== value)
+          throw new Error("METER_READING_CONFLICT");
+        const previous = sameType
+          .filter((reading) => Date.parse(reading.observed_at) < stamp)
+          .sort(
+            (a, b) => Date.parse(b.observed_at) - Date.parse(a.observed_at),
+          )[0];
+        const next = sameType
+          .filter((reading) => Date.parse(reading.observed_at) > stamp)
+          .sort(
+            (a, b) => Date.parse(a.observed_at) - Date.parse(b.observed_at),
+          )[0];
+        if (previous && value < previous.value)
+          throw new Error("METER_BELOW_PREVIOUS");
+        if (next && !next.is_reset && value > next.value)
+          throw new Error("METER_ABOVE_NEXT");
+      }
+    }
     const target = id ?? operation;
     const now = new Date().toISOString();
     const record: RecordEntry = {

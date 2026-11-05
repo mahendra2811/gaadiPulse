@@ -1,4 +1,11 @@
 export const en = {
+  loadingMore: "Loading more…",
+  authorUnavailable: "Name unavailable",
+  filterFromDate: "From date",
+  filterToDate: "To date",
+  filterMinimumAmount: "Minimum amount (₹)",
+  filterMaximumAmount: "Maximum amount (₹)",
+  filterClear: "Clear filters",
   lastMeterReading: "Previous reading: {value}",
   readingBelowPrevious:
     "Reading must be at least the previous reading ({value}).",
@@ -7,6 +14,8 @@ export const en = {
   closePopup: "Close popup",
   fuelPrimaryRequired:
     "Enter the total amount and quantity to save this record.",
+  readingAboveNextServer:
+    "This reading is higher than a later reading. Check the value and observation time.",
   fuelQuickHelp:
     "Enter amount and quantity. The unit price is calculated automatically; you can enter the receipt rate under Additional options.",
 

@@ -122,7 +122,7 @@ export const recordCopy = {
   amount: "Amount (₹)",
   quantity: "Quantity",
   price: "Price per unit (₹)",
-  event: "Actual event date and time (ISO)",
+  event: "Date and time",
   observed: "Actual meter observation date and time (ISO)",
   readingHelp:
     "A later reading may be linked only when you actually observed it at the original event time. Do not infer or backdate a reading.",

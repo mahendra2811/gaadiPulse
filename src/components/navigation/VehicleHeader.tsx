@@ -1,12 +1,14 @@
+import { View, Text } from "react-native";
 import { SquareArtwork } from "@/src/components/ui/SquareArtwork";
 import { subtypeLabel } from "@/src/features/garage/subtypes";
-import { View, Text } from "react-native";
 import { vehicleArt } from "@/src/lib/assets";
 import { useActiveVehicle } from "@/src/features/garage/hooks";
-import { AppText, Card } from "@/src/components/ui";
+import { Card } from "@/src/components/ui";
 import { GradientSurface } from "@/src/components/ui/premium";
 import { useTheme } from "@/src/lib/theme";
 import { t } from "@/src/lib/i18n";
+import { r, recordCopy } from "@/src/features/records/copy";
+
 export function VehicleHeader({
   vehicleId,
   hero = false,
@@ -26,84 +28,62 @@ export function VehicleHeader({
   const title =
     vehicle.nickname ||
     vehicle.registration_number ||
-    vehicle.model ||
+    vehicle.brand ||
     subtypeLabel(vehicle.subtype);
+  const ink = hero ? "#FFFFFF" : colors.ink;
+  const muted = hero ? "#D0F0E8" : colors.muted;
+  const brand = vehicle.brand.trim();
+  const energy =
+    r(vehicle.energy_type as keyof typeof recordCopy) ??
+    vehicle.energy_type.replaceAll("_", " + ");
   const content = (
-    <>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-        <View style={{ width: "20%", flexShrink: 0 }}>
-          <SquareArtwork
-            source={vehicleArt(vehicle.category, vehicle.subtype)}
-          />
-        </View>
-        <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
-          {hero && (
-            <Text
-              style={{
-                color: "#D0F0E8",
-                fontSize: 11,
-                fontWeight: "600",
-                letterSpacing: 0.6,
-                textTransform: "uppercase",
-              }}
-            >
-              {t("uiActiveVehicle")}
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+      <View style={{ width: "25%", flexShrink: 0 }}>
+        <SquareArtwork source={vehicleArt(vehicle.category, vehicle.subtype)} />
+      </View>
+      <View style={{ flex: 1, minWidth: 0, gap: 5 }}>
+        <Text style={{ color: ink, fontSize: 18, fontWeight: "800" }}>
+          {title}
+        </Text>
+        {!!vehicle.registration_number &&
+          vehicle.registration_number !== title && (
+            <Text style={{ color: muted, fontSize: 14, fontWeight: "400" }}>
+              {vehicle.registration_number}
             </Text>
           )}
-          {hero ? (
-            <Text style={{ fontSize: 18, fontWeight: "800", color: "#FFFFFF" }}>
-              {title}
-            </Text>
-          ) : (
-            <AppText large>{title}</AppText>
-          )}
-          {[
-            vehicle.registration_number,
-            [vehicle.brand, vehicle.model].filter(Boolean).join(" "),
-          ]
-            .filter(
-              (value, index, values) =>
-                value && value !== title && values.indexOf(value) === index,
-            )
-            .map((value) => (
-              <Text
-                key={value}
-                style={{ color: hero ? "#E5FFF7" : colors.muted, fontSize: 12 }}
-              >
-                {value}
-              </Text>
-            ))}
-          <View
+      </View>
+      <View style={{ flex: 1, minWidth: 0, gap: 6 }}>
+        {!!brand && brand.toLowerCase() !== title.toLowerCase() && (
+          <Text style={{ color: ink, fontSize: 14, fontWeight: "600" }}>
+            {brand}
+          </Text>
+        )}
+        <Text style={{ color: muted, fontSize: 14 }}>{energy}</Text>
+        <View
+          style={{
+            alignSelf: "flex-start",
+            backgroundColor: hero ? "#FFFFFF24" : colors.background,
+            borderRadius: 8,
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+          }}
+        >
+          <Text
             style={{
-              alignSelf: "flex-start",
-              borderRadius: 10,
-              backgroundColor: hero ? "#FFFFFF20" : "transparent",
-              paddingHorizontal: hero ? 8 : 0,
-              paddingVertical: 4,
+              color: hero ? "#FFFFFF" : colors.primary,
+              fontSize: 13,
+              fontWeight: "700",
             }}
           >
-            <Text
-              style={{
-                color: hero ? "#E5FFF7" : colors.primary,
-                fontWeight: "600",
-                fontSize: 13,
-              }}
-            >
-              {t(vehicle.role === "OWNER" ? "owner" : "pilot")} ·{" "}
-              {t(vehicle.meter_mode)}
-            </Text>
-          </View>
+            {t(vehicle.role === "OWNER" ? "owner" : "pilot")}
+          </Text>
         </View>
       </View>
-    </>
+    </View>
   );
-  return (
-    <>
-      {hero ? (
-        <GradientSurface style={{ padding: 16 }}>{content}</GradientSurface>
-      ) : (
-        <Card style={{ padding: 16 }}>{content}</Card>
-      )}
-    </>
+  return hero ? (
+    <GradientSurface style={{ padding: 12 }}>{content}</GradientSurface>
+  ) : (
+    <Card style={{ padding: 12 }}>{content}</Card>
   );
 }

@@ -175,3 +175,9 @@ Expose vehicle membership management in the focused release. A verified pilot ha
 ## 2026-11-05 — Restore paused vehicle and advanced tools
 
 The user requested restoring the focused-release feature register. `releaseFeatures.advancedTools` is enabled, restoring commercial/agricultural/heavy vehicle creation, editable KM/HOURS/BOTH meter settings, progress forms and review, document metadata, reminders, maintenance, reports, analytics and exports. Online-only behavior remains. Existing Pilot limitations remain: fuel/expense/meter history is limited to today and yesterday, Pilot records cannot be edited or deleted, and progress view/submission is available only when an owner explicitly grants it; its history has the same two-day restriction. Photo/file capture, GPS, Hindi and paid plans remain out of scope as already documented. This source change is not proof of deployed backend, real-device or store readiness.
+
+### Home readings and fuel history — 2026-11-05
+
+A reading is ordered by its actual observation time, not entry time. Fuel, expense and manual form observations must be no lower than the preceding active observation and no higher than the next active observation, with equality allowed. Existing history and explicit reset/correction workflows are retained. This permits a truthful late observation without silently backdating it. Home refreshes on focus and after local writes; while active it also polls every 15 seconds for changes from other sessions. This is not a realtime delivery guarantee.
+
+Fuel history is filtered on the server under existing row-level security, returned in pages of 30 with matching count and total, and fetched one record at a time for detail/edit. A fuel author lookup is restricted to readers of that record; only vehicle Owners receive the author's email. Fuel fields and timestamps remain available for future full-to-full analysis; no new insight or inferred average is claimed here.

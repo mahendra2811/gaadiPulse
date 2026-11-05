@@ -20,6 +20,7 @@ import {
 } from "@/src/components/ui/premium";
 import { useActiveVehicle } from "@/src/features/garage/hooks";
 import { useRecords, usePermissions } from "@/src/features/records/hooks";
+import { useFuelHistory } from "@/src/features/records/useFuelHistory";
 import { r } from "@/src/features/records/copy";
 import { money } from "@/src/utils/money";
 import { dateInZone } from "@/src/features/progress/schema";
@@ -62,7 +63,6 @@ function DashboardContent({
 }) {
   const { vehicle } = useActiveVehicle();
   const permissions = usePermissions(vehicle?.id);
-  const fuel = useRecords("fuel");
   const expenses = useRecords("expenses");
   const reminders = useRecords("reminders");
   const now = useCurrentTime();
@@ -73,7 +73,33 @@ function DashboardContent({
     new Date(now),
     vehicle?.timezone ?? "Asia/Kolkata",
   ).slice(0, 7);
-  const total = (entries: typeof fuel.data) =>
+  const fuel = useFuelHistory(
+    vehicle?.id,
+    !!permissions.data && !!permissions.data["fuel.read"],
+    true,
+    {
+      start: "",
+      end: "",
+      min: null,
+      max: null,
+      search: "",
+      timezone: vehicle?.timezone ?? "Asia/Kolkata",
+    },
+  );
+  const monthlyFuel = useFuelHistory(
+    vehicle?.id,
+    !!permissions.data?.owner && !!permissions.data["fuel.read"],
+    true,
+    {
+      start: `${month}-01`,
+      end: "",
+      min: null,
+      max: null,
+      search: "",
+      timezone: vehicle?.timezone ?? "Asia/Kolkata",
+    },
+  );
+  const total = (entries: typeof expenses.data) =>
     entries
       ?.filter(
         (row) =>
@@ -185,7 +211,7 @@ function DashboardContent({
   ).filter((action) => action.show);
   const enabledSecondary = releaseFeatures.advancedTools ? secondary : [];
   const activity = [
-    ...(permissions.data?.["fuel.read"] ? (fuel.data ?? []) : []).map(
+    ...(permissions.data?.["fuel.read"] ? (fuel.rows ?? []) : []).map(
       (row) => ({ ...row, kind: "fuel" }),
     ),
     ...(permissions.data?.["expenses.read"] ? (expenses.data ?? []) : []).map(
@@ -253,9 +279,9 @@ function DashboardContent({
                       fontWeight: "800",
                     }}
                   >
-                    {fuel.isPending || fuel.error
+                    {monthlyFuel.isPending || monthlyFuel.error
                       ? "—"
-                      : money(total(fuel.data))}
+                      : money(monthlyFuel.total)}
                   </Text>
                   <TextAction
                     light
@@ -298,12 +324,16 @@ function DashboardContent({
                 </GradientSurface>
               )}
             </View>
-            {permissions.data?.["fuel.read"] && fuel.error && (
-              <ErrorState
-                message={fuel.error.message}
-                retry={() => void fuel.refetch()}
-              />
-            )}
+            {permissions.data?.["fuel.read"] &&
+              (fuel.error || monthlyFuel.error) && (
+                <ErrorState
+                  message={(fuel.error || monthlyFuel.error)!.message}
+                  retry={() => {
+                    void fuel.refetch();
+                    void monthlyFuel.refetch();
+                  }}
+                />
+              )}
             {permissions.data?.["expenses.read"] && expenses.error && (
               <ErrorState
                 message={expenses.error.message}
@@ -374,7 +404,7 @@ function DashboardContent({
       {!!activity.length && (
         <>
           <SectionHeading title={t("uiRecentActivity")} />
-          <View>
+          <Card style={{ paddingHorizontal: 12, paddingVertical: 0, gap: 0 }}>
             {activity.slice(0, moreActivity ? 10 : 3).map((row) => (
               <MenuRow
                 key={`${row.kind}.${row.id}`}
@@ -387,7 +417,7 @@ function DashboardContent({
                 onPress={() => navigate(row.kind, row.id)}
               />
             ))}
-          </View>
+          </Card>
           {activity.length > 3 && (
             <TextAction
               label={t(moreActivity ? "uiFewerActions" : "uiMoreActivity")}
@@ -414,25 +444,32 @@ function DashboardContent({
             {!reminders.isPending && !reminders.error && !upcoming.length && (
               <AppText muted>{t("uiNoReminders")}</AppText>
             )}
-            {upcoming.slice(0, 3).map((row) => (
-              <MenuRow
-                key={row.id}
-                label={String(row.payload.title)}
-                subtitle={
-                  row.payload.due_at
-                    ? Date.parse(String(row.payload.due_at)) < now
-                      ? r("overdue")
-                      : new Date(String(row.payload.due_at)).toLocaleDateString(
-                          undefined,
-                          { timeZone: vehicle?.timezone ?? "Asia/Kolkata" },
-                        )
-                    : r("dueReading")
-                }
-                icon="notifications"
-                tone="coral"
-                onPress={() => navigate("reminders", row.id)}
-              />
-            ))}
+            {!!upcoming.length && (
+              <Card
+                style={{ paddingHorizontal: 12, paddingVertical: 0, gap: 0 }}
+              >
+                {upcoming.slice(0, 3).map((row) => (
+                  <MenuRow
+                    key={row.id}
+                    label={String(row.payload.title)}
+                    subtitle={
+                      row.payload.due_at
+                        ? Date.parse(String(row.payload.due_at)) < now
+                          ? r("overdue")
+                          : new Date(
+                              String(row.payload.due_at),
+                            ).toLocaleDateString(undefined, {
+                              timeZone: vehicle?.timezone ?? "Asia/Kolkata",
+                            })
+                        : r("dueReading")
+                    }
+                    icon="notifications"
+                    tone="coral"
+                    onPress={() => navigate("reminders", row.id)}
+                  />
+                ))}
+              </Card>
+            )}
           </>
         )}
     </>

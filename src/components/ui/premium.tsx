@@ -222,19 +222,21 @@ export function ActionTile({
 export function MenuRow({
   label,
   subtitle,
+  accessibilityLabel,
   icon,
   tone = "mint",
   onPress,
 }: {
   label: string;
   subtitle?: string;
+  accessibilityLabel?: string;
   icon: IconName;
   tone?: IconTone;
   onPress: () => void;
 }) {
   const c = useTheme();
   return (
-    <MotionPress label={label} onPress={onPress}>
+    <MotionPress label={accessibilityLabel ?? label} onPress={onPress}>
       <View
         style={{
           flexDirection: "row",

@@ -1,0 +1,6 @@
+# Brand assets and main-screen loading plan
+
+1. Inventory and use the supplied logo variants. Use the dark square mark for app/auth branding, the light circle for compact round marks, and the supplied light- and dark-background wordmarks where appropriate. Preserve source assets; generate launcher, adaptive foreground, splash, notification and web favicon assets with a repeatable script, respecting Android icon masks.
+2. Wire Expo config, app headers, authentication and onboarding to the appropriate local assets. Update the existing generated Android resource tree without overwriting unrelated native configuration. Native/Play asset changes require rebuilding; a web refresh cannot update an installed APK.
+3. Introduce accessible, reduced-motion-aware skeleton components shaped like the Home and Fuel/Expenses layouts. Show them only while relevant vehicle, permission or record requests are actually pending; retain existing errors, retry actions, empty states and vehicle-scoped cache keys. Never display invented progress.
+4. Check initial load, no vehicle, denied access, errors, vehicle switches and refresh behavior; validate asset sizes/transparency and mobile light/dark layouts. Run TypeScript, relevant lint/tests, Expo config and Android bundle/build where feasible, and document unverified native/device behavior.

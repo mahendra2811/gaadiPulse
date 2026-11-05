@@ -4,7 +4,9 @@ import { AppButton, ConfirmDialog, ErrorState } from "@/src/components/ui";
 import { useSession } from "./session";
 import { t } from "@/src/lib/i18n";
 
-export function SignOutButton() {
+export function SignOutButton({
+  onSignedOut,
+}: { onSignedOut?: () => void } = {}) {
   const auth = useSession();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -14,6 +16,7 @@ export function SignOutButton() {
     setError("");
     try {
       await auth.signOut();
+      onSignedOut?.();
       router.replace("/auth/login");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

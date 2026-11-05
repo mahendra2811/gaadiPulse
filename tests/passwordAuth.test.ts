@@ -64,6 +64,23 @@ describe("password account boundaries", () => {
       email: "user@example.com",
     });
   });
+  it("validates and sends the sign-up name as account metadata", async () => {
+    auth.signUp.mockResolvedValue({ data: { session: null }, error: null });
+    await passwordSignup(
+      " user@example.com ",
+      "a long passphrase",
+      "  Vehicle Owner  ",
+    );
+    expect(auth.signUp).toHaveBeenCalledWith({
+      email: "user@example.com",
+      password: "a long passphrase",
+      options: { data: { full_name: "Vehicle Owner" } },
+    });
+    await expect(
+      passwordSignup("user@example.com", "a long passphrase", "  "),
+    ).rejects.toThrow();
+    expect(auth.signUp).toHaveBeenCalledTimes(1);
+  });
   it("uses the recovery verification type and rejects missing or expired sessions", async () => {
     auth.verifyOtp.mockResolvedValue({
       data: { session: { access_token: "fixture" } },

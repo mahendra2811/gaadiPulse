@@ -113,3 +113,25 @@ export async function updateProfile(
     .single();
   if (error) throw new Error(error.message);
 }
+
+export async function updateAppearance(
+  user: string,
+  theme: ThemeMode,
+  development = false,
+) {
+  if (development) {
+    const profile = await developmentProfile();
+    return saveDevelopmentProfile({
+      display_name: profile.display_name,
+      timezone: profile.timezone,
+      theme,
+    });
+  }
+  const { error } = await client()
+    .from("profiles")
+    .update({ theme })
+    .eq("id", user)
+    .select("id")
+    .single();
+  if (error) throw new Error(error.message);
+}

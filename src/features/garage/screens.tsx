@@ -1,4 +1,6 @@
+import { PageSkeleton } from "@/src/components/ui/PageSkeleton";
 import { isPilotHistoryVisible } from "@/src/features/members/history";
+import { VehicleMembersSection } from "@/src/features/members/screens";
 import { useCurrentTime } from "@/src/hooks/useCurrentTime";
 import { SquareArtwork } from "@/src/components/ui/SquareArtwork";
 import { Timestamp } from "@/src/components/ui/Timestamp";
@@ -66,7 +68,12 @@ export function Garage() {
     },
   ];
   return (
-    <Screen title={t("garage")} loading={query.isPending} compact>
+    <Screen
+      title={t("garage")}
+      loading={query.isPending}
+      compact
+      banner="garage"
+    >
       <AppText muted>{t("uiGarageHint")}</AppText>
       <AppButton label={t("add")} onPress={() => router.push("/garage/add")} />
       <SearchField value={search} onChange={setSearch} />
@@ -75,7 +82,9 @@ export function Garage() {
           message={query.error.message}
           retry={() => void query.refetch()}
         />
-      ) : !query.isPending && query.data?.length === 0 ? (
+      ) : query.isPending ? (
+        <PageSkeleton shape="garage" />
+      ) : query.data?.length === 0 ? (
         <EmptyState title={t("empty")} body={t("emptyBody")} />
       ) : (
         <>
@@ -252,7 +261,7 @@ export function Garage() {
 }
 export function VehicleDetails() {
   const { development } = useSession();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, add } = useLocalSearchParams<{ id: string; add?: string }>();
   const query = useVehicles();
   const vehicle = query.data?.find((v) => v.id === id);
   const qc = useQueryClient();
@@ -291,30 +300,6 @@ export function VehicleDetails() {
             >
               {!vehicle.archived_at && (
                 <>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={t("addVehicleMember")}
-                    onPress={() =>
-                      router.push({
-                        pathname: "/owner/members",
-                        params: { vehicle: id, add: "1" },
-                      })
-                    }
-                    style={{
-                      width: 48,
-                      height: 48,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderRadius: 14,
-                      backgroundColor: colors.background,
-                    }}
-                  >
-                    <Ionicons
-                      name="person-add-outline"
-                      size={22}
-                      color={colors.primary}
-                    />
-                  </Pressable>
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={t("edit")}
@@ -394,11 +379,20 @@ export function VehicleDetails() {
           {vehicle.archived_at && (
             <AppText muted>{t("archivedVehicleReadOnly")}</AppText>
           )}
+          {vehicle.role === "OWNER" && (
+            <VehicleMembersSection
+              key={`${vehicle.id}:${add ?? ""}`}
+              vehicle={vehicle}
+              openGrant={add === "1"}
+            />
+          )}
         </>
       ) : (
         !query.isPending && <AppText>{t("denied")}</AppText>
       )}
-      {error && <ErrorState message={error} retry={() => void archive()} />}
+      {error ? (
+        <ErrorState message={error} retry={() => void archive()} />
+      ) : null}
     </Screen>
   );
 }
@@ -445,6 +439,8 @@ export function Home() {
           message={query.error.message}
           retry={() => void query.refetch()}
         />
+      ) : query.isPending ? (
+        <PageSkeleton shape="home" />
       ) : v ? (
         <>
           <SectionHeading
@@ -458,6 +454,8 @@ export function Home() {
               message={access.error.message}
               retry={() => void access.refetch()}
             />
+          ) : access.isPending ? (
+            <PageSkeleton shape="reading" />
           ) : (
             access.data?.metersRead && (
               <>
@@ -523,13 +521,15 @@ export function Home() {
                       </View>
                     ))}
                   </Card>
-                ) : !readings.isPending ? (
+                ) : readings.isPending ? (
+                  <PageSkeleton shape="reading" />
+                ) : (
                   <EmptyState
                     kind="meters"
                     title={t("emptyMetersTitle")}
                     body={t("emptyMeterReadOnlyBody")}
                   />
-                ) : null}
+                )}
               </>
             )
           )}

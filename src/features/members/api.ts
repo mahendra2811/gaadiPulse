@@ -180,6 +180,14 @@ export async function changeMember(
           ? { ...m, role, status, permission_overrides: permissions }
           : m,
       ),
+      grants:
+        status === "REVOKED"
+          ? state.grants.map((grant) =>
+              grant.resolved_user_id === user
+                ? { ...grant, status: "REVOKED" }
+                : grant,
+            )
+          : state.grants,
     });
     return;
   }

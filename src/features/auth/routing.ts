@@ -9,7 +9,7 @@ export function authDestination(
       ? null
       : hasDisplayName
         ? "/(tabs)"
-        : "/settings/profile";
+        : "/onboarding";
 }
 
 // A recovery OTP establishes a session before its new password is saved.
@@ -24,7 +24,8 @@ export function profileRedirect(
   hasDisplayName: boolean,
 ): string | null {
   if (keepsAuthenticatedAuthScreen(pathname)) return null;
-  if (!hasDisplayName)
-    return pathname === "/settings/profile" ? null : "/settings/profile";
-  return pathname.startsWith("/auth/") ? "/(tabs)" : null;
+  if (!hasDisplayName) return pathname === "/onboarding" ? null : "/onboarding";
+  return pathname.startsWith("/auth/") || pathname === "/onboarding"
+    ? "/(tabs)"
+    : null;
 }

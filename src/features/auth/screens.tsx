@@ -6,6 +6,7 @@ import { Redirect, router, useLocalSearchParams } from "expo-router";
 import { accountEmail, emailCode } from "./passwordSchema";
 import {
   Screen,
+  Card,
   AppText,
   AppButton,
   InputField,
@@ -95,10 +96,61 @@ export function Verify() {
 }
 export function Legal() {
   return (
-    <Screen title={t("legal")}>
-      <AppText>{t("privacy")}</AppText>
-      <AppText>{t("terms")}</AppText>
-      <AppButton label={t("back")} onPress={() => router.back()} />
+    <Screen title={t("legal")} compact>
+      <AppText muted>
+        Pre-release information. The app operator must review and publish the
+        final policy and terms before distribution.
+      </AppText>
+      <Card>
+        <AppText large>Privacy</AppText>
+        <AppText>
+          GaadiPulse uses your account details and the vehicle information you
+          enter, such as fuel, expenses, readings, members, reminders and
+          document details. The configured Supabase project stores account and
+          shared vehicle records. Owners control per-vehicle access, subject to
+          server permissions.
+        </AppText>
+        <AppText>
+          Records require an internet connection. Open forms are held in memory;
+          durable offline record drafts and caches are not provided. The app
+          schedules optional local reminders on this device. It does not provide
+          GPS tracking, ads, or document photo upload.
+        </AppText>
+        <AppText>
+          Reports you export or share create copies outside the app. Other
+          people who receive them may retain them. Signing out clears the
+          session and scheduled local notifications on this device, but does not
+          delete server records or exported files.
+        </AppText>
+        <AppText>
+          To request account deletion, open Settings → Request account deletion,
+          or contact mahendrapuniya92@gmail.com. Requests revoke vehicle access
+          and require operator review. Retention and completion depend on the
+          operator’s process; do not assume that submission immediately deletes
+          records.
+        </AppText>
+      </Card>
+      <Card>
+        <AppText large>Terms of use</AppText>
+        <AppText>
+          Enter accurate information, use truthful observation times, and grant
+          access only to trusted people. App Owner or Pilot roles do not
+          establish legal vehicle ownership. Each user is responsible for
+          reviewing records, permissions and exports.
+        </AppText>
+        <AppText>
+          Document entries are metadata, not official RC or licence documents.
+          Insights depend on available readings and valid intervals, and
+          reminders and notifications can be delayed or missed. Keep independent
+          records and use official sources where required.
+        </AppText>
+        <AppText>
+          Features, access and availability depend on the configured service and
+          network. The operator should review these pre-release terms, privacy,
+          retention and support arrangements before public distribution.
+        </AppText>
+      </Card>
+      <AppButton secondary label={t("back")} onPress={() => router.back()} />
     </Screen>
   );
 }

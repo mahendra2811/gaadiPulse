@@ -24,26 +24,20 @@ export async function exportText(text: string, filename: string, mime: string) {
     });
   else await Share.share({ message: text, title: filename });
 }
-export async function exportPdf(title: string, lines: string[]) {
+export async function exportPdf(html: string) {
   const Print = await import("expo-print");
-  const Sharing = await import("expo-sharing");
-  const escape = (s: string) =>
-    s.replace(
-      /[&<>"']/g,
-      (ch) =>
-        ({
-          "&": "&amp;",
-          "<": "&lt;",
-          ">": "&gt;",
-          '"': "&quot;",
-          "'": "&#39;",
-        })[ch]!,
-    );
-  const html = `<html><head><meta charset="utf-8"/><style>body{font-family:sans-serif;color:#122c2a;padding:30px}li{margin:10px 0}</style></head><body><h1>${escape(title)}</h1><ul>${lines.map((s) => `<li>${escape(s)}</li>`).join("")}</ul></body></html>`;
   if (Platform.OS === "web") {
     await Print.printAsync({ html });
     return;
   }
+  const Sharing = await import("expo-sharing");
+  if (!(await Sharing.isAvailableAsync()))
+    throw new Error(
+      "Sharing is unavailable on this device. Try JSON or CSV export.",
+    );
   const file = await Print.printToFileAsync({ html });
-  await Sharing.shareAsync(file.uri, { mimeType: "application/pdf" });
+  await Sharing.shareAsync(file.uri, {
+    mimeType: "application/pdf",
+    UTI: "com.adobe.pdf",
+  });
 }

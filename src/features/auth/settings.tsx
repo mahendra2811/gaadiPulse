@@ -5,19 +5,14 @@ import { defaultProfileIcon, type ProfileIcon } from "./avatars";
 import { releaseFeatures } from "@/src/features/release/scope";
 import { TimezoneField } from "@/src/features/garage/TimezoneField";
 import { errorMessage } from "@/src/lib/errors";
-import {
-  MenuRow,
-  SectionHeading,
-  InfoRows,
-  ColorIcon,
-} from "@/src/components/ui/premium";
+import { MenuRow, SectionHeading, InfoRows } from "@/src/components/ui/premium";
 import { SignOutButton } from "./SignOutButton";
 import { notificationPermission } from "@/src/features/reminders/notifications";
 import { r } from "@/src/features/records/copy";
 import { useEffect, useState, useRef } from "react";
 import { router, usePreventRemove } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useProfile, updateProfile } from "./profile";
+import { useProfile, updateProfile, updateAppearance } from "./profile";
 import { useSession, useAccountId } from "./session";
 import {
   Card,
@@ -25,17 +20,41 @@ import {
   AppButton,
   AppText,
   InputField,
-  Choice,
   ConfirmDialog,
   ErrorState,
   useToast,
 } from "@/src/components/ui";
 import { t } from "@/src/lib/i18n";
 import type { ThemeMode } from "@/src/lib/theme";
+import { Image, Pressable, View, Text } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { useTheme } from "@/src/lib/theme";
+import { artwork } from "@/src/lib/assets";
 export { MoreDrawerRoute as More } from "@/src/components/navigation/MoreDrawer";
 export function Settings() {
   const toast = useToast();
   const [error, setError] = useState("");
+  const [themeBusy, setThemeBusy] = useState(false);
+  const profile = useProfile();
+  const user = useAccountId();
+  const auth = useSession();
+  const queryClient = useQueryClient();
+  const colors = useTheme();
+  const changeTheme = async (theme: ThemeMode) => {
+    if (!user || themeBusy || !profile.data || profile.data.theme === theme)
+      return;
+    setError("");
+    setThemeBusy(true);
+    try {
+      await updateAppearance(user, theme, auth.development);
+      queryClient.setQueryData([user, "profile"], { ...profile.data, theme });
+      await queryClient.invalidateQueries({ queryKey: [user, "profile"] });
+    } catch (e) {
+      setError(errorMessage(e));
+    } finally {
+      setThemeBusy(false);
+    }
+  };
   return (
     <Screen title={t("settings")} compact>
       <Card style={{ padding: 16 }}>
@@ -56,17 +75,69 @@ export function Settings() {
           label={r("requestDeletion")}
           icon="trash"
           tone="coral"
-          onPress={() => router.push("/settings/security")}
+          onPress={() => router.push("/settings/deletion")}
         />
       </Card>
       <Card style={{ padding: 16 }}>
         <SectionHeading title={t("uiPreferences")} />
-        <MenuRow
-          label={t("appearance")}
-          icon="color-palette"
-          tone="violet"
-          onPress={() => router.push("/settings/profile")}
-        />
+        <AppText>{t("appearance")}</AppText>
+        <AppText muted>
+          Choose one appearance. System default follows your device.
+        </AppText>
+        {profile.error ? (
+          <ErrorState
+            message={profile.error.message}
+            retry={() => void profile.refetch()}
+          />
+        ) : (
+          <View accessibilityRole="radiogroup" style={{ gap: 6 }}>
+            {(
+              [
+                ["system", "System default", "phone-portrait-outline"],
+                ["light", "Light", "sunny-outline"],
+                ["dark", "Dark", "moon-outline"],
+              ] as const
+            ).map(([mode, label, icon]) => (
+              <Pressable
+                key={mode}
+                accessibilityRole="radio"
+                accessibilityLabel={label}
+                accessibilityState={{
+                  checked: profile.data?.theme === mode,
+                  disabled: themeBusy || !profile.data,
+                }}
+                disabled={themeBusy || !profile.data}
+                onPress={() => void changeTheme(mode)}
+                style={{
+                  minHeight: 48,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 12,
+                  paddingHorizontal: 12,
+                  borderWidth: 1,
+                  borderColor:
+                    profile.data?.theme === mode ? colors.primary : colors.line,
+                  borderRadius: 12,
+                  backgroundColor: colors.surface,
+                }}
+              >
+                <Ionicons name={icon} size={20} color={colors.ink} />
+                <Text style={{ color: colors.ink, flex: 1 }}>{label}</Text>
+                <Ionicons
+                  name={
+                    profile.data?.theme === mode
+                      ? "radio-button-on"
+                      : "radio-button-off"
+                  }
+                  size={22}
+                  color={
+                    profile.data?.theme === mode ? colors.primary : colors.muted
+                  }
+                />
+              </Pressable>
+            ))}
+          </View>
+        )}
         <InfoRows items={[{ label: t("language"), value: t("english") }]} />
         <AppText muted>{t("hindi")}</AppText>
         {releaseFeatures.advancedTools && (
@@ -123,7 +194,6 @@ export function Profile() {
   const [avatar, setAvatar] = useState<ProfileIcon>(defaultProfileIcon);
   const hydrated = useRef(false);
   const [timezone, setTimezone] = useState("Asia/Kolkata");
-  const [theme, setTheme] = useState<ThemeMode>("system");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [initialized, setInitialized] = useState(false);
@@ -132,21 +202,25 @@ export function Profile() {
     if (query.data && !hydrated.current) {
       hydrated.current = true;
       /* Server profile initializes an editable local draft after fetch. */
-      setName(query.data.display_name);
+      const signupName = auth.session?.user.user_metadata?.full_name;
+      setName(
+        query.data.display_name ||
+          (typeof signupName === "string"
+            ? signupName.trim().slice(0, 120)
+            : ""),
+      );
       setCountry(query.data.country_code);
       setAvatar(query.data.avatar_icon);
-      setTheme(query.data.theme);
       setTimezone(query.data.timezone);
       setInitialized(true);
     }
-  }, [query.data]);
+  }, [query.data, auth.session?.user.user_metadata?.full_name]);
   const dirty =
     initialized &&
     !!query.data &&
     (country !== query.data.country_code ||
       avatar !== query.data.avatar_icon ||
       name !== query.data.display_name ||
-      theme !== query.data.theme ||
       timezone !== query.data.timezone);
   const disablePrevention = usePreventRemove(dirty && !leaving, ({ repeat }) =>
     ConfirmDialog(
@@ -165,22 +239,29 @@ export function Profile() {
       if (!user) return;
       if (!name.trim() || name.trim().length > 120) throw new Error(t("name"));
       new Intl.DateTimeFormat("en", { timeZone: timezone });
+      let current = query.data;
       if (
-        country !== query.data?.country_code &&
-        !query.data?.country_available
-      )
+        (avatar !== current?.avatar_icon && !current?.avatar_available) ||
+        (country !== current?.country_code && !current?.country_available)
+      ) {
+        const refreshed = await query.refetch();
+        if (refreshed.error) throw refreshed.error;
+        current = refreshed.data;
+      }
+      if (!current) throw new Error(t("profileLoadError"));
+      if (country !== current.country_code && !current.country_available)
         throw new Error(t("countrySetup"));
-      if (avatar !== query.data?.avatar_icon && !query.data?.avatar_available)
+      if (avatar !== current.avatar_icon && !current.avatar_available)
         throw new Error(t("profileIconSetup"));
       await updateProfile(
         user,
         {
           display_name: name.trim(),
-          ...(query.data?.avatar_available ? { avatar_icon: avatar } : {}),
-          ...(country !== query.data?.country_code
+          ...(current.avatar_available ? { avatar_icon: avatar } : {}),
+          ...(country !== current.country_code
             ? { country_code: country }
             : {}),
-          theme,
+          theme: current.theme,
           timezone,
         },
         auth.development,
@@ -240,13 +321,6 @@ export function Profile() {
         disabled={busy || !initialized}
         account
       />
-      <AppText>{t("appearance")}</AppText>
-      <Choice
-        compact
-        values={["light", "dark", "system"] as const}
-        value={theme}
-        onChange={setTheme}
-      />
       {query.error && (
         <ErrorState
           message={query.error.message}
@@ -281,7 +355,12 @@ export function About() {
   return (
     <Screen title={t("about")} compact>
       <Card style={{ padding: 18 }}>
-        <ColorIcon name="pulse" tone="mint" size={26} />
+        <Image
+          accessibilityLabel={t("app")}
+          source={artwork.logoCircle}
+          resizeMode="contain"
+          style={{ width: 54, height: 54 }}
+        />
         <AppText large>{t("app")}</AppText>
         <AppText muted>{t("tagline")}</AppText>
       </Card>

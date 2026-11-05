@@ -1,6 +1,11 @@
 import { t } from "../../lib/i18n";
 import { client } from "../../lib/supabase";
-import { accountEmail, emailCode, newPassword } from "./passwordSchema";
+import {
+  accountEmail,
+  emailCode,
+  newPassword,
+  signupName,
+} from "./passwordSchema";
 
 export async function passwordLogin(email: string, password: string) {
   if (!password || password.length > 128) throw new Error(t("passwordRules"));
@@ -10,10 +15,17 @@ export async function passwordLogin(email: string, password: string) {
   });
   if (error) throw error;
 }
-export async function passwordSignup(email: string, password: string) {
+export async function passwordSignup(
+  email: string,
+  password: string,
+  name?: string,
+) {
   const { data, error } = await client().auth.signUp({
     email: accountEmail.parse(email.trim()),
     password: newPassword.parse(password),
+    ...(name !== undefined
+      ? { options: { data: { full_name: signupName.parse(name) } } }
+      : {}),
   });
   if (error) throw error;
   return !!data.session;

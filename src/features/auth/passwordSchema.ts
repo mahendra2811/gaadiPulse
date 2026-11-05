@@ -1,6 +1,11 @@
 import { z } from "zod";
 import { t } from "../../lib/i18n";
 
+export const signupName = z
+  .string()
+  .trim()
+  .min(1, t("authFullNameRequired"))
+  .max(120, t("authFullNameRequired"));
 export const accountEmail = z
   .string()
   .trim()

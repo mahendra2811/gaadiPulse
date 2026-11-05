@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/src/components/ui/PageSkeleton";
 import { releaseFeatures } from "@/src/features/release/scope";
 import { useState } from "react";
 import { View, Text } from "react-native";
@@ -211,6 +212,13 @@ function DashboardContent({
           (a.payload.due_at ? Date.parse(String(a.payload.due_at)) : Infinity) -
           (b.payload.due_at ? Date.parse(String(b.payload.due_at)) : Infinity),
       ) ?? [];
+  if (permissions.isPending && vehicle)
+    return <PageSkeleton shape="dashboard" />;
+  const activityPending =
+    (!!permissions.data?.["fuel.read"] && fuel.isPending && !fuel.error) ||
+    (!!permissions.data?.["expenses.read"] &&
+      expenses.isPending &&
+      !expenses.error);
   return (
     <>
       {permissions.error && (
@@ -242,17 +250,19 @@ function DashboardContent({
                       ? t("charging")
                       : r("fuel")}
                   </Text>
-                  <Text
-                    style={{
-                      color: "#FFFFFF",
-                      fontSize: 24,
-                      fontWeight: "800",
-                    }}
-                  >
-                    {monthlyFuel.isPending || monthlyFuel.error
-                      ? "—"
-                      : money(monthlyFuel.total)}
-                  </Text>
+                  {monthlyFuel.isPending ? (
+                    <PageSkeleton shape="amount" />
+                  ) : (
+                    <Text
+                      style={{
+                        color: "#FFFFFF",
+                        fontSize: 24,
+                        fontWeight: "800",
+                      }}
+                    >
+                      {monthlyFuel.error ? "—" : money(monthlyFuel.total)}
+                    </Text>
+                  )}
                   <TextAction
                     light
                     label={r("history")}
@@ -275,17 +285,19 @@ function DashboardContent({
                   <Text style={{ color: "#FFF0D8", fontSize: 14 }}>
                     {r("expenses")}
                   </Text>
-                  <Text
-                    style={{
-                      color: "#FFFFFF",
-                      fontSize: 24,
-                      fontWeight: "800",
-                    }}
-                  >
-                    {expenses.isPending || expenses.error
-                      ? "—"
-                      : money(total(expenses.data))}
-                  </Text>
+                  {expenses.isPending ? (
+                    <PageSkeleton shape="amount" />
+                  ) : (
+                    <Text
+                      style={{
+                        color: "#FFFFFF",
+                        fontSize: 24,
+                        fontWeight: "800",
+                      }}
+                    >
+                      {expenses.error ? "—" : money(total(expenses.data))}
+                    </Text>
+                  )}
                   <TextAction
                     light
                     label={r("history")}
@@ -371,7 +383,13 @@ function DashboardContent({
           </Expandable>
         </>
       )}
-      {!!activity.length && (
+      {activityPending && (
+        <>
+          <SectionHeading title={t("uiRecentActivity")} />
+          <PageSkeleton shape="rows" />
+        </>
+      )}
+      {!activityPending && !!activity.length && (
         <>
           <SectionHeading title={t("uiRecentActivity")} />
           <Card style={{ paddingHorizontal: 12, paddingVertical: 0, gap: 0 }}>

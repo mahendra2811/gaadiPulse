@@ -6,6 +6,7 @@ import { t } from "@/src/lib/i18n";
 import { FormError } from "@/src/components/ui/FormError";
 import { PasswordField } from "./PasswordField";
 import { AuthLayout, AuthDivider, AuthLink } from "./AuthLayout";
+import { PremiumPasswordScreen } from "./PremiumPasswordScreen";
 import { googleSignIn, sendOtp } from "./api";
 import { env } from "@/src/lib/env";
 import { useSession } from "./session";
@@ -22,18 +23,21 @@ import {
 
 type Mode = "login" | "signup" | "recovery";
 export function PasswordScreen({ mode }: { mode: Mode }) {
+  return mode === "recovery" ? <RecoveryScreen /> : <PremiumPasswordScreen mode={mode} />;
+}
+function RecoveryScreen() {
+  const mode: Mode = "recovery";
+  return <LegacyPasswordScreen mode={mode} />;
+}
+function LegacyPasswordScreen({ mode }: { mode: Mode }) {
   const auth = useSession();
   const profile = useProfile();
-  const [email, setEmail] = useState(
-    mode === "recovery" ? (auth.session?.user.email ?? "") : "",
-  );
+  const [email, setEmail] = useState(mode === "recovery" ? (auth.session?.user.email ?? "") : "");
   const [useCode, setUseCode] = useState(false);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [code, setCode] = useState("");
-  const [stage, setStage] = useState<
-    "details" | "verify" | "password" | "complete"
-  >("details");
+  const [stage, setStage] = useState<"details" | "verify" | "password" | "complete">("details");
   const [busy, setBusy] = useState(false);
   const running = useRef(false);
   const [error, setError] = useState("");
@@ -52,11 +56,7 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
       await action();
     } catch (e) {
       setError(
-        e instanceof ZodError
-          ? e.issues[0].message
-          : e instanceof Error
-            ? e.message
-            : String(e),
+        e instanceof ZodError ? e.issues[0].message : e instanceof Error ? e.message : String(e)
       );
     } finally {
       running.current = false;
@@ -71,11 +71,7 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
   };
   const submit = async () => {
     if (stage === "verify") {
-      await verifyAccountCode(
-        email,
-        code,
-        mode === "recovery" ? "recovery" : "signup",
-      );
+      await verifyAccountCode(email, code, mode === "recovery" ? "recovery" : "signup");
       setCode("");
       if (mode === "recovery") setStage("password");
       return;
@@ -116,8 +112,7 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
         ? t("createAccount")
         : t("resetPassword");
   const editingPassword =
-    stage === "password" ||
-    (stage === "details" && mode !== "recovery" && !useCode);
+    stage === "password" || (stage === "details" && mode !== "recovery" && !useCode);
   return (
     <AuthLayout
       title={mode === "login" ? t("authLoginTitle") : title}
@@ -129,9 +124,7 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
             : t("authRecoveryHint")
       }
       loading={busy}
-      onBack={
-        mode !== "login" ? () => router.replace("/auth/login") : undefined
-      }
+      onBack={mode !== "login" ? () => router.replace("/auth/login") : undefined}
     >
       {!env && <AppText>{t("configBody")}</AppText>}
       {mode !== "recovery" && stage === "details" && (
@@ -151,9 +144,7 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
           <AppButton
             label={t("continue")}
             onPress={() =>
-              router.replace(
-                profile.data?.display_name ? "/(tabs)" : "/settings/profile",
-              )
+              router.replace(profile.data?.display_name ? "/(tabs)" : "/settings/profile")
             }
           />
         </>
@@ -180,9 +171,7 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
           )}
           {stage === "verify" && (
             <>
-              <AppText>
-                {t(mode === "recovery" ? "resetSent" : "signupSent")}
-              </AppText>
+              <AppText>{t(mode === "recovery" ? "resetSent" : "signupSent")}</AppText>
               <InputField
                 label={t("code")}
                 required
@@ -206,9 +195,7 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
                 editable={!busy}
                 autoCapitalize="none"
                 autoCorrect={false}
-                autoComplete={
-                  mode === "login" ? "current-password" : "new-password"
-                }
+                autoComplete={mode === "login" ? "current-password" : "new-password"}
               />
               {(mode === "signup" || stage === "password") && (
                 <>

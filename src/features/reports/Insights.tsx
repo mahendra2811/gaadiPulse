@@ -1,5 +1,5 @@
-import { View, Text } from "react-native";
-import Svg, { Rect, Line, Circle, Polyline } from "react-native-svg";
+import { ScrollView, Text, View } from "react-native";
+import { Svg, Rect, Line } from "react-native-svg";
 import { useQueries } from "@tanstack/react-query";
 import { useState } from "react";
 import { Screen, Card, AppText, ErrorState } from "@/src/components/ui";
@@ -14,36 +14,94 @@ import { useQuery } from "@/src/lib/query";
 import { measuredIntervals } from "@/src/utils/meter";
 import { fuelIntervals, type FuelPoint } from "@/src/utils/fuelEconomy";
 import { money } from "@/src/utils/money";
-import { expenseAccounting } from "@/src/utils/expenseAccounting";
 import { useTheme } from "@/src/lib/theme";
-const kinds = ["fuel", "expenses", "meters"] as const;
-function Bars({ values, colors }: { values: number[]; colors: string[] }) {
-  const max = Math.max(1, ...values);
+import { dateInZone } from "@/src/features/progress/schema";
+import {
+  bucketKey,
+  efficiencyAverage,
+  insightBuckets,
+  type InsightPeriod,
+} from "./insightPeriods";
+
+const kinds = ["fuel", "expenses"] as const;
+type Bar = {
+  label: string;
+  description: string;
+  value: number | null;
+  display: string;
+};
+function Chart({
+  bars,
+  color,
+  unit,
+}: {
+  bars: Bar[];
+  color: string;
+  unit: string;
+}) {
+  const theme = useTheme();
+  const max = Math.max(0, ...bars.map((bar) => bar.value ?? 0));
+  const width = Math.max(280, bars.length * 58);
   return (
-    <Svg
-      width="100%"
-      height="154"
-      viewBox={`0 0 ${Math.max(values.length * 54, 280)} 154`}
-    >
-      <Line
-        x1="0"
-        y1="130"
-        x2={Math.max(values.length * 54, 280)}
-        y2="130"
-        stroke="#CBD5D1"
-      />
-      {values.map((v, i) => (
-        <Rect
+    <>
+      <AppText muted>{unit} · Scroll horizontally to see all bars</AppText>
+      <ScrollView
+        horizontal
+        nestedScrollEnabled
+        showsHorizontalScrollIndicator
+        accessibilityLabel={`${unit} chart. Details follow below.`}
+      >
+        <View style={{ width }}>
+          <Svg width={width} height={145}>
+            <Line x1="0" y1="120" x2={width} y2="120" stroke={theme.line} />
+            {bars.map(
+              (bar, i) =>
+                bar.value !== null && (
+                  <Rect
+                    key={i}
+                    x={i * 58 + 14}
+                    y={120 - (max ? (bar.value / max) * 100 : 0)}
+                    width="30"
+                    height={Math.max(2, max ? (bar.value / max) * 100 : 0)}
+                    rx="5"
+                    fill={color}
+                  />
+                ),
+            )}
+          </Svg>
+          <View style={{ flexDirection: "row" }}>
+            {bars.map((bar, i) => (
+              <Text
+                key={i}
+                style={{
+                  width: 58,
+                  textAlign: "center",
+                  color: theme.muted,
+                  fontSize: 12,
+                }}
+              >
+                {bar.label}
+              </Text>
+            ))}
+          </View>
+        </View>
+      </ScrollView>
+      {bars.map((bar, i) => (
+        <View
           key={i}
-          x={i * 54 + 12}
-          y={130 - (v / max) * 108}
-          width="30"
-          height={Math.max(2, (v / max) * 108)}
-          rx="7"
-          fill={colors[i % colors.length]}
-        />
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            gap: 12,
+          }}
+        >
+          <Text style={{ color: theme.ink, flex: 1 }}>
+            {bar.label} · {bar.description}
+          </Text>
+          <Text style={{ color: theme.ink }}>{bar.display}</Text>
+        </View>
       ))}
-    </Svg>
+    </>
   );
 }
 export function Insights() {
@@ -53,101 +111,105 @@ export function Insights() {
     { development } = useSession(),
     perms = usePermissions(vehicle?.id),
     theme = useTheme();
-  const [period, setPeriod] = useState("month");
+  const [period, setPeriod] = useState<InsightPeriod>("month");
+  const canRead = (kind: (typeof kinds)[number]) =>
+    perms.data?.["reports.read"] === true &&
+    perms.data?.[readPermission(kind)] === true;
   const queries = useQueries({
     queries: kinds.map((kind) => ({
       queryKey: [user, vehicle?.id, "insights", kind],
-      enabled:
-        !!user &&
-        !!vehicle &&
-        perms.data?.["reports.read"] === true &&
-        perms.data?.[readPermission(kind)] === true,
+      enabled: !!user && !!vehicle && canRead(kind),
       queryFn: () => listRecords(user!, vehicle!.id, kind, development),
     })),
   });
+  const canMeasure =
+    perms.data?.["reports.read"] === true &&
+    perms.data?.["meters.read"] === true;
   const meterQuery = useQuery({
     queryKey: [user, vehicle?.id, "observations"],
-    enabled: !!user && !!vehicle && perms.data?.["meters.read"] === true,
+    enabled: !!user && !!vehicle && canMeasure,
     queryFn: () => observations(user!, vehicle!.id, development),
   });
-  const errors = queries.some((q) => q.error) || meterQuery.error;
-  const loading = queries.some((q) => q.isPending) || meterQuery.isPending;
-  const records = queries
-    .flatMap((q, index) =>
-      (q.data ?? []).map((x) => ({ ...x, kind: kinds[index] })),
-    )
-    .filter((x) => x.status !== "ARCHIVED");
-  const expenses = records.filter((x) => x.kind === "expenses");
-  const categories = [
-    ...new Set(expenses.map((x) => String(x.payload.category ?? "OTHER"))),
-  ]
-    .map((c) => ({
-      name: c,
-      value: expenses
-        .filter((x) => String(x.payload.category ?? "OTHER") == c)
-        .reduce((s, x) => s + Number(x.payload.amount_paise ?? 0), 0),
-    }))
-    .sort((a, b) => b.value - a.value);
-  const fuel = records.filter((x) => x.kind === "fuel");
-  const spendByMonth = Array.from(
-    { length: period === "week" ? 7 : period === "month" ? 4 : 12 },
-    (_, i) => {
-      const now = new Date();
-      const d = new Date(now);
-      if (period === "week") d.setDate(now.getDate() - (6 - i));
-      else if (period === "month") d.setDate(1 + i * 7);
-      else d.setMonth(now.getMonth() - (11 - i));
-      const sameBucket = (value: Date) =>
-        period === "week"
-          ? value.toDateString() === d.toDateString()
-          : period === "month"
-            ? value.getFullYear() === now.getFullYear() &&
-              value.getMonth() === now.getMonth() &&
-              Math.floor((value.getDate() - 1) / 7) === i
-            : value.getFullYear() === d.getFullYear() &&
-              value.getMonth() === d.getMonth();
-      return {
-        label:
-          period === "week"
-            ? d.toLocaleDateString("en", { weekday: "short" })
-            : period === "month"
-              ? `W${i + 1}`
-              : d.toLocaleDateString("en", { month: "short" }),
-        value: [...fuel, ...expenses]
-          .filter((x) =>
-            sameBucket(new Date(String(x.payload.event_at ?? x.created_at))),
-          )
-          .reduce((sum, x) => sum + Number(x.payload.amount_paise ?? 0), 0),
-      };
-    },
+  const errors =
+    perms.error ||
+    queries.some((q, i) => canRead(kinds[i]) && q.error) ||
+    (canMeasure && meterQuery.error);
+  const loading =
+    perms.isPending ||
+    queries.some((q, i) => !!vehicle && canRead(kinds[i]) && q.isPending) ||
+    (!!vehicle && canMeasure && meterQuery.isPending);
+  const records = queries.flatMap((q, i) =>
+    canRead(kinds[i])
+      ? (q.data ?? [])
+          .filter((x) => x.status !== "ARCHIVED")
+          .map((x) => ({ ...x, kind: kinds[i] }))
+      : [],
   );
-  const intervals = perms.data?.["meters.read"]
+  const fuel = records.filter((x) => x.kind === "fuel");
+  const zone = vehicle?.timezone ?? "Asia/Kolkata";
+  const timestamp = (x: (typeof records)[number]) =>
+    String(x.payload.event_at ?? x.created_at);
+  const intervals = canMeasure
     ? fuelIntervals(
         fuel.map((x) => ({ id: x.id, ...x.payload }) as FuelPoint),
         meterQuery.data ?? [],
       )
     : [];
-  const measured = measuredIntervals(meterQuery.data ?? []).filter(
-    (x) => !x.anomaly,
+  const measured = canMeasure
+    ? measuredIntervals(meterQuery.data ?? [])
+        .filter((x) => !x.anomaly)
+        .sort((a, b) => a.to.localeCompare(b.to))
+    : [];
+  const today = dateInZone(new Date(), zone);
+  const dates = [
+    ...records.map(timestamp),
+    ...intervals.map((x) => x.to),
+    ...measured.map((x) => x.to),
+  ].map((x) => dateInZone(new Date(x), zone));
+  const buckets = insightBuckets(period, today, dates);
+  const keys = new Set(buckets.map((x) => x.key));
+  const inPeriod = (date: string) => keys.has(bucketKey(date, zone, period));
+  const selected = records.filter((x) => inPeriod(timestamp(x)));
+  const selectedIntervals = intervals.filter((x) => inPeriod(x.to));
+  const selectedMeasured = measured.filter((x) => inPeriod(x.to));
+  const total = selected.reduce(
+    (sum, x) => sum + Number(x.payload.amount_paise ?? 0),
+    0,
   );
-  const efficiency = intervals
-    .map((x) => x.kmPerUnit)
-    .filter((x): x is number => x !== null);
-  const total = [...fuel, ...expenses]
-    .filter((x) => {
-      const d = new Date(String(x.payload.event_at ?? x.created_at));
-      const now = new Date();
-      return (
-        period === "all" ||
-        (period === "week" && now.getTime() - d.getTime() < 7 * 86400000) ||
-        (period === "month" &&
-          d.getFullYear() === now.getFullYear() &&
-          d.getMonth() === now.getMonth()) ||
-        (period === "year" && d.getFullYear() === now.getFullYear())
-      );
-    })
-    .reduce((s, x) => s + Number(x.payload.amount_paise ?? 0), 0);
-  const colors = [theme.primary, "#22A783", "#F0A648", "#7774D6", "#E36B70"];
+  const spendBars = buckets.map((b) => {
+    const value = selected
+      .filter((x) => bucketKey(timestamp(x), zone, period) === b.key)
+      .reduce((sum, x) => sum + Number(x.payload.amount_paise ?? 0), 0);
+    return { ...b, value, display: money(value) };
+  });
+  const categories = [
+    ...new Set(
+      selected
+        .filter((x) => x.kind === "expenses")
+        .map((x) => String(x.payload.category ?? "OTHER")),
+    ),
+  ]
+    .map((name) => ({
+      name,
+      value: selected
+        .filter(
+          (x) =>
+            x.kind === "expenses" &&
+            String(x.payload.category ?? "OTHER") === name,
+        )
+        .reduce((sum, x) => sum + Number(x.payload.amount_paise ?? 0), 0),
+    }))
+    .sort((a, b) => b.value - a.value);
+  const metrics = [
+    ...new Set(
+      selectedIntervals
+        .flatMap((x) => [
+          x.kmPerUnit !== null ? `distance|${x.unit}` : null,
+          x.unitsPerHour !== null ? `hours|${x.unit}` : null,
+        ])
+        .filter((x): x is string => x !== null),
+    ),
+  ];
   return (
     <Screen title="Insights" compact loading={loading}>
       <VehicleHeader />
@@ -162,15 +224,18 @@ export function Insights() {
           { id: "all", label: "All time" },
         ]}
         value={period}
-        onChange={setPeriod}
+        onChange={(value) => setPeriod(value as InsightPeriod)}
       />
       {errors ? (
         <ErrorState
           message="Some insight data could not be loaded."
           retry={() => {
+            void perms.refetch();
             void Promise.all([
-              ...queries.map((q) => q.refetch()),
-              meterQuery.refetch(),
+              ...queries
+                .filter((_, i) => canRead(kinds[i]))
+                .map((q) => q.refetch()),
+              ...(canMeasure ? [meterQuery.refetch()] : []),
             ]);
           }}
         />
@@ -182,81 +247,122 @@ export function Insights() {
               <AppText large>{money(total)}</AppText>
             </Card>
             <Card style={{ flex: 1, padding: 14 }}>
-              <AppText muted>Valid fuel intervals</AppText>
-              <AppText large>{String(efficiency.length)}</AppText>
+              <AppText muted>Completed fuel intervals</AppText>
+              <AppText large>
+                {String(
+                  selectedIntervals.filter(
+                    (x) => x.kmPerUnit !== null || x.unitsPerHour !== null,
+                  ).length,
+                )}
+              </AppText>
             </Card>
           </View>
           <Card>
-            <AppText large>Spend by month</AppText>
-            <Bars values={spendByMonth.map((x) => x.value)} colors={colors} />
-            <View
-              style={{ flexDirection: "row", justifyContent: "space-between" }}
-            >
-              {spendByMonth.map((x) => (
-                <Text
-                  key={x.label}
-                  style={{ color: theme.muted, fontSize: 12 }}
-                >
-                  {x.label}
-                </Text>
-              ))}
-            </View>
+            <AppText large>Recorded spend</AppText>
+            {spendBars.length ? (
+              <Chart
+                bars={spendBars}
+                color={theme.primary}
+                unit="Fuel and expenses · INR"
+              />
+            ) : (
+              <AppText muted>No records for this period.</AppText>
+            )}
           </Card>
           <Card>
             <AppText large>Expense categories</AppText>
             {categories.length ? (
-              <>
-                <Bars values={categories.map((x) => x.value)} colors={colors} />
-                {categories.map((x, i) => (
-                  <View
-                    key={x.name}
-                    style={{
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <AppText>{x.name}</AppText>
-                    <AppText>{money(x.value)}</AppText>
-                  </View>
-                ))}
-              </>
+              <Chart
+                bars={categories.map((x, i) => ({
+                  label: String(i + 1),
+                  description: x.name,
+                  value: x.value,
+                  display: money(x.value),
+                }))}
+                color="#F0A648"
+                unit="Expenses · INR"
+              />
             ) : (
-              <AppText muted>No expense records in this vehicle yet.</AppText>
+              <AppText muted>No expense records in this period.</AppText>
             )}
           </Card>
           <Card>
             <AppText large>Fuel efficiency</AppText>
-            {efficiency.length ? (
-              <>
-                <Bars values={efficiency} colors={["#22A783"]} />
-                {efficiency.slice(-8).map((x, i) => (
-                  <AppText key={i}>{x.toFixed(2)} KM per unit</AppText>
-                ))}
-              </>
+            <AppText muted>
+              Full-to-full intervals are grouped by their closing fill date. An
+              interval can cover several days; it does not measure each day
+              separately. Averages use total distance or hours and total fuel
+              for qualifying intervals.
+            </AppText>
+            {metrics.length ? (
+              metrics.map((metric) => {
+                const [type, unit] = metric.split("|");
+                const mode = type as "distance" | "hours";
+                const rows = selectedIntervals.filter((x) => x.unit === unit);
+                const average = efficiencyAverage(rows, mode);
+                const unitLabel =
+                  mode === "distance" ? `KM / ${unit}` : `${unit} / hour`;
+                return (
+                  <View key={metric} style={{ gap: 12 }}>
+                    <AppText large>
+                      Average: {average?.toFixed(2)} {unitLabel}
+                    </AppText>
+                    <Chart
+                      color="#22A783"
+                      unit={unitLabel}
+                      bars={buckets.map((b) => {
+                        const value = efficiencyAverage(
+                          rows.filter(
+                            (x) => bucketKey(x.to, zone, period) === b.key,
+                          ),
+                          mode,
+                        );
+                        return {
+                          ...b,
+                          value,
+                          display:
+                            value === null
+                              ? "No interval"
+                              : `${value.toFixed(2)} ${unitLabel}`,
+                        };
+                      })}
+                    />
+                  </View>
+                );
+              })
             ) : (
               <AppText muted>
-                Efficiency appears after valid full-to-full fuel intervals with
-                meter readings.
+                No qualifying full-to-full intervals completed in this period.
+                Fuel and matching meter readings are required.
               </AppText>
             )}
           </Card>
           <Card>
             <AppText large>Measured distance and use</AppText>
-            {measured.length ? (
-              <>
-                <Bars
-                  values={measured.slice(-8).map((x) => x.delta)}
-                  colors={["#7774D6"]}
-                />
-                {measured.slice(-8).map((x, i) => (
-                  <AppText key={i}>
-                    {x.delta} {x.type} · {new Date(x.to).toLocaleDateString()}
-                  </AppText>
-                ))}
-              </>
+            <AppText muted>
+              Each bar represents the change between two actual readings,
+              grouped by the later reading date.
+            </AppText>
+            {selectedMeasured.length ? (
+              (["KM", "HOURS"] as const).map((type) => {
+                const rows = selectedMeasured.filter((x) => x.type === type);
+                return rows.length ? (
+                  <Chart
+                    key={type}
+                    color="#7774D6"
+                    unit={`Measured ${type}`}
+                    bars={rows.map((x, i) => ({
+                      label: String(i + 1),
+                      description: `${dateInZone(new Date(x.from), zone)} to ${dateInZone(new Date(x.to), zone)}`,
+                      value: x.delta,
+                      display: `${x.delta} ${x.type}`,
+                    }))}
+                  />
+                ) : null;
+              })
             ) : (
               <AppText muted>
-                Add dated meter readings to see measured distance or hours.
+                No measured intervals completed in this period.
               </AppText>
             )}
           </Card>

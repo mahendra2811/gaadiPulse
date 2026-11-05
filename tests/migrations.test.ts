@@ -97,11 +97,57 @@ it("applies every authoritative migration in order on PostgreSQL", async () => {
         )
       ).rows,
     ).toEqual([{ country_code: null }]);
+    expect(
+      (
+        await db.query<{ allowed: boolean }>(
+          `select has_function_privilege('authenticated', 'public.save_vehicle_legacy_inr(jsonb,uuid,uuid,timestamptz)', 'execute') as allowed`,
+        )
+      ).rows[0].allowed,
+    ).toBe(false);
+    await db.exec("set role authenticated");
+    const saved = await db.query<{ id: string }>(
+      `select public.save_vehicle($1::jsonb, '40000000-0000-4000-8000-000000000001') as id`,
+      [
+        JSON.stringify({
+          nickname: "Legacy car",
+          registration_number: "",
+          category: "four_wheeler",
+          subtype: "car",
+          brand: "",
+          model: "",
+          energy_type: "PETROL",
+          meter_mode: "KM",
+          timezone: "Asia/Kolkata",
+          km: "",
+          hours: "",
+          observed_at: "2026-01-01T00:00:00Z",
+        }),
+      ],
+    );
+    expect(saved.rows[0].id).toBeTruthy();
+    await expect(
+      db.exec(
+        `select public.save_vehicle('{"currency_code":"USD"}'::jsonb, gen_random_uuid())`,
+      ),
+    ).rejects.toThrow("CURRENCY_NOT_ENABLED");
+    await db.exec("reset role");
     await db.exec(`insert into public.vehicles(id, created_by, nickname, category, subtype, energy_type, meter_mode, timezone) values
       ('20000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','Car','four_wheeler','car','PETROL','KM','Asia/Kolkata');
       insert into public.meter_readings(id, vehicle_id, reading_type, value, observed_at, source, created_by) values
       ('30000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001','KM',100,now(),'MANUAL','10000000-0000-4000-8000-000000000001');
       update public.vehicles set archived_at=now() where id='20000000-0000-4000-8000-000000000001';`);
+    expect(
+      (
+        await db.query<{ currency_code: string }>(
+          `select currency_code from public.vehicles where id='20000000-0000-4000-8000-000000000001'`,
+        )
+      ).rows[0].currency_code,
+    ).toBe("INR");
+    await expect(
+      db.exec(
+        `update public.vehicles set currency_code='USD' where id='20000000-0000-4000-8000-000000000001'`,
+      ),
+    ).rejects.toThrow("VEHICLE_CURRENCY_IMMUTABLE");
     await expect(
       db.exec(
         `update public.meter_readings set notes='changed' where id='30000000-0000-4000-8000-000000000001'`,

@@ -1,3 +1,4 @@
+import { PageSkeleton } from "@/src/components/ui/PageSkeleton";
 import { releaseFeatures } from "@/src/features/release/scope";
 import { isPilotHistoryVisible } from "@/src/features/members/history";
 import { useCurrentTime } from "@/src/hooks/useCurrentTime";
@@ -257,6 +258,7 @@ export function RecordsList({
       title={kind === "fuel" && v?.energy_type === "ELECTRIC" ? t("charging") : r(kind)}
       compact
       loading={active.isPending || (!!v && (permissions.isPending || query.isPending))}
+      banner={kind === "fuel" || kind === "expenses" || kind === "progress" ? kind : undefined}
     >
       <VehicleHeader vehicleId={v?.id} allowSwitch={!contextVehicle} />
       {active.error && (
@@ -265,7 +267,9 @@ export function RecordsList({
       {permissions.error && (
         <ErrorState message={permissions.error.message} retry={() => void permissions.refetch()} />
       )}
-      {!v ? (
+      {active.isPending || (!!v && permissions.isPending) ? (
+        <PageSkeleton shape="records" />
+      ) : active.error || permissions.error ? null : !v ? (
         <EmptyState title={r("noVehicle")} />
       ) : (
         <>
@@ -436,7 +440,7 @@ export function RecordsList({
           {query.error ? (
             <ErrorState message={query.error.message} retry={() => void query.refetch()} />
           ) : query.isPending ? (
-            <Skeleton />
+            <PageSkeleton shape="rows" />
           ) : !rows.length ? (
             <EmptyState
               kind={kind === "fuel" && v.energy_type === "ELECTRIC" ? "charging" : kind}

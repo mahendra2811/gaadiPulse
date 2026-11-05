@@ -1,8 +1,9 @@
 import { HeaderVehicleSwitcher } from "./HeaderVehicleSwitcher";
-import { Pressable, Text, View } from "react-native";
+import { Image, Pressable, Text, View, useColorScheme } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { usePathname, useRouter } from "expo-router";
-import { useTheme } from "@/src/lib/theme";
+import { resolveTheme, useTheme, useThemeMode } from "@/src/lib/theme";
+import { artwork } from "@/src/lib/assets";
 import { t } from "@/src/lib/i18n";
 import { r } from "@/src/features/records/copy";
 import { pageNavigation } from "./routes";
@@ -17,7 +18,10 @@ export function PageHeader({
   const path = usePathname();
   const router = useRouter();
   const c = useTheme();
+  const dark = resolveTheme(useThemeMode(), useColorScheme()) === "dark";
   const navigation = pageNavigation(path);
+  const brandHeader =
+    path === "/" && title === t("app") && !navigation.back && !onBack;
   const section = navigation.section;
   const sectionLabel = section
     ? ["garage", "settings", "more"].includes(section)
@@ -68,37 +72,40 @@ export function PageHeader({
         >
           <Ionicons name="arrow-back" size={23} color={c.primary} />
         </Pressable>
+      ) : brandHeader ? (
+        <Image
+          accessibilityLabel={t("app")}
+          source={dark ? artwork.wordmarkDark : artwork.wordmarkLight}
+          resizeMode="contain"
+          style={{ width: 158, height: 44 }}
+        />
       ) : (
-        <View
-          style={{
-            width: 42,
-            height: 42,
-            borderRadius: 15,
-            backgroundColor: "#D9F5EB",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Ionicons name="pulse" size={25} color="#087565" />
-        </View>
+        <Image
+          accessibilityLabel={t("app")}
+          source={artwork.logoCircle}
+          resizeMode="contain"
+          style={{ width: 42, height: 42 }}
+        />
       )}
       <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
         {sectionLabel && sectionLabel !== title && (
           <Text style={{ color: c.muted, fontSize: 12 }}>{sectionLabel}</Text>
         )}
-        <Text
-          numberOfLines={1}
-          ellipsizeMode="tail"
-          accessibilityRole="header"
-          style={{
-            color: c.ink,
-            fontSize: 20,
-            lineHeight: 27,
-            fontWeight: "800",
-          }}
-        >
-          {title}
-        </Text>
+        {!brandHeader && (
+          <Text
+            numberOfLines={1}
+            ellipsizeMode="tail"
+            accessibilityRole="header"
+            style={{
+              color: c.ink,
+              fontSize: 20,
+              lineHeight: 27,
+              fontWeight: "800",
+            }}
+          >
+            {title}
+          </Text>
+        )}
       </View>
       {!path.startsWith("/auth") && <HeaderVehicleSwitcher />}
     </View>

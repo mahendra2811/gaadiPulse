@@ -1,4 +1,5 @@
 import { Popup } from "./Popup";
+import { ScreenBanner, type ScreenBannerName } from "./ScreenBanner";
 import {
   isNumericDraft,
   type NumericInputOptions,
@@ -290,6 +291,7 @@ export function Screen({
   onBack,
   compact = false,
   contentKey,
+  banner,
 }: {
   title: string;
   children: ReactNode;
@@ -298,6 +300,7 @@ export function Screen({
   onBack?: () => void;
   compact?: boolean;
   contentKey?: string | number;
+  banner?: ScreenBannerName;
 }) {
   const c = useTheme();
   const path = usePathname();
@@ -338,6 +341,7 @@ export function Screen({
           }}
         >
           {children}
+          {banner ? <ScreenBanner name={banner} /> : null}
         </ScrollView>
         {action && (
           <SafeAreaView

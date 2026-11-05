@@ -10,7 +10,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { router } from "expo-router";
 import { LoadingLine } from "@/src/components/ui";
 import { GradientSurface } from "@/src/components/ui/GradientSurface";
 import { artwork } from "@/src/lib/assets";
@@ -56,30 +55,18 @@ export function AuthLayout({
             }}
           >
             <GradientSurface style={{ padding: 24, gap: 16 }}>
-              <View
-                style={{ flexDirection: "row", alignItems: "center", gap: 12 }}
-              >
+              <View style={{ alignItems: "flex-start", gap: 4 }}>
                 <Image
-                  source={artwork.logo}
-                  style={{ width: 48, height: 48 }}
+                  accessibilityLabel={t("app")}
+                  source={artwork.wordmarkDark}
+                  style={{ width: 180, height: 48 }}
                   resizeMode="contain"
                 />
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={{
-                      color: "#FFFFFF",
-                      fontSize: 24,
-                      fontWeight: "700",
-                    }}
-                  >
-                    {t("app")}
-                  </Text>
-                  <Text
-                    style={{ color: "#D6F5EA", fontSize: 13, lineHeight: 20 }}
-                  >
-                    {t("authTagline")}
-                  </Text>
-                </View>
+                <Text
+                  style={{ color: "#D6F5EA", fontSize: 13, lineHeight: 20 }}
+                >
+                  {t("authTagline")}
+                </Text>
               </View>
               <View
                 style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
@@ -129,11 +116,11 @@ export function AuthLayout({
             >
               {children}
             </View>
-            <AuthLink
+            {/* <AuthLink
               label={t("legal")}
               onPress={() => router.push("/auth/legal")}
               disabled={loading}
-            />
+            /> */}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

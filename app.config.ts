@@ -10,7 +10,8 @@ const config: ExpoConfig = {
   version: "1.0.0",
   orientation: "portrait",
   userInterfaceStyle: "automatic",
-  icon: "./assets/android-store-icon.png",
+  icon: "./assets/brand/generated/app-icon.png",
+  web: { favicon: "./assets/brand/generated/favicon.png" },
   android: {
     softwareKeyboardLayoutMode: "resize",
     blockedPermissions: [
@@ -24,7 +25,7 @@ const config: ExpoConfig = {
     ],
     package: process.env.ANDROID_PACKAGE ?? "com.pooniya.gaadipulse",
     adaptiveIcon: {
-      foregroundImage: "./assets/adaptive-icon-foreground.png",
+      foregroundImage: "./assets/brand/generated/adaptive-foreground.png",
       backgroundColor: "#122C2A",
     },
   },
@@ -35,13 +36,16 @@ const config: ExpoConfig = {
     "@react-native-community/datetimepicker",
     [
       "expo-notifications",
-      { icon: "./assets/notification-icon.png", color: "#147D69" },
+      {
+        icon: "./assets/brand/generated/notification-icon.png",
+        color: "#147D69",
+      },
     ],
     "expo-secure-store",
     [
       "expo-splash-screen",
       {
-        image: "./assets/app-icon.png",
+        image: "./assets/media/logo/new/02-square-dark.png",
         imageWidth: 180,
         backgroundColor: "#122C2A",
       },

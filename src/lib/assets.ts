@@ -19,7 +19,11 @@ export const artwork = {
     require("../../assets/onboarding-2.png"),
     require("../../assets/onboarding-3.png"),
   ],
-  logo: require("../../assets/app-icon.png"),
+  logo: require("../../assets/media/logo/new/02-square-dark.png"),
+  logoLight: require("../../assets/media/logo/new/03-square-light.png"),
+  logoCircle: require("../../assets/media/logo/new/05-circle-light.png"),
+  wordmarkLight: require("../../assets/media/logo/new/07-header-transparent.png"),
+  wordmarkDark: require("../../assets/media/logo/new/08-header-dark.png"),
 };
 export { VEHICLE_SUBTYPE_IMAGES as subtypeArtwork } from "@/assets/vehicle-subtypes";
 export function vehicleArt(_category: string, subtype: string) {

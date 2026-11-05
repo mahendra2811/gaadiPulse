@@ -102,8 +102,7 @@ function Routes() {
         pathname,
         !!profile.data?.display_name?.trim(),
       );
-      if (destination)
-        router.replace(destination as "/(tabs)" | "/settings/profile");
+      if (destination) router.replace(destination as "/(tabs)" | "/onboarding");
     }
   }, [
     auth.loading,

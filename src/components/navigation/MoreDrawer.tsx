@@ -12,6 +12,7 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SignOutButton } from "@/src/features/auth/SignOutButton";
 import { MoreMenu } from "@/src/features/navigation/MoreMenu";
 import { useReducedMotion } from "@/src/hooks/useReducedMotion";
 import { t } from "@/src/lib/i18n";
@@ -153,6 +154,17 @@ export function MoreDrawerProvider({ children }: { children: ReactNode }) {
                 }}
               />
             </ScrollView>
+            <View
+              style={{
+                paddingHorizontal: 16,
+                paddingTop: 12,
+                paddingBottom: 12,
+                borderTopWidth: 1,
+                borderTopColor: c.line,
+              }}
+            >
+              <SignOutButton onSignedOut={close} />
+            </View>
           </Animated.View>
         </View>
       </Modal>

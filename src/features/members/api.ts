@@ -3,6 +3,7 @@ import { accountEmail } from "@/src/features/auth/passwordSchema";
 import { t } from "@/src/lib/i18n";
 import * as Crypto from "expo-crypto";
 import { client } from "@/src/lib/supabase";
+import { requirePilotPolicy } from "./pilotPolicy";
 import {
   readDevelopment,
   writeDevelopment,
@@ -137,6 +138,7 @@ export async function grantAccess(
     });
     return;
   }
+  await requirePilotPolicy();
   const { error } = await client().rpc("grant_vehicle_access", {
     p_vehicle: vehicle,
     p_email: email,
@@ -181,6 +183,7 @@ export async function changeMember(
     });
     return;
   }
+  if (status === "ACTIVE") await requirePilotPolicy();
   const { error } = await client().rpc("set_vehicle_membership", {
     p_vehicle: vehicle,
     p_user: user,

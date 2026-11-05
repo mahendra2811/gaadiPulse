@@ -11,16 +11,24 @@ import {
   fuelUnit,
 } from "../src/features/garage/energy";
 
-describe("focused release boundaries", () => {
-  it("keeps bike/car ledger routes and defers advanced direct links", () => {
+describe("release boundaries", () => {
+  it("enables all existing vehicle categories and advanced routes", () => {
     expect(supportsVehicle("two_wheeler")).toBe(true);
     expect(supportsVehicle("four_wheeler")).toBe(true);
     for (const category of ["commercial", "agricultural", "heavy_machinery"])
-      expect(supportsVehicle(category)).toBe(false);
-    for (const kind of ["fuel", "expenses", "meters"])
+      expect(supportsVehicle(category)).toBe(true);
+    for (const kind of [
+      "fuel",
+      "expenses",
+      "meters",
+      "progress",
+      "documents",
+      "reminders",
+    ])
       expect(supportsRecord(kind)).toBe(true);
+    expect(supportsVehicle("unknown")).toBe(false);
+    expect(supportsRecord("unknown")).toBe(false);
     for (const path of [
-      "/owner/members",
       "/owner/form-builder",
       "/progress/approvals",
       "/reports",
@@ -30,8 +38,9 @@ describe("focused release boundaries", () => {
       "/records/progress/add",
       "/records/fuel/analytics",
     ])
-      expect(deferredPath(path)).toBe(true);
+      expect(deferredPath(path)).toBe(false);
     for (const path of [
+      "/owner/members",
       "/garage/add",
       "/records/fuel/add",
       "/records/expenses/edit",
@@ -40,14 +49,14 @@ describe("focused release boundaries", () => {
     ])
       expect(deferredPath(path)).toBe(false);
   });
-  it("restores advanced availability without deleting source", () => {
-    releaseFeatures.advancedTools = true;
+  it("retains the focused-release switch without removing source", () => {
+    releaseFeatures.advancedTools = false;
     try {
-      expect(supportsVehicle("commercial")).toBe(true);
-      expect(supportsRecord("progress")).toBe(true);
+      expect(supportsVehicle("commercial")).toBe(false);
+      expect(supportsRecord("progress")).toBe(false);
       expect(deferredPath("/owner/members")).toBe(false);
     } finally {
-      releaseFeatures.advancedTools = false;
+      releaseFeatures.advancedTools = true;
     }
   });
   it("selects charging and correct units without offering petrol to an EV", () => {

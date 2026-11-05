@@ -1,9 +1,7 @@
-import { defaultMeter } from "./schema";
+/** Suggested meter modes are defaults; a vehicle's real meters remain editable. */
 export function allowedMeterModes(
-  category: string,
+  _category: string,
   subtype: string,
 ): ("KM" | "HOURS" | "BOTH")[] {
-  if (!subtype) return [];
-  const mode = defaultMeter(category, subtype);
-  return mode === "BOTH" ? ["KM", "HOURS", "BOTH"] : [mode];
+  return subtype ? ["KM", "HOURS", "BOTH"] : [];
 }

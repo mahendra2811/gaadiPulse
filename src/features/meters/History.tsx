@@ -1,3 +1,5 @@
+import { isPilotHistoryVisible } from "@/src/features/members/history";
+import { useCurrentTime } from "@/src/hooks/useCurrentTime";
 import { isReading } from "@/src/utils/formInput";
 import { ReadingCard } from "./ReadingCard";
 import { TimestampRange } from "@/src/components/ui/Timestamp";
@@ -44,6 +46,7 @@ export default function MeterHistory() {
   const user = useAccountId();
   const { development } = useSession();
   const permissions = usePermissions(vehicle?.id);
+  const now = useCurrentTime();
   const qc = useQueryClient();
   const toast = useToast();
   const [selected, setSelected] = useState<Reading | null>(null);
@@ -98,8 +101,13 @@ export default function MeterHistory() {
       setBusy(false);
     }
   };
+  const visibleReadings = (query.data ?? []).filter(
+    (row) =>
+      vehicle?.role !== "PILOT" ||
+      isPilotHistoryVisible(row.observed_at, vehicle.timezone, now),
+  );
   const measured = measuredIntervals(
-    (query.data ?? []).filter((row) => !row.status || row.status === "ACTIVE"),
+    visibleReadings.filter((row) => !row.status || row.status === "ACTIVE"),
   );
   return (
     <Screen compact title={r("meters")} loading={query.isPending || busy}>
@@ -117,6 +125,9 @@ export default function MeterHistory() {
       <AppText muted>
         {t("meterTimeZone")}: {vehicle?.timezone ?? "Asia/Kolkata"}
       </AppText>
+      {permissions.data?.owner === false && (
+        <AppText muted>{t("pilotHistoryHint")}</AppText>
+      )}
       <FilterChips
         items={[
           { id: "ALL", label: r("ALL") },
@@ -135,8 +146,8 @@ export default function MeterHistory() {
           retry={() => void query.refetch()}
         />
       ) : (
-        query.data
-          ?.filter((row) => type === "ALL" || row.reading_type === type)
+        visibleReadings
+          .filter((row) => type === "ALL" || row.reading_type === type)
           .slice(0, limit)
           .map((row) => (
             <ReadingCard
@@ -156,11 +167,12 @@ export default function MeterHistory() {
             />
           ))
       )}
-      {!query.isPending && !query.error && !query.data?.length && (
+      {!query.isPending && !query.error && !visibleReadings.length && (
         <AppText muted>{r("noData")}</AppText>
       )}
-      {(query.data?.filter((row) => type === "ALL" || row.reading_type === type)
-        .length ?? 0) > limit && (
+      {visibleReadings.filter(
+        (row) => type === "ALL" || row.reading_type === type,
+      ).length > limit && (
         <TextAction
           label={r("more")}
           icon="chevron-down"

@@ -1,3 +1,5 @@
+import { isPilotHistoryVisible } from "@/src/features/members/history";
+import { useCurrentTime } from "@/src/hooks/useCurrentTime";
 import { releaseFeatures, supportsRecord } from "@/src/features/release/scope";
 import { SquareArtwork } from "@/src/components/ui/SquareArtwork";
 import { Timestamp } from "@/src/components/ui/Timestamp";
@@ -377,6 +379,7 @@ export function Home() {
   const user = useAccountId();
   const v = query.vehicle;
   const access = useVehicleAccess(v?.id);
+  const now = useCurrentTime();
   const readings = useQuery({
     queryKey: [user, v?.id, "latest-observations"],
     enabled: !!v && access.data?.metersRead === true,
@@ -393,7 +396,12 @@ export function Home() {
   const latestReadings = (["KM", "HOURS"] as const)
     .filter((kind) => v?.meter_mode === "BOTH" || v?.meter_mode === kind)
     .map((kind) => readings.data?.find((row) => row.reading_type === kind))
-    .filter((reading) => reading !== undefined);
+    .filter((reading) => reading !== undefined)
+    .filter(
+      (reading) =>
+        v?.role !== "PILOT" ||
+        isPilotHistoryVisible(reading.observed_at, v.timezone, now),
+    );
   return (
     <Screen
       title={t("app")}

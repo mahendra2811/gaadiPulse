@@ -3,6 +3,7 @@ import { linkedReminder } from "./linkedReminder";
 import { permittedFuel, fuelUnit } from "@/src/features/garage/energy";
 import { validatePayload } from "./payloadSchemas";
 import { client } from "@/src/lib/supabase";
+import { requirePilotPolicy } from "@/src/features/members/pilotPolicy";
 import {
   listDevelopmentVehicles,
   readDevelopment,
@@ -41,7 +42,9 @@ export async function access(
     p_vehicle: vehicle,
   });
   if (error) throw new Error(error.message);
-  return data as Record<string, boolean>;
+  const permissions = data as Record<string, boolean>;
+  if (!permissions.owner) await requirePilotPolicy();
+  return permissions;
 }
 export async function listRecords(
   user: string,

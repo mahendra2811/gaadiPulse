@@ -1,5 +1,6 @@
-import { releaseFeatures, supportsVehicle } from "@/src/features/release/scope";
-import { DeferredFeature } from "@/src/features/release/DeferredFeature";
+import { releaseFeatures } from "@/src/features/release/scope";
+import { isPilotHistoryVisible } from "@/src/features/members/history";
+import { useCurrentTime } from "@/src/hooks/useCurrentTime";
 import { InlineSelect } from "@/src/components/ui/InlineSelect";
 import { AdditionalOptions } from "@/src/components/ui/AdditionalOptions";
 import { ZodError } from "zod";
@@ -175,6 +176,7 @@ export function RecordsList({
     : active.vehicle;
   const query = useRecords(kind, v?.id);
   const permissions = usePermissions(v?.id);
+  const now = useCurrentTime();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState(initialStatus ?? "ALL");
   const [period, setPeriod] = useState(
@@ -190,12 +192,24 @@ export function RecordsList({
     ];
   const rows = filterRecords(
     query.data ?? [],
-    period,
+    permissions.data?.owner === false ? "all" : period,
     v?.timezone ?? "Asia/Kolkata",
     kind,
     showArchived,
   ).filter(
     (row) =>
+      (v?.role !== "PILOT" ||
+        isPilotHistoryVisible(
+          String(
+            kind === "meters"
+              ? (row.payload.reading_at ?? row.payload.event_at)
+              : kind === "progress"
+                ? row.payload.progress_date
+                : row.payload.event_at,
+          ),
+          v.timezone,
+          now,
+        )) &&
       (statusFilter === "ALL" || row.status === statusFilter) &&
       `${row.payload.title ?? ""} ${row.payload.notes ?? ""} ${row.payload.category ?? ""}`
         .toLowerCase()
@@ -242,6 +256,9 @@ export function RecordsList({
             }
             onAction={() => go(kind, "add", v.id)}
           />
+          {permissions.data?.owner === false && (
+            <AppText muted>{t("pilotHistoryHint")}</AppText>
+          )}
           {["fuel", "expenses"].includes(kind) &&
             canCreate &&
             !v.archived_at && (
@@ -250,7 +267,8 @@ export function RecordsList({
                 onPress={() => go(kind, "add", v.id)}
               />
             )}
-          {["fuel", "expenses"].includes(kind) &&
+          {permissions.data?.owner &&
+            ["fuel", "expenses"].includes(kind) &&
             permissions.data?.[`${kind}.read`] && (
               <RecordSummary
                 kind={kind}
@@ -276,17 +294,19 @@ export function RecordsList({
               setLimit(30);
             }}
           />
-          <FilterChips
-            items={["week", "month", "year", "all"].map((id) => ({
-              id,
-              label: r(id as keyof typeof recordCopy),
-            }))}
-            value={period}
-            onChange={(value) => {
-              setPeriod(value);
-              setLimit(30);
-            }}
-          />
+          {permissions.data?.owner && (
+            <FilterChips
+              items={["week", "month", "year", "all"].map((id) => ({
+                id,
+                label: r(id as keyof typeof recordCopy),
+              }))}
+              value={period}
+              onChange={(value) => {
+                setPeriod(value);
+                setLimit(30);
+              }}
+            />
+          )}
           <View
             style={{
               flexDirection: "row",
@@ -875,7 +895,9 @@ export function RecordForm() {
     kind === "progress" ? "progress.submit" : `${kind}.create`;
   const allowed = id
     ? owner ||
-      (existing?.created_by === user && access.data?.[`${kind}.edit_own`])
+      (kind === "progress" &&
+        existing?.created_by === user &&
+        access.data?.[`${kind}.edit_own`])
     : access.data?.[createPermission];
   if (id && query.error)
     return (
@@ -1011,7 +1033,6 @@ export function RecordForm() {
       )}
     </>
   );
-  if (v && !supportsVehicle(v.category)) return <DeferredFeature />;
   return (
     <Screen
       compact
@@ -1707,7 +1728,8 @@ export function RecordDetail({
   const editAllowed =
     row?.status !== "ARCHIVED" &&
     (owner ||
-      (row?.created_by === user &&
+      (kind === "progress" &&
+        row?.created_by === user &&
         permissions.data?.[`${kind}.edit_own`] &&
         !(kind === "progress" && row?.status === "APPROVED")));
   // Confirm inside the existing popup: a second native Modal can sit behind it.

@@ -371,6 +371,12 @@ export const en = {
   switch: "Switch vehicle",
   owner: "Owner",
   pilot: "Pilot",
+  pilotAccessHint:
+    "By default, pilots can add fuel, expenses and meter readings and view today and yesterday. You can restrict access or allow Daily Progress below. Pilots cannot edit or delete records.",
+  pilotPolicyUnavailable:
+    "Pilot access needs a server update. Try again after the update.",
+  pilotHistoryHint:
+    "Pilot access: showing today and yesterday in the vehicle’s time zone.",
   archived: "Archived",
   archive: "Archive vehicle",
   recover: "Recover vehicle",

@@ -1,3 +1,5 @@
+import { releaseFeatures } from "@/src/features/release/scope";
+import { t } from "@/src/lib/i18n";
 import { Timestamp } from "@/src/components/ui/Timestamp";
 import {
   MenuRow,
@@ -29,6 +31,7 @@ import { VehicleHeader } from "@/src/components/navigation/VehicleHeader";
 import { useActiveVehicle } from "@/src/features/garage/hooks";
 import { useSession, useAccountId } from "@/src/features/auth/session";
 import { usePermissions } from "@/src/features/records/hooks";
+import { requirePilotPolicy } from "./pilotPolicy";
 import { r } from "@/src/features/records/copy";
 import {
   members,
@@ -48,28 +51,53 @@ export function PermissionEditor({
 }) {
   return (
     <View style={{ gap: 12 }}>
-      {permissionKeys.map((key) => (
-        <View
-          key={key}
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 10,
-          }}
-        >
-          <AppText>{permissionLabel(key)}</AppText>
-          <Switch
-            accessibilityLabel={permissionLabel(key)}
-            value={value[key] === true}
-            onValueChange={(enabled) => onChange({ ...value, [key]: enabled })}
-          />
-        </View>
-      ))}
+      {permissionKeys
+        .filter((key) =>
+          [
+            "fuel.read",
+            "fuel.create",
+            "expenses.read",
+            "expenses.create",
+            "meters.read",
+            "meters.create",
+            ...(releaseFeatures.advancedTools
+              ? ["progress.view", "progress.submit"]
+              : []),
+          ].includes(key),
+        )
+        .map((key) => (
+          <View
+            key={key}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 10,
+            }}
+          >
+            <AppText>{permissionLabel(key)}</AppText>
+            <Switch
+              accessibilityLabel={permissionLabel(key)}
+              value={
+                key.startsWith("progress.")
+                  ? value[key] === true
+                  : value[key] !== false
+              }
+              onValueChange={(enabled) =>
+                onChange({ ...value, [key]: enabled })
+              }
+            />
+          </View>
+        ))}
     </View>
   );
 }
 export default function Members() {
+  const { vehicle } = useActiveVehicle();
+  return <MembersForVehicle key={vehicle?.id ?? "none"} />;
+}
+
+function MembersForVehicle() {
   const active = useActiveVehicle();
   const v = active.vehicle;
   const user = useAccountId();
@@ -81,6 +109,14 @@ export default function Members() {
     queryKey: [user, v?.id, "members"],
     enabled: !!v && access.data?.owner === true,
     queryFn: () => members(v!.id, development),
+  });
+  const pilotPolicy = useQuery({
+    queryKey: [user, v?.id, "pilot-policy"],
+    enabled: !!v && access.data?.owner === true,
+    queryFn: async () => {
+      if (!development) await requirePilotPolicy();
+      return true;
+    },
   });
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"OWNER" | "PILOT">("PILOT");
@@ -94,13 +130,13 @@ export default function Members() {
   const [showGrant, setShowGrant] = useState(false);
   const [showOverrides, setShowOverrides] = useState(false);
   const [showDefaults, setShowDefaults] = useState(false);
-  const run = async (action: () => Promise<void>) => {
+  const run = async (action: () => Promise<void>, message = r("saved")) => {
     setBusy(true);
     setError("");
     try {
       await action();
       await qc.invalidateQueries();
-      toast(r("saved"), "success");
+      toast(message, "success");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -128,6 +164,12 @@ export default function Members() {
         <AppText>{r("permission")}</AppText>
       ) : (
         <>
+          {pilotPolicy.error && (
+            <ErrorState
+              message={pilotPolicy.error.message}
+              retry={() => void pilotPolicy.refetch()}
+            />
+          )}
           <SectionHeading
             title={r("members")}
             action={r("grant")}
@@ -157,6 +199,9 @@ export default function Members() {
                 onChange={(value) => setRole(value as "OWNER" | "PILOT")}
               />
               {role === "PILOT" && (
+                <AppText muted>{t("pilotAccessHint")}</AppText>
+              )}
+              {role === "PILOT" && (
                 <TextAction
                   label={r("permissions")}
                   icon="options-outline"
@@ -177,7 +222,11 @@ export default function Members() {
               )}
               <AppButton
                 disabled={
-                  busy || !v || !z.email().safeParse(email.trim()).success
+                  busy ||
+                  !v ||
+                  !query.data ||
+                  !pilotPolicy.data ||
+                  !z.email().safeParse(email.trim()).success
                 }
                 label={r("grant")}
                 onPress={() =>
@@ -191,7 +240,7 @@ export default function Members() {
                     );
                     setEmail("");
                     setShowGrant(false);
-                  })
+                  }, r("grantSaved"))
                 }
               />
             </Card>
@@ -247,7 +296,7 @@ export default function Members() {
                 />
               </Card>
             ))}
-          {query.data && (
+          {releaseFeatures.advancedTools && query.data && (
             <>
               <TextAction
                 label={r("defaults")}
@@ -296,14 +345,16 @@ export default function Members() {
                 onPress={() => setSelected({ ...selected, role })}
               />
             ))}
-            <PermissionEditor
-              value={selected.permission_overrides}
-              onChange={(permission_overrides) =>
-                setSelected({ ...selected, permission_overrides })
-              }
-            />
+            {selected.role === "PILOT" && (
+              <PermissionEditor
+                value={selected.permission_overrides}
+                onChange={(permission_overrides) =>
+                  setSelected({ ...selected, permission_overrides })
+                }
+              />
+            )}
             <AppButton
-              disabled={busy}
+              disabled={busy || !pilotPolicy.data}
               label={r("save")}
               onPress={() =>
                 void run(async () => {

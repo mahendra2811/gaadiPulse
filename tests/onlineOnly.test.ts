@@ -90,11 +90,26 @@ describe("online-only writes", () => {
 });
 
 describe("server-only reads", () => {
+  it("blocks pilot access when the server has not installed the history policy", async () => {
+    backend.rpc
+      .mockResolvedValueOnce({
+        data: { owner: false, "fuel.read": true },
+        error: null,
+      })
+      .mockResolvedValueOnce({
+        data: null,
+        error: { code: "PGRST202", message: "missing function" },
+      });
+    await expect(access("vehicle", false)).rejects.toThrow(
+      "Pilot access needs a server update",
+    );
+  });
   it("withholds a previously loaded ledger when its next read fails", async () => {
-    backend.rpc.mockResolvedValue({
-      data: { "meters.read": true },
+    backend.rpc.mockImplementation(async (name: string) => ({
+      data:
+        name === "pilot_access_policy_ready" ? true : { "meters.read": true },
       error: null,
-    });
+    }));
     const row = {
       id: "10000000-0000-4000-8000-000000000001",
       vehicle_id: "20000000-0000-4000-8000-000000000001",

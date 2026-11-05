@@ -4,6 +4,7 @@ import { View, Text } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
 import { useReminderReconciliation } from "@/src/features/reminders/useReminders";
+import { isPilotHistoryVisible } from "@/src/features/members/history";
 import { useCurrentTime } from "@/src/hooks/useCurrentTime";
 import { Card, AppText, ErrorState } from "@/src/components/ui";
 import {
@@ -191,7 +192,16 @@ function DashboardContent({
       (row) => ({ ...row, kind: "expenses" }),
     ),
   ]
-    .filter((row) => row.status !== "ARCHIVED")
+    .filter(
+      (row) =>
+        row.status !== "ARCHIVED" &&
+        (vehicle?.role !== "PILOT" ||
+          isPilotHistoryVisible(
+            String(row.payload.event_at),
+            vehicle.timezone,
+            now,
+          )),
+    )
     .sort(
       (a, b) =>
         Date.parse(String(b.payload.event_at)) -
@@ -213,84 +223,95 @@ function DashboardContent({
           retry={() => void permissions.refetch()}
         />
       )}
-      {(permissions.data?.["fuel.read"] ||
-        permissions.data?.["expenses.read"]) && (
-        <>
-          <SectionHeading title={t("uiThisMonth")} />
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
-            {permissions.data?.["fuel.read"] && (
-              <GradientSurface
-                colors={["#294A87", "#3764A1", "#2B688D"]}
-                style={{
-                  flexBasis: "45%",
-                  flexGrow: 1,
-                  padding: 16,
-                  gap: 12,
-                  borderRadius: 24,
-                }}
-              >
-                <Ionicons name="water" size={22} color="#D5EEFF" />
-                <Text style={{ color: "#E0EDFF", fontSize: 14 }}>
-                  {vehicle?.energy_type === "ELECTRIC"
-                    ? t("charging")
-                    : r("fuel")}
-                </Text>
-                <Text
-                  style={{ color: "#FFFFFF", fontSize: 24, fontWeight: "800" }}
+      {permissions.data?.owner &&
+        (permissions.data?.["fuel.read"] ||
+          permissions.data?.["expenses.read"]) && (
+          <>
+            <SectionHeading title={t("uiThisMonth")} />
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
+              {permissions.data?.["fuel.read"] && (
+                <GradientSurface
+                  colors={["#294A87", "#3764A1", "#2B688D"]}
+                  style={{
+                    flexBasis: "45%",
+                    flexGrow: 1,
+                    padding: 16,
+                    gap: 12,
+                    borderRadius: 24,
+                  }}
                 >
-                  {fuel.isPending || fuel.error ? "—" : money(total(fuel.data))}
-                </Text>
-                <TextAction
-                  light
-                  label={r("history")}
-                  onPress={() => navigate("fuel")}
-                />
-              </GradientSurface>
-            )}
-            {permissions.data?.["expenses.read"] && (
-              <GradientSurface
-                colors={["#78501E", "#96612C", "#92532F"]}
-                style={{
-                  flexBasis: "45%",
-                  flexGrow: 1,
-                  padding: 16,
-                  gap: 12,
-                  borderRadius: 24,
-                }}
-              >
-                <Ionicons name="receipt" size={22} color="#FFEBC2" />
-                <Text style={{ color: "#FFF0D8", fontSize: 14 }}>
-                  {r("expenses")}
-                </Text>
-                <Text
-                  style={{ color: "#FFFFFF", fontSize: 24, fontWeight: "800" }}
+                  <Ionicons name="water" size={22} color="#D5EEFF" />
+                  <Text style={{ color: "#E0EDFF", fontSize: 14 }}>
+                    {vehicle?.energy_type === "ELECTRIC"
+                      ? t("charging")
+                      : r("fuel")}
+                  </Text>
+                  <Text
+                    style={{
+                      color: "#FFFFFF",
+                      fontSize: 24,
+                      fontWeight: "800",
+                    }}
+                  >
+                    {fuel.isPending || fuel.error
+                      ? "—"
+                      : money(total(fuel.data))}
+                  </Text>
+                  <TextAction
+                    light
+                    label={r("history")}
+                    onPress={() => navigate("fuel")}
+                  />
+                </GradientSurface>
+              )}
+              {permissions.data?.["expenses.read"] && (
+                <GradientSurface
+                  colors={["#78501E", "#96612C", "#92532F"]}
+                  style={{
+                    flexBasis: "45%",
+                    flexGrow: 1,
+                    padding: 16,
+                    gap: 12,
+                    borderRadius: 24,
+                  }}
                 >
-                  {expenses.isPending || expenses.error
-                    ? "—"
-                    : money(total(expenses.data))}
-                </Text>
-                <TextAction
-                  light
-                  label={r("history")}
-                  onPress={() => navigate("expenses")}
-                />
-              </GradientSurface>
+                  <Ionicons name="receipt" size={22} color="#FFEBC2" />
+                  <Text style={{ color: "#FFF0D8", fontSize: 14 }}>
+                    {r("expenses")}
+                  </Text>
+                  <Text
+                    style={{
+                      color: "#FFFFFF",
+                      fontSize: 24,
+                      fontWeight: "800",
+                    }}
+                  >
+                    {expenses.isPending || expenses.error
+                      ? "—"
+                      : money(total(expenses.data))}
+                  </Text>
+                  <TextAction
+                    light
+                    label={r("history")}
+                    onPress={() => navigate("expenses")}
+                  />
+                </GradientSurface>
+              )}
+            </View>
+            {permissions.data?.["fuel.read"] && fuel.error && (
+              <ErrorState
+                message={fuel.error.message}
+                retry={() => void fuel.refetch()}
+              />
             )}
-          </View>
-          {permissions.data?.["fuel.read"] && fuel.error && (
-            <ErrorState
-              message={fuel.error.message}
-              retry={() => void fuel.refetch()}
-            />
-          )}
-          {permissions.data?.["expenses.read"] && expenses.error && (
-            <ErrorState
-              message={expenses.error.message}
-              retry={() => void expenses.refetch()}
-            />
-          )}
-        </>
-      )}
+            {permissions.data?.["expenses.read"] && expenses.error && (
+              <ErrorState
+                message={expenses.error.message}
+                retry={() => void expenses.refetch()}
+              />
+            )}
+          </>
+        )}
       <SectionHeading title={t("uiQuickActions")} />
       {primary.length ? (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>

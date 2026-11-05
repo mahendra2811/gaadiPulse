@@ -60,7 +60,7 @@ export async function reconcileReminders(
     const date = due && due.getTime() > Date.now() ? due : null;
     if (
       old?.revision === entry.revision &&
-      old.presentationVersion === 2 &&
+      old.presentationVersion === 3 &&
       old.threshold === Boolean(threshold)
     )
       continue;
@@ -70,13 +70,13 @@ export async function reconcileReminders(
         revision: entry.revision,
         id: "",
         threshold: false,
-        presentationVersion: 2,
+        presentationVersion: 3,
       });
       continue;
     }
     const id = await Notifications.scheduleNotificationAsync({
       content: {
-        title: String(entry.payload.title),
+        title: r("reminders"),
         body: r("notificationBody"),
         color: "#147D69",
         autoDismiss: true,
@@ -101,7 +101,7 @@ export async function reconcileReminders(
       revision: entry.revision,
       id,
       threshold: Boolean(threshold),
-      presentationVersion: 2,
+      presentationVersion: 3,
     });
   }
 }

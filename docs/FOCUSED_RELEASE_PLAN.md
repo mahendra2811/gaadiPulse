@@ -1,5 +1,7 @@
 # GaadiPulse focused first release — plan and implementation register
 
+> Historical scope: on 5 November 2026 the user requested restoration of the paused features and vehicle categories. The application now enables the advanced release switch. Online-only operation and the separate Pilot restrictions remain in effect. See `STAGE_3_HANDOFF.md` for validation and deployment blockers.
+
 Updated 3 November 2026. Online-only requirements in [ONLINE_ONLY_PLAN.md](ONLINE_ONLY_PLAN.md) supersede the original offline-draft/outbox portions of this plan. This scope follows the latest user request and temporarily narrows PROJECT_REFERENCE.md’s larger Phase 1 scope. This is an implemented rollout plan, not a claim that device QA or live backend integration is complete.
 
 ## Product goal

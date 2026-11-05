@@ -2,6 +2,12 @@
 
 # Visual asset manifest and requirements
 
+## Current logo assets (5 November 2026)
+
+The user-supplied originals are in `assets/media/logo/new/`. The dark square (`02-square-dark.png`) is the main mark and splash source; `03-square-light.png` is available for light surfaces, and `05-circle-light.png` is used for circular marks. The light-background wordmark is `07-header-transparent.png` and the dark-background wordmark is `08-header-dark.png`. These files remain the source of truth for the brand; older logo descriptions below are historical.
+
+`node scripts/build-brand-assets.mjs` derives the launcher icon, adaptive foreground, favicon and monochrome notification icon in `assets/brand/generated/`. Expo config references those generated assets. For an existing local Android native tree, run `node scripts/build-brand-assets.mjs --android` to update its generated resources and notification-icon metadata. The Android directory is ignored by Git, so regenerate or refresh it on other machines. Launcher, notification and splash changes require a new native build and installation; refreshing the web app cannot update an installed app.
+
 All included imagery is newly created for this project and saved locally; no remote links or vendor/manufacturer copyrighted artwork required. Use Expo asset imports / bundled image static references. Local assets are real images; user receipts and vehicle photo uploads are **not** part of Phase 1.
 
 ## Initial assets already present

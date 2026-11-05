@@ -73,12 +73,18 @@ export function PageHeader({
           <Ionicons name="arrow-back" size={23} color={c.primary} />
         </Pressable>
       ) : brandHeader ? (
-        <Image
+        <View
+          accessible
+          accessibilityRole="header"
           accessibilityLabel={t("app")}
-          source={dark ? artwork.wordmarkDark : artwork.wordmarkLight}
-          resizeMode="contain"
-          style={{ width: 158, height: 44 }}
-        />
+        >
+          <Image
+            accessible={false}
+            source={dark ? artwork.wordmarkDark : artwork.wordmarkLight}
+            resizeMode="contain"
+            style={{ width: 158, height: 44 }}
+          />
+        </View>
       ) : (
         <Image
           accessibilityLabel={t("app")}

@@ -324,6 +324,24 @@ function DashboardContent({
             )}
           </>
         )}
+      {permissions.data &&
+        !permissions.data.owner &&
+        permissions.data["fuel.read"] &&
+        fuel.error && (
+          <ErrorState
+            message={fuel.error.message}
+            retry={() => void fuel.refetch()}
+          />
+        )}
+      {permissions.data &&
+        !permissions.data.owner &&
+        permissions.data["expenses.read"] &&
+        expenses.error && (
+          <ErrorState
+            message={expenses.error.message}
+            retry={() => void expenses.refetch()}
+          />
+        )}
       <SectionHeading title={t("uiQuickActions")} />
       {primary.length ? (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>

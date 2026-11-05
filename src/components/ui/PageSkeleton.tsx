@@ -5,7 +5,14 @@ import { useTheme } from "@/src/lib/theme";
 import { t } from "@/src/lib/i18n";
 
 type Shape =
-  "home" | "records" | "rows" | "garage" | "dashboard" | "reading" | "amount";
+  | "home"
+  | "records"
+  | "rows"
+  | "garage"
+  | "dashboard"
+  | "reading"
+  | "amount"
+  | "summary";
 export function PageSkeleton({ shape }: { shape: Shape }) {
   const c = useTheme();
   const reduced = useReducedMotion();
@@ -154,6 +161,22 @@ export function PageSkeleton({ shape }: { shape: Shape }) {
           {box(14, "38%")}
           {rows}
         </>
+      )}
+      {shape === "summary" && (
+        <View
+          style={{
+            padding: 16,
+            backgroundColor: c.surface,
+            borderWidth: 1,
+            borderColor: c.line,
+            borderRadius: 18,
+            gap: 10,
+          }}
+        >
+          {box(12, "40%")}
+          {box(24, "55%")}
+          {box(10, "70%")}
+        </View>
       )}
       {shape === "amount" && box(24, "70%")}
       {shape === "reading" && (

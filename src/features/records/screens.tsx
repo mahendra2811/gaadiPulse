@@ -267,9 +267,9 @@ export function RecordsList({
       {permissions.error && (
         <ErrorState message={permissions.error.message} retry={() => void permissions.refetch()} />
       )}
-      {active.isPending || (!!v && permissions.isPending) ? (
+      {active.error || permissions.error ? null : active.isPending || (!!v && permissions.isPending) ? (
         <PageSkeleton shape="records" />
-      ) : active.error || permissions.error ? null : !v ? (
+      ) : !v ? (
         <EmptyState title={r("noVehicle")} />
       ) : (
         <>
@@ -289,20 +289,13 @@ export function RecordsList({
           {permissions.data?.owner &&
             ["fuel", "expenses"].includes(kind) &&
             permissions.data?.[`${kind}.read`] && (
-              <RecordSummary
+              query.isPending ? <PageSkeleton shape="summary" /> : query.error ? null : <RecordSummary
                 kind={kind}
-                value={
-                  query.isPending || query.error
-                    ? "—"
-                    : money(
-                        kind === "fuel"
-                          ? fuelQuery.total
-                          : confirmed.reduce(
-                              (sum, row) => sum + Number(row.payload.amount_paise ?? 0),
-                              0
-                            )
-                      )
-                }
+                value={money(
+                  kind === "fuel" ? fuelQuery.total : confirmed.reduce(
+                    (sum, row) => sum + Number(row.payload.amount_paise ?? 0), 0
+                  )
+                )}
                 subtitle={`${r("cash")} · ${r(period as keyof typeof recordCopy)} · ${kind === "fuel" ? fuelQuery.count : confirmed.length} ${r("confirmed")}`}
               />
             )}

@@ -4,9 +4,11 @@ import type { Href } from "expo-router";
 import { useActiveVehicle } from "@/src/features/garage/hooks";
 import { usePermissions } from "@/src/features/records/hooks";
 import { useProfile } from "@/src/features/auth/profile";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { ErrorState, AppText } from "@/src/components/ui";
 import {
   MenuRow,
+  MotionPress,
   type IconName,
   type IconTone,
 } from "@/src/components/ui/premium";
@@ -86,6 +88,13 @@ export function MoreMenu({ navigate }: { navigate: (href: Href) => void }) {
           show: !!access.data?.["reminders.read"],
         },
         {
+          label: "Insights",
+          icon: "analytics",
+          tone: "violet",
+          href: "/insights",
+          show: !!access.data?.["reports.read"],
+        },
+        {
           label: r("reports"),
           icon: "stats-chart",
           tone: "blue",
@@ -120,35 +129,46 @@ export function MoreMenu({ navigate }: { navigate: (href: Href) => void }) {
   ];
   return (
     <View style={{ gap: 22 }}>
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 12,
-          paddingBottom: 4,
-        }}
+      <MotionPress
+        label={`${t("profile")}: ${profile.data?.display_name || t("app")}`}
+        onPress={() => navigate("/settings/profile")}
       >
         <View
           style={{
-            width: 48,
-            height: 48,
-            borderRadius: 18,
-            backgroundColor: "#E5ECFF",
+            flexDirection: "row",
             alignItems: "center",
-            justifyContent: "center",
+            gap: 12,
+            paddingBottom: 4,
+            minHeight: 48,
           }}
         >
-          <Text style={{ fontSize: 20, fontWeight: "700", color: "#3157BF" }}>
-            {profile.data?.display_name?.slice(0, 1).toUpperCase() || "G"}
-          </Text>
+          <View
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: 18,
+              backgroundColor: "#E5ECFF",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Ionicons
+              name={profile.data?.avatar_icon ?? "person-circle"}
+              size={28}
+              color="#3157BF"
+            />
+          </View>
+          <View style={{ flex: 1, gap: 3 }}>
+            <AppText large>{profile.data?.display_name || t("app")}</AppText>
+            <AppText muted>
+              {active.vehicle?.nickname ||
+                active.vehicle?.model ||
+                t("tagline")}
+            </AppText>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={c.muted} />
         </View>
-        <View style={{ flex: 1, gap: 3 }}>
-          <AppText large>{profile.data?.display_name || t("app")}</AppText>
-          <AppText muted>
-            {active.vehicle?.nickname || active.vehicle?.model || t("tagline")}
-          </AppText>
-        </View>
-      </View>
+      </MotionPress>
       {active.error && (
         <ErrorState
           message={active.error.message}

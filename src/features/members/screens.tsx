@@ -32,6 +32,7 @@ import { useActiveVehicle } from "@/src/features/garage/hooks";
 import { useSession, useAccountId } from "@/src/features/auth/session";
 import { usePermissions } from "@/src/features/records/hooks";
 import { requirePilotPolicy } from "./pilotPolicy";
+import { resolveMemberVehicle } from "./vehicleContext";
 import { r } from "@/src/features/records/copy";
 import {
   members,
@@ -91,9 +92,7 @@ export default function Members() {
     add?: string;
   }>();
   const active = useActiveVehicle();
-  const vehicle = vehicleId
-    ? active.data?.find((item) => item.id === vehicleId)
-    : active.vehicle;
+  const vehicle = resolveMemberVehicle(vehicleId, active.data, active.vehicle);
   return (
     <MembersForVehicle
       key={`${vehicleId ?? vehicle?.id ?? "none"}:${add ?? ""}`}

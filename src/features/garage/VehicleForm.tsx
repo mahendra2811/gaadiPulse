@@ -337,6 +337,13 @@ export default function VehicleForm() {
         <AppButton label={t("back")} onPress={() => router.back()} />
       </Screen>
     );
+  if (id && vehicle?.archived_at)
+    return (
+      <Screen title={t("uiEditVehicle")}>
+        <AppText>{t("archivedVehicleReadOnly")}</AppText>
+        <AppButton secondary label={t("back")} onPress={() => router.back()} />
+      </Screen>
+    );
   if (id)
     return (
       <Screen title={t("uiEditVehicle")} compact loading={!ready || busy}>

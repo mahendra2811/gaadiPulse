@@ -3,6 +3,7 @@ import { isPilotHistoryVisible } from "@/src/features/members/history";
 import { useCurrentTime } from "@/src/hooks/useCurrentTime";
 import { InlineSelect } from "@/src/components/ui/InlineSelect";
 import { AdditionalOptions } from "@/src/components/ui/AdditionalOptions";
+import { FormError } from "@/src/components/ui/FormError";
 import { ZodError } from "zod";
 import { errorMessage } from "@/src/lib/errors";
 import { TimestampRange } from "@/src/components/ui/Timestamp";
@@ -518,8 +519,10 @@ export function RecordForm() {
   const access = usePermissions(v?.id);
   const qc = useQueryClient();
   const toast = useToast();
+  const formColors = useTheme();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [errorIsValidation, setErrorIsValidation] = useState(false);
   const [additionalOpen, setAdditionalOpen] = useState(false);
   const [ready, setReady] = useState(false);
   const [leaving, setLeaving] = useState(false);
@@ -635,6 +638,8 @@ export function RecordForm() {
               value={String(value ?? "")}
               onChange={(value) => {
                 onChange(value);
+                form.clearErrors(name);
+                if (errorIsValidation) setError("");
                 if (kind === "fuel" && (name === "event_at" || name === "observed_at"))
                   form.setValue("confirmed_observation", false);
               }}
@@ -661,6 +666,8 @@ export function RecordForm() {
               value={String(value ?? "")}
               onChangeText={(value) => {
                 onChange(value);
+                form.clearErrors(name);
+                if (errorIsValidation) setError("");
                 if (kind === "fuel" && (name === "km" || name === "hours"))
                   form.setValue("confirmed_observation", false);
               }}
@@ -784,6 +791,8 @@ export function RecordForm() {
     if (busy || !user || !v) return;
     setBusy(true);
     setError("");
+    setErrorIsValidation(false);
+    let saving = false;
     try {
       if (kind === "fuel" && (!values.amount.trim() || !values.quantity.trim())) {
         if (!values.amount.trim()) form.setError("amount", { message: t("requiredValue") });
@@ -812,6 +821,11 @@ export function RecordForm() {
             throw new Error(message);
           }
         }
+      }
+      if (kind === "fuel" && (values.km !== "" || values.hours !== "") && Date.parse(values.observed_at) === Date.parse(values.event_at) && !values.confirmed_observation) {
+        const message = t("fillConfirmationRequired");
+        form.setError("confirmed_observation", { message });
+        throw new Error(message);
       }
       const payload = entryPayload(kind, form.getValues(), {
         meterMode: v.meter_mode,
@@ -844,6 +858,7 @@ export function RecordForm() {
             ? "PENDING_REVIEW"
             : "APPROVED"
           : "ACTIVE";
+      saving = true;
       await saveRecord(
         user,
         development,
@@ -905,6 +920,7 @@ export function RecordForm() {
             });
         }
       setError(errorMessage(e));
+      setErrorIsValidation(!saving);
     } finally {
       setBusy(false);
     }
@@ -941,6 +957,8 @@ export function RecordForm() {
         <AppButton label={r("back")} onPress={() => router.back()} />
       </Screen>
     );
+  if (v.archived_at)
+    return <Screen title={r(kind)}><AppText>{t("archivedVehicleReadOnly")}</AppText><AppButton secondary label={r("back")} onPress={() => router.back()} /></Screen>;
   if (access.data && !allowed)
     return (
       <Screen title={r(kind)}>
@@ -1027,7 +1045,7 @@ export function RecordForm() {
       {kind === "fuel" &&
         (values.km !== "" || values.hours !== "") &&
         Date.parse(values.observed_at) === Date.parse(values.event_at) && (
-          <View style={{ gap: 8 }}>
+          <View style={{ gap: 8, borderWidth: form.formState.errors.confirmed_observation ? 1 : 0, borderColor: formColors.danger, borderRadius: 14, padding: form.formState.errors.confirmed_observation ? 10 : 0 }}>
             <AppText>{t("fillConfirmationHelp")}</AppText>
             <AppText>{r("fillConfirmation")}</AppText>
             <Switch
@@ -1037,7 +1055,10 @@ export function RecordForm() {
                 form.setValue("confirmed_observation", value, {
                   shouldDirty: true,
                 });
-                if (value) setError("");
+                if (value) {
+                  form.clearErrors("confirmed_observation");
+                  if (errorIsValidation) setError("");
+                }
               }}
             />
           </View>
@@ -1050,26 +1071,13 @@ export function RecordForm() {
       title={`${r(id ? "edit" : "add")} · ${kind === "fuel" && v?.energy_type === "ELECTRIC" ? t("charging") : r(kind)}`}
       loading={!ready || busy || access.isPending || (kind === "progress" && forms.isPending)}
       action={
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 12,
-            paddingBottom: 8,
-            flexWrap: "wrap",
-          }}
-        >
-          <View style={{ flex: 1, minWidth: 130 }}>
-            <GradientButton
-              label={r(kind === "progress" ? "submit" : "save")}
-              disabled={
-                busy ||
-                !ready ||
-                (kind === "progress" && (forms.isPending || !values.form_version_id))
-              }
-              onPress={() => void submit()}
-            />
-          </View>
+        <View style={{ gap: 10 }}>
+          {!!error && <FormError message={error} onDismiss={() => setError("")} />}
+          <GradientButton
+            label={r(kind === "progress" ? "submit" : "save")}
+            disabled={busy || !ready || (kind === "progress" && (forms.isPending || !values.form_version_id))}
+            onPress={() => void submit()}
+          />
         </View>
       }
     >
@@ -1527,7 +1535,6 @@ export function RecordForm() {
       {access.error && (
         <ErrorState message={access.error.message} retry={() => void access.refetch()} />
       )}
-      {!!error && <ErrorState message={error} retry={() => void submit()} />}
     </Screen>
   );
 }
@@ -1605,8 +1612,9 @@ export function RecordDetail({
       return data?.[0]?.display_name ?? null;
     },
   });
+  const vehicleIsActive = !!vehicleQuery.data?.some((item) => item.id === vehicle && !item.archived_at);
   const mutate = async (status: string, payload = row?.payload) => {
-    if (!row || !user || !payload || busy) return;
+    if (!row || !user || !payload || busy || !vehicleIsActive) return;
     setBusy(true);
     try {
       await saveRecord(
@@ -1647,7 +1655,7 @@ export function RecordDetail({
     }
   };
   const editAllowed =
-    row?.status !== "ARCHIVED" &&
+    vehicleIsActive && row?.status !== "ARCHIVED" &&
     (owner ||
       (kind === "progress" &&
         row?.created_by === user &&
@@ -1689,7 +1697,7 @@ export function RecordDetail({
       ) : row ? (
         <>
           {!context && <VehicleHeader vehicleId={row.vehicle_id} allowSwitch={false} />}
-          {kind === "fuel" && (editAllowed || (owner && row.status !== "ARCHIVED")) && (
+          {kind === "fuel" && (editAllowed || (owner && vehicleIsActive && row.status !== "ARCHIVED")) && (
             <View
               style={{
                 flexDirection: "row",
@@ -1895,7 +1903,7 @@ export function RecordDetail({
               }}
             />
           )}
-          {owner && row.status !== "ARCHIVED" && kind !== "progress" && kind !== "fuel" && (
+          {owner && vehicleIsActive && row.status !== "ARCHIVED" && kind !== "progress" && kind !== "fuel" && (
             <TextAction
               icon="trash-outline"
               disabled={busy}
@@ -1906,7 +1914,7 @@ export function RecordDetail({
               }}
             />
           )}
-          {releaseFeatures.advancedTools &&
+          {releaseFeatures.advancedTools && vehicleIsActive &&
             kind === "expenses" &&
             ["SERVICE", "REPAIR", "INSURANCE", "EMI"].includes(String(row.payload.category)) && (
               <AppButton
@@ -1925,7 +1933,7 @@ export function RecordDetail({
                 }
               />
             )}
-          {kind === "reminders" && owner && (
+          {kind === "reminders" && owner && vehicleIsActive && (
             <>
               <AppButton
                 label={r("complete")}

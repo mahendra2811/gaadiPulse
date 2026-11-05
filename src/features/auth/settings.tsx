@@ -1,6 +1,8 @@
 import { AuthLayout } from "./AuthLayout";
+import { ProfileIconPicker } from "./ProfileIconPicker";
+import { CountryField } from "./CountryField";
+import { defaultProfileIcon, type ProfileIcon } from "./avatars";
 import { releaseFeatures } from "@/src/features/release/scope";
-import { AdditionalOptions } from "@/src/components/ui/AdditionalOptions";
 import { TimezoneField } from "@/src/features/garage/TimezoneField";
 import { errorMessage } from "@/src/lib/errors";
 import {
@@ -117,12 +119,13 @@ export function Profile() {
   const qc = useQueryClient();
   const toast = useToast();
   const [name, setName] = useState("");
+  const [country, setCountry] = useState<string | null>(null);
+  const [avatar, setAvatar] = useState<ProfileIcon>(defaultProfileIcon);
   const hydrated = useRef(false);
   const [timezone, setTimezone] = useState("Asia/Kolkata");
   const [theme, setTheme] = useState<ThemeMode>("system");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [additionalOpen, setAdditionalOpen] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [leaving, setLeaving] = useState(false);
   useEffect(() => {
@@ -130,6 +133,8 @@ export function Profile() {
       hydrated.current = true;
       /* Server profile initializes an editable local draft after fetch. */
       setName(query.data.display_name);
+      setCountry(query.data.country_code);
+      setAvatar(query.data.avatar_icon);
       setTheme(query.data.theme);
       setTimezone(query.data.timezone);
       setInitialized(true);
@@ -138,7 +143,9 @@ export function Profile() {
   const dirty =
     initialized &&
     !!query.data &&
-    (name !== query.data.display_name ||
+    (country !== query.data.country_code ||
+      avatar !== query.data.avatar_icon ||
+      name !== query.data.display_name ||
       theme !== query.data.theme ||
       timezone !== query.data.timezone);
   const disablePrevention = usePreventRemove(dirty && !leaving, ({ repeat }) =>
@@ -158,10 +165,21 @@ export function Profile() {
       if (!user) return;
       if (!name.trim() || name.trim().length > 120) throw new Error(t("name"));
       new Intl.DateTimeFormat("en", { timeZone: timezone });
+      if (
+        country !== query.data?.country_code &&
+        !query.data?.country_available
+      )
+        throw new Error(t("countrySetup"));
+      if (avatar !== query.data?.avatar_icon && !query.data?.avatar_available)
+        throw new Error(t("profileIconSetup"));
       await updateProfile(
         user,
         {
           display_name: name.trim(),
+          ...(query.data?.avatar_available ? { avatar_icon: avatar } : {}),
+          ...(country !== query.data?.country_code
+            ? { country_code: country }
+            : {}),
           theme,
           timezone,
         },
@@ -178,7 +196,6 @@ export function Profile() {
       else router.replace("/(tabs)");
     } catch (e) {
       setError(errorMessage(e));
-      if (e instanceof RangeError) setAdditionalOpen(true);
     } finally {
       setBusy(false);
     }
@@ -195,6 +212,11 @@ export function Profile() {
   );
   const content = (
     <>
+      <ProfileIconPicker
+        value={avatar}
+        onChange={setAvatar}
+        disabled={busy || !initialized}
+      />
       <InputField
         label={t("name")}
         required
@@ -207,24 +229,24 @@ export function Profile() {
           items={[{ label: t("email"), value: auth.session.user.email }]}
         />
       )}
+      <CountryField
+        value={country}
+        onChange={setCountry}
+        disabled={busy || !initialized}
+      />
       <TimezoneField
         value={timezone}
         onChange={setTimezone}
         disabled={busy || !initialized}
         account
       />
-      <AdditionalOptions
-        open={additionalOpen}
-        onToggle={() => setAdditionalOpen((value) => !value)}
-      >
-        <AppText>{t("appearance")}</AppText>
-        <Choice
-          compact
-          values={["light", "dark", "system"] as const}
-          value={theme}
-          onChange={setTheme}
-        />
-      </AdditionalOptions>
+      <AppText>{t("appearance")}</AppText>
+      <Choice
+        compact
+        values={["light", "dark", "system"] as const}
+        value={theme}
+        onChange={setTheme}
+      />
       {query.error && (
         <ErrorState
           message={query.error.message}

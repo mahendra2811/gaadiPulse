@@ -1,5 +1,6 @@
 import { createContext, useContext } from "react";
 import { useColorScheme } from "react-native";
+import { resolveTheme, type ThemeMode } from "./themeMode";
 export const palettes = {
   light: {
     background: "#F4F7FB",
@@ -22,14 +23,12 @@ export const palettes = {
     danger: "#FFADB4",
   },
 };
-export type ThemeMode = "light" | "dark" | "system";
+export { resolveTheme, type ThemeMode } from "./themeMode";
 export const ThemeContext = createContext<ThemeMode>("system");
 export function useTheme() {
   const mode = useContext(ThemeContext);
   const system = useColorScheme();
-  return palettes[
-    mode === "system" ? (system === "dark" ? "dark" : "light") : mode
-  ];
+  return palettes[resolveTheme(mode, system)];
 }
 export const tokens = { space: 4, radius: 20, controlHeight: 52, motion: 200 };
 export function useThemeMode() {

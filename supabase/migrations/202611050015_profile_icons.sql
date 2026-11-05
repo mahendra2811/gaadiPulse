@@ -1,0 +1,3 @@
+-- Add a bounded, bundled profile icon identifier; existing profiles keep the default.
+alter table public.profiles add column avatar_icon text not null default 'person-circle' check (avatar_icon in ('person-circle', 'person', 'happy', 'accessibility', 'body', 'heart', 'star', 'sparkles', 'sunny', 'moon', 'planet', 'earth', 'rocket', 'airplane', 'bicycle', 'car-sport', 'bus', 'train', 'boat', 'speedometer', 'compass', 'map', 'navigate', 'location', 'leaf', 'flower', 'paw', 'fish', 'flame', 'flash', 'water', 'umbrella', 'musical-notes', 'headset', 'camera', 'game-controller', 'football', 'basketball', 'trophy', 'ribbon'));
+grant update (avatar_icon) on public.profiles to authenticated;

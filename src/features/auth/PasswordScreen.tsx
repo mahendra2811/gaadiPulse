@@ -1,13 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { router } from "expo-router";
 import { ZodError } from "zod";
-import {
-  AppButton,
-  AppText,
-  ErrorState,
-  InputField,
-} from "@/src/components/ui";
+import { AppButton, AppText, InputField } from "@/src/components/ui";
 import { t } from "@/src/lib/i18n";
+import { FormError } from "@/src/components/ui/FormError";
 import { PasswordField } from "./PasswordField";
 import { AuthLayout, AuthDivider, AuthLink } from "./AuthLayout";
 import { googleSignIn, sendOtp } from "./api";
@@ -31,7 +27,6 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
   const [email, setEmail] = useState(
     mode === "recovery" ? (auth.session?.user.email ?? "") : "",
   );
-  const [emailStep, setEmailStep] = useState(mode === "signup");
   const [useCode, setUseCode] = useState(false);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -94,10 +89,6 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
       return;
     }
     accountEmail.parse(email.trim());
-    if (mode === "signup" && emailStep) {
-      setEmailStep(false);
-      return;
-    }
     if (mode === "login" && useCode) {
       await sendOtp(email.trim());
       router.push({
@@ -126,7 +117,7 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
         : t("resetPassword");
   const editingPassword =
     stage === "password" ||
-    (stage === "details" && mode !== "recovery" && !emailStep && !useCode);
+    (stage === "details" && mode !== "recovery" && !useCode);
   return (
     <AuthLayout
       title={mode === "login" ? t("authLoginTitle") : title}
@@ -134,22 +125,12 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
         mode === "login"
           ? t("authLoginHint")
           : mode === "signup"
-            ? t(
-                emailStep
-                  ? "authEmailStep"
-                  : stage === "verify"
-                    ? "authVerifyStep"
-                    : "authPasswordStep",
-              )
+            ? t(stage === "verify" ? "authVerifyStep" : "authSignupHint")
             : t("authRecoveryHint")
       }
       loading={busy}
       onBack={
-        mode === "signup" && !emailStep && stage === "details"
-          ? () => setEmailStep(true)
-          : mode !== "login"
-            ? () => router.replace("/auth/login")
-            : undefined
+        mode !== "login" ? () => router.replace("/auth/login") : undefined
       }
     >
       {!env && <AppText>{t("configBody")}</AppText>}
@@ -178,7 +159,7 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
         </>
       ) : (
         <>
-          {stage === "details" && (mode !== "signup" || emailStep) ? (
+          {stage === "details" ? (
             <InputField
               label={t("email")}
               required
@@ -194,7 +175,7 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
           ) : (
             <AppText>{email}</AppText>
           )}
-          {mode === "signup" && stage === "details" && emailStep && (
+          {mode === "signup" && stage === "details" && (
             <AppText muted>{t("accountNameHelp")}</AppText>
           )}
           {stage === "verify" && (
@@ -255,11 +236,9 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
                   ? t("save")
                   : mode === "recovery"
                     ? t("sendReset")
-                    : mode === "signup" && emailStep
-                      ? t("continue")
-                      : mode === "login"
-                        ? t(useCode ? "send" : "authEmailLogin")
-                        : title
+                    : mode === "login"
+                      ? t(useCode ? "send" : "authEmailLogin")
+                      : title
             }
             disabled={
               busy ||
@@ -293,7 +272,6 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
                 disabled={busy}
                 onPress={() => {
                   setStage("details");
-                  setEmailStep(mode === "signup");
                   setCode("");
                   setError("");
                 }}
@@ -331,7 +309,7 @@ export function PasswordScreen({ mode }: { mode: Mode }) {
           )}
         </>
       )}
-      {!!error && <ErrorState message={error} retry={() => setError("")} />}
+      {!!error && <FormError message={error} onDismiss={() => setError("")} />}
     </AuthLayout>
   );
 }

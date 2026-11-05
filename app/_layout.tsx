@@ -8,8 +8,8 @@ import { ConfirmationHost } from "@/src/components/ui/ConfirmationHost";
 import { MoreDrawerProvider } from "@/src/components/navigation/MoreDrawer";
 import { useMembershipUpdates } from "@/src/hooks/useMembershipUpdates";
 import {
-  authDestination,
   keepsAuthenticatedAuthScreen,
+  profileRedirect,
 } from "@/src/features/auth/routing";
 import { View, Appearance, Platform } from "react-native";
 import { AuthLayout } from "@/src/features/auth/AuthLayout";
@@ -95,19 +95,23 @@ function Routes() {
       router.replace("/auth/login");
     if (
       (auth.session || auth.development) &&
-      path === "auth" &&
-      !keepsAuthenticatedAuthScreen(pathname) &&
-      !profile.isPending
-    )
-      router.replace(
-        authDestination(true, true, !!profile.data?.display_name)!,
+      !profile.isPending &&
+      !profile.error
+    ) {
+      const destination = profileRedirect(
+        pathname,
+        !!profile.data?.display_name?.trim(),
       );
+      if (destination)
+        router.replace(destination as "/(tabs)" | "/settings/profile");
+    }
   }, [
     auth.loading,
     auth.session,
     auth.development,
     auth.error,
     profile.isPending,
+    profile.error,
     profile.data?.display_name,
     segments,
     pathname,
@@ -115,7 +119,7 @@ function Routes() {
   ]);
   if (auth.loading && !auth.session && !auth.development)
     return (
-      <ThemeContext.Provider value="dark">
+      <ThemeContext.Provider value="system">
         <AuthLayout
           title={t("authRestoreTitle")}
           subtitle={t("authRestoreHint")}
@@ -135,6 +139,42 @@ function Routes() {
           onPress={() => void auth.signOut().catch(auth.retry)}
         />
       </Screen>
+    );
+  if (
+    (auth.session || auth.development) &&
+    profile.isPending &&
+    !keepsAuthenticatedAuthScreen(pathname)
+  )
+    return (
+      <ThemeContext.Provider value="system">
+        <AuthLayout
+          title={t("authRestoreTitle")}
+          subtitle={t("authRestoreHint")}
+          loading
+        >
+          <Skeleton />
+        </AuthLayout>
+      </ThemeContext.Provider>
+    );
+  if (
+    (auth.session || auth.development) &&
+    profile.error &&
+    !keepsAuthenticatedAuthScreen(pathname)
+  )
+    return (
+      <ThemeContext.Provider value="system">
+        <AuthLayout title={t("profile")} subtitle={t("profileLoadError")}>
+          <ErrorState
+            message={profile.error.message}
+            retry={() => void profile.refetch()}
+          />
+          <AppButton
+            secondary
+            label={t("logout")}
+            onPress={() => void auth.signOut().catch(auth.retry)}
+          />
+        </AuthLayout>
+      </ThemeContext.Provider>
     );
   return (
     <ThemeContext.Provider value={profile.data?.theme ?? "system"}>

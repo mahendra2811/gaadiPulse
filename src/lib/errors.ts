@@ -14,6 +14,7 @@ export function errorMessage(value: unknown): string {
   return t("error");
 }
 export function readableError(message: string) {
+  if (/VEHICLE_ARCHIVED/i.test(message)) return t("archivedVehicleReadOnly");
   if (/ARCHIVE_ADMINISTERED_VEHICLES_FIRST/i.test(message))
     return t("deletionArchiveFirst");
   if (/METER_ABOVE_NEXT/i.test(message)) return t("readingAboveNextServer");

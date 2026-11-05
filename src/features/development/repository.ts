@@ -47,6 +47,7 @@ export function saveDevelopmentVehicle(
     if (typeof previous === "string") return previous;
     const vehicles = await listDevelopmentVehicles();
     const old = vehicles.find((v) => v.id === id);
+    if (old?.archived_at) throw new Error("VEHICLE_ARCHIVED");
     if (id && (!old || old.updated_at !== expected))
       throw new Error("CONFLICT: Refresh the vehicle before editing again.");
     const vehicle: Vehicle = {
@@ -202,11 +203,16 @@ export async function developmentProfile(): Promise<Profile> {
       locale: "en",
       theme: "system",
       timezone: "Asia/Kolkata",
+      avatar_icon: "person-circle",
+      avatar_available: true,
+      country_code: null,
+      country_available: true,
     }
   );
 }
 export async function saveDevelopmentProfile(
-  profile: Pick<Profile, "display_name" | "theme" | "timezone">,
+  profile: Pick<Profile, "display_name" | "theme" | "timezone"> &
+    Partial<Pick<Profile, "avatar_icon" | "country_code">>,
 ) {
   await writeDevelopment("profile", {
     ...(await developmentProfile()),

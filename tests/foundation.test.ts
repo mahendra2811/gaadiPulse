@@ -56,6 +56,10 @@ describe("vehicle foundation", () => {
     expect(selectActive(vehicles, "a")).toBe("b");
     expect(selectActive(vehicles, "revoked")).toBe("b");
     expect(selectActive([], "a")).toBe(null);
+    expect(selectActive([vehicles[0]], "a")).toBe(null);
+    expect(selectActive([{ ...vehicles[0], archived_at: null }], "a")).toBe(
+      "a",
+    );
   });
   it("has an English-only future locale label", () => {
     expect(en.hindi).toContain("coming later");

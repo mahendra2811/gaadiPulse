@@ -1,20 +1,17 @@
 import { isPilotHistoryVisible } from "@/src/features/members/history";
 import { useCurrentTime } from "@/src/hooks/useCurrentTime";
-import { supportsRecord } from "@/src/features/release/scope";
 import { SquareArtwork } from "@/src/components/ui/SquareArtwork";
 import { Timestamp } from "@/src/components/ui/Timestamp";
-import { recordVisuals } from "@/src/features/records/RecordCard";
 import { SearchField } from "@/src/components/ui/SearchField";
-import { usePermissions } from "@/src/features/records/hooks";
 import { r } from "@/src/features/records/copy";
 import { Dashboard } from "@/src/features/dashboard/Dashboard";
 import { useVehicleAccess } from "@/src/hooks/useVehicleAccess";
 import { useCallback, useState } from "react";
-import { View, Text, useWindowDimensions } from "react-native";
+import { View, Text, Pressable, useWindowDimensions } from "react-native";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import {
   SectionHeading,
   MotionPress,
-  ActionTile,
   InfoRows,
 } from "@/src/components/ui/premium";
 import { useTheme } from "@/src/lib/theme";
@@ -58,6 +55,16 @@ export function Garage() {
         .toLowerCase()
         .includes(search.toLowerCase()),
     ) ?? [];
+  const groups = [
+    {
+      title: t("activeVehicles"),
+      items: vehicles.filter((vehicle) => !vehicle.archived_at),
+    },
+    {
+      title: t("archivedVehicles"),
+      items: vehicles.filter((vehicle) => !!vehicle.archived_at),
+    },
+  ];
   return (
     <Screen title={t("garage")} loading={query.isPending} compact>
       <AppText muted>{t("uiGarageHint")}</AppText>
@@ -86,130 +93,158 @@ export function Garage() {
               }
             />
           )}
-          <View
-            onLayout={(event) => setGridWidth(event.nativeEvent.layout.width)}
-            style={{
-              width: "100%",
-              maxWidth: 640,
-              alignSelf: "center",
-              flexDirection: "row",
-              flexWrap: "wrap",
-              alignItems: "flex-start",
-              gap: 10,
-            }}
-          >
-            {vehicles.map((v) => (
-              <View
-                key={v.id}
-                style={{ width: cardWidth, minWidth: 0, gap: 6 }}
-              >
-                <MotionPress
-                  label={`${t("details")}: ${v.nickname || v.registration_number || v.model || subtypeLabel(v.subtype)}`}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/garage/[id]",
-                      params: { id: v.id },
-                    })
+          {groups
+            .filter((group) => group.items.length > 0)
+            .map((group) => (
+              <View key={group.title} style={{ gap: 10 }}>
+                <SectionHeading title={group.title} />
+                <View
+                  onLayout={(event) =>
+                    setGridWidth(event.nativeEvent.layout.width)
                   }
+                  style={{
+                    width: "100%",
+                    maxWidth: 640,
+                    alignSelf: "center",
+                    flexDirection: "row",
+                    flexWrap: "wrap",
+                    alignItems: "flex-start",
+                    gap: 10,
+                  }}
                 >
-                  <View
-                    style={{
-                      overflow: "hidden",
-                      borderRadius: 20,
-                      backgroundColor: colors.surface,
-                      gap: 8,
-                      borderWidth: 1,
-                      borderColor: colors.line,
-                      shadowColor: "#163B46",
-                      shadowOpacity: 0.05,
-                      shadowOffset: { width: 0, height: 3 },
-                      shadowRadius: 8,
-                      elevation: 1,
-                    }}
-                  >
-                    <SquareArtwork
-                      source={vehicleArt(v.category, v.subtype)}
-                      radius={0}
-                    />
+                  {group.items.map((v) => (
                     <View
-                      style={{
-                        paddingHorizontal: 10,
-                        gap: 5,
-                        paddingBottom: 10,
-                      }}
+                      key={v.id}
+                      style={{ width: cardWidth, minWidth: 0, gap: 6 }}
                     >
-                      <Text
-                        style={{
-                          fontSize: 15,
-                          fontWeight: "700",
-                          color: colors.ink,
-                        }}
+                      <MotionPress
+                        label={`${t("details")}: ${v.nickname || v.registration_number || v.model || subtypeLabel(v.subtype)}`}
+                        onPress={() =>
+                          router.push({
+                            pathname: "/garage/[id]",
+                            params: { id: v.id },
+                          })
+                        }
                       >
-                        {v.nickname ||
-                          v.registration_number ||
-                          v.model ||
-                          subtypeLabel(v.subtype)}
-                      </Text>
-                      <Text style={{ fontSize: 12, color: colors.muted }}>
-                        {subtypeLabel(v.subtype)}
-                      </Text>
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          flexWrap: "wrap",
-                          gap: 4,
-                        }}
-                      >
-                        <Text
+                        <View
                           style={{
-                            fontSize: 11,
-                            fontWeight: "600",
-                            color: colors.primary,
-                            backgroundColor: colors.background,
-                            paddingHorizontal: 7,
-                            paddingVertical: 4,
-                            borderRadius: 8,
+                            overflow: "hidden",
+                            borderRadius: 20,
+                            backgroundColor: colors.surface,
+                            gap: 8,
+                            borderWidth: 1,
+                            borderColor: colors.line,
+                            shadowColor: "#163B46",
+                            shadowOpacity: 0.05,
+                            shadowOffset: { width: 0, height: 3 },
+                            shadowRadius: 8,
+                            elevation: 1,
                           }}
                         >
-                          {t(v.role === "OWNER" ? "owner" : "pilot")} ·{" "}
-                          {t(
-                            v.meter_mode === "KM"
-                              ? "meterModeShortKm"
-                              : v.meter_mode === "HOURS"
-                                ? "meterModeShortHours"
-                                : "meterModeShortBoth",
-                          )}
-                        </Text>
-                        {v.archived_at && (
-                          <Text
+                          <SquareArtwork
+                            source={vehicleArt(v.category, v.subtype)}
+                            radius={0}
+                          />
+                          <View
                             style={{
-                              fontSize: 11,
-                              color: colors.muted,
-                              paddingVertical: 4,
+                              paddingLeft: 10,
+                              paddingRight: 58,
+                              paddingBottom: 10,
+                              minHeight: 80,
+                              gap: 5,
                             }}
                           >
-                            {t("archived")}
-                          </Text>
-                        )}
-                      </View>
+                            <Text
+                              style={{
+                                fontSize: 15,
+                                fontWeight: "700",
+                                color: colors.ink,
+                              }}
+                            >
+                              {v.nickname ||
+                                v.registration_number ||
+                                v.model ||
+                                subtypeLabel(v.subtype)}
+                            </Text>
+                            <Text style={{ fontSize: 12, color: colors.muted }}>
+                              {subtypeLabel(v.subtype)}
+                            </Text>
+                            <View
+                              style={{
+                                flexDirection: "row",
+                                flexWrap: "wrap",
+                                gap: 4,
+                              }}
+                            >
+                              <Text
+                                style={{
+                                  fontSize: 11,
+                                  fontWeight: "600",
+                                  color: colors.primary,
+                                  backgroundColor: colors.background,
+                                  paddingHorizontal: 7,
+                                  paddingVertical: 4,
+                                  borderRadius: 8,
+                                }}
+                              >
+                                {t(v.role === "OWNER" ? "owner" : "pilot")} ·{" "}
+                                {t(
+                                  v.meter_mode === "KM"
+                                    ? "meterModeShortKm"
+                                    : v.meter_mode === "HOURS"
+                                      ? "meterModeShortHours"
+                                      : "meterModeShortBoth",
+                                )}
+                              </Text>
+                              {v.archived_at && (
+                                <Text
+                                  style={{
+                                    fontSize: 11,
+                                    color: colors.muted,
+                                    paddingVertical: 4,
+                                  }}
+                                >
+                                  {t("archived")}
+                                </Text>
+                              )}
+                            </View>
+                          </View>
+                        </View>
+                      </MotionPress>
+                      {v.role === "OWNER" && !v.archived_at && (
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`${t("edit")}: ${v.nickname || v.registration_number || v.model || subtypeLabel(v.subtype)}`}
+                          onPress={() =>
+                            router.push({
+                              pathname: "/garage/edit",
+                              params: { id: v.id },
+                            })
+                          }
+                          style={{
+                            position: "absolute",
+                            right: 8,
+                            bottom: 6,
+                            width: 44,
+                            height: 44,
+                            alignItems: "center",
+                            justifyContent: "center",
+                            borderRadius: 14,
+                            backgroundColor: colors.background,
+                          }}
+                        >
+                          <Ionicons
+                            name="create-outline"
+                            size={22}
+                            color={colors.primary}
+                          />
+                        </Pressable>
+                      )}
                     </View>
-                  </View>
-                </MotionPress>
-                {v.role === "OWNER" && (
-                  <AppButton
-                    secondary
-                    label={t("edit")}
-                    onPress={() =>
-                      router.push({
-                        pathname: "/garage/edit",
-                        params: { id: v.id },
-                      })
-                    }
-                  />
-                )}
+                  ))}
+                </View>
               </View>
             ))}
-          </View>
         </>
       )}
     </Screen>
@@ -220,9 +255,9 @@ export function VehicleDetails() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const query = useVehicles();
   const vehicle = query.data?.find((v) => v.id === id);
-  const access = usePermissions(id);
   const qc = useQueryClient();
   const toast = useToast();
+  const colors = useTheme();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const archive = async () => {
@@ -239,8 +274,107 @@ export function VehicleDetails() {
   };
   return (
     <Screen compact title={t("details")} loading={query.isPending || busy}>
-      {vehicle ? (
+      {query.error ? (
+        <ErrorState
+          message={query.error.message}
+          retry={() => void query.refetch()}
+        />
+      ) : vehicle ? (
         <>
+          {vehicle.role === "OWNER" && (
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "flex-end",
+                gap: 8,
+              }}
+            >
+              {!vehicle.archived_at && (
+                <>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t("addVehicleMember")}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/owner/members",
+                        params: { vehicle: id, add: "1" },
+                      })
+                    }
+                    style={{
+                      width: 48,
+                      height: 48,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: 14,
+                      backgroundColor: colors.background,
+                    }}
+                  >
+                    <Ionicons
+                      name="person-add-outline"
+                      size={22}
+                      color={colors.primary}
+                    />
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t("edit")}
+                    onPress={() =>
+                      router.push({ pathname: "/garage/edit", params: { id } })
+                    }
+                    style={{
+                      width: 48,
+                      height: 48,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: 14,
+                      backgroundColor: colors.background,
+                    }}
+                  >
+                    <Ionicons
+                      name="create-outline"
+                      size={22}
+                      color={colors.primary}
+                    />
+                  </Pressable>
+                </>
+              )}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t(
+                  vehicle.archived_at ? "recover" : "archive",
+                )}
+                disabled={busy}
+                onPress={() =>
+                  ConfirmDialog(
+                    t(vehicle.archived_at ? "recover" : "archive"),
+                    t(
+                      vehicle.archived_at
+                        ? "recoverVehicleBody"
+                        : "archiveVehicleBody",
+                    ),
+                    () => void archive(),
+                  )
+                }
+                style={{
+                  width: 48,
+                  height: 48,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: 14,
+                  backgroundColor: colors.background,
+                  opacity: busy ? 0.5 : 1,
+                }}
+              >
+                <Ionicons
+                  name={
+                    vehicle.archived_at ? "refresh-outline" : "archive-outline"
+                  }
+                  size={22}
+                  color={colors.primary}
+                />
+              </Pressable>
+            </View>
+          )}
           <VehicleHeader vehicleId={id} allowSwitch={false} />
           <Card style={{ padding: 16 }}>
             <InfoRows
@@ -257,91 +391,14 @@ export function VehicleDetails() {
               ]}
             />
           </Card>
-          <AppText muted>{t("roleInfo")}</AppText>
-          <AppText muted>{t("noPhoto")}</AppText>
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-            {(["fuel", "expenses", "documents", "reminders"] as const)
-              .filter(
-                (kind) => supportsRecord(kind) && access.data?.[`${kind}.read`],
-              )
-              .map((kind) => (
-                <ActionTile
-                  key={kind}
-                  icon={recordVisuals[kind].icon}
-                  tone={recordVisuals[kind].tone}
-                  label={r(kind)}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/records/[kind]",
-                      params: { kind, vehicle: id },
-                    })
-                  }
-                />
-              ))}
-          </View>
-          {access.data?.["meters.read"] && (
-            <AppButton
-              secondary
-              label={r("meters")}
-              onPress={() =>
-                router.push({
-                  pathname: "/records/[kind]",
-                  params: { kind: "meters", vehicle: id },
-                })
-              }
-            />
-          )}
-          {access.data?.["meters.create"] && (
-            <AppButton
-              label={r("addMeter")}
-              onPress={() =>
-                router.push({
-                  pathname: "/records/[kind]/[action]",
-                  params: { kind: "meters", action: "add", vehicle: id },
-                })
-              }
-            />
-          )}
-          {vehicle.role === "OWNER" && !vehicle.archived_at && (
-            <AppButton
-              secondary
-              label={t("addVehicleMember")}
-              onPress={() =>
-                router.push({
-                  pathname: "/owner/members",
-                  params: { vehicle: id, add: "1" },
-                })
-              }
-            />
-          )}
-          {vehicle.role === "OWNER" && (
-            <>
-              <AppButton
-                label={t("edit")}
-                onPress={() =>
-                  router.push({ pathname: "/garage/edit", params: { id } })
-                }
-              />
-              <AppButton
-                secondary
-                disabled={busy}
-                label={t(vehicle.archived_at ? "recover" : "archive")}
-                onPress={() =>
-                  ConfirmDialog(
-                    t(vehicle.archived_at ? "recover" : "archive"),
-                    t("archiveBody"),
-                    () => void archive(),
-                  )
-                }
-              />
-            </>
+          {vehicle.archived_at && (
+            <AppText muted>{t("archivedVehicleReadOnly")}</AppText>
           )}
         </>
       ) : (
         !query.isPending && <AppText>{t("denied")}</AppText>
       )}
       {error && <ErrorState message={error} retry={() => void archive()} />}
-      <AppButton secondary label={t("back")} onPress={() => router.back()} />
     </Screen>
   );
 }

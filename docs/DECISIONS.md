@@ -201,3 +201,15 @@ Meter history uses the shared compact fuel/expense row and opens observation det
 ### Retire Daily Progress — 2026-11-05
 
 Remove user-facing Daily Progress, approvals, form builder, permissions and reports. Preserve existing submissions, form versions, audit history and meter observations rather than deleting user data. An additive migration revokes client RPC/table access and stops automatic form creation and adaptation. Retired implementation remains in source where shared code and historical compatibility still depend on it; it is not reachable through the app routes. The backend migration must be applied separately to disable older clients.
+
+### Profile icon selection — 2026-11-05
+
+Profile icons use an allowlisted Ionicons identifier stored on the profile, not image uploads or remote URLs. Existing profiles default to `person-circle`. The picker and More drawer use the selected icon. Profile reads remain compatible with a backend without the new column; other settings can still be saved there, while a changed icon reports that the database update is required. Currency remains unimplemented under the previously recorded per-record currency and legacy-client requirements; selecting a currency must not imply that the INR-only ledger has changed.
+
+### Archived vehicle access — 2026-11-05
+
+Interpret the requested archive behavior as keeping archived vehicles in a separate Garage section, excluding them from the active vehicle switcher until restored, and preventing record or vehicle-detail writes while archived. Existing data stays readable. Use compact owner actions on vehicle details and retain the member-management entry as an icon. Keep the standard header/Android back navigation; remove the duplicate bottom Back button. An additive server trigger migration hardens additional write paths, in addition to the existing guarded save RPC. No real data is removed.
+
+### Authentication and first-vehicle flow — 2026-11-05
+
+Keep email/password login, Google sign-in, password recovery, verified email sign-up and the existing optional email-code sign-in. Collect email/password/confirmation on one sign-up screen before verification rather than an extra email-only step. Apply the existing display-name profile gate after restored sessions and app deep links, while keeping legal and password recovery reachable; profile-load failures offer retry/sign-out. Account theme is a single System/Light/Dark choice: System follows a detected device appearance and falls back to Light if unavailable. The first vehicle is optional because verified vehicle grants may already exist. See `docs/AUTH_ONBOARDING_FLOW.md`.

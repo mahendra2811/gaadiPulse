@@ -17,3 +17,14 @@ export function authDestination(
 export function keepsAuthenticatedAuthScreen(pathname: string) {
   return pathname === "/auth/legal" || pathname === "/auth/reset-password";
 }
+
+/** Gate first-time setup on every app entry, including deep links and session restore. */
+export function profileRedirect(
+  pathname: string,
+  hasDisplayName: boolean,
+): string | null {
+  if (keepsAuthenticatedAuthScreen(pathname)) return null;
+  if (!hasDisplayName)
+    return pathname === "/settings/profile" ? null : "/settings/profile";
+  return pathname.startsWith("/auth/") ? "/(tabs)" : null;
+}

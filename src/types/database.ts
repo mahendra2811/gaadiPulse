@@ -75,6 +75,8 @@ export type Database = {
         locale: "en";
         theme: "light" | "dark" | "system";
         timezone: string;
+        avatar_icon: string;
+        country_code: string | null;
         created_at: string;
         updated_at: string;
       }>;

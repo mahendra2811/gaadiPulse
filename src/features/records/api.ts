@@ -156,6 +156,11 @@ async function saveLocal(
     const receipt = await readDevelopment(`recordOperation.${operation}`);
     if (receipt) return String(receipt);
     const old = rows.find((r) => r.id === id);
+    const recordVehicle = (await listDevelopmentVehicles()).find(
+      (item) => item.id === vehicle,
+    );
+    if (!recordVehicle || recordVehicle.archived_at)
+      throw new Error("VEHICLE_ARCHIVED");
     if (kind === "fuel") {
       const configuration = (await listDevelopmentVehicles()).find(
         (item) => item.id === vehicle,

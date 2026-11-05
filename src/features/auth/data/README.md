@@ -1,0 +1,3 @@
+# Country and territory names
+
+`countries.json` contains the two-letter territory labels from Unicode CLDR JSON 48.2.0, English `cldr-localenames-full/main/en/territories.json`, with non-territory regional aggregates and pseudo-locales removed. CLDR includes some territory codes in addition to ISO 3166 country codes; this is a country-or-territory selector, not a legal nationality list. Source: https://github.com/unicode-org/cldr-json/blob/48.2.0/cldr-json/cldr-localenames-full/main/en/territories.json. The Unicode License V3 is in `UNICODE_LICENSE.txt`. Refresh deliberately with the corresponding server allowlist and tests; do not infer currency or time zone from a country name.

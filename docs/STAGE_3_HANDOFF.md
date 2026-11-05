@@ -420,3 +420,21 @@ Validation performed:
 Additional follow-up: `npx supabase migration list --linked` PASS (read-only); linked project shows 001–004 applied and 005–009 pending. No linked project migration or data was changed. An in-memory-only PGlite experiment adding parentheses around the CASE expression in 005 compiled all nine migrations; this is diagnostic, not an applied correction or hosted/RLS test. `npm run lint`, `npm run format:check` and `npm run typecheck` subsequently PASS. The user supplied Mahendra Singh, `mahendrapuniya92@gmail.com` and the website, and chose to keep shared vehicle records while removing the departing identity. Added `docs/ACCOUNT_DELETION_PAGE_DRAFT.md`, populated contact details in the policy draft, and added a deletion support email action in-app. HTTP HEAD to the supplied website returned 200, but publishing access was not established and no policy/deletion page was published. Changes after the full checks received targeted checks (recorded below).
 - After adding the contact action and updating privacy copy, `npx prettier --check src/lib/i18n.ts src/features/auth/SecurityScreen.tsx src/features/records/copy.ts`, targeted ESLint on those files and `npm run typecheck`: PASS. `git diff --check`: PASS.
 - `cd android && ./gradlew assembleDebug`: CANCELLED during native compilation after the offline failure; then `cd android && ./gradlew :app:assembleDebug -PreactNativeArchitectures=arm64-v8a`: PASS. This is a debug native build for one ABI, not a signed release or device test.
+
+## More drawer restoration — 2026-11-04
+
+Restored More as a full-height drawer entering from the left at 75% of the current window width, with a translucent blue backdrop, outside-tap/close-button/Android Back dismissal, safe-area padding, scrollable menu content and reduced-motion handling. Changed `src/components/navigation/MoreDrawer.tsx`; existing menu actions remain in `MoreMenu`.
+
+Validation: `npm run typecheck` — PASS; `npx eslint src/components/navigation/MoreDrawer.tsx --max-warnings=0` — PASS; `npx prettier --check src/components/navigation/MoreDrawer.tsx` — PASS. Browser visual/interaction verification was not completed: the available browser was on an expense form after an automation timeout, so no further interaction was attempted. Android device verification and a native build were not run for this UI-only change.
+
+## Compact home observations — 2026-11-04
+
+Changed `src/features/garage/screens.tsx` and `src/lib/i18n.ts` to show available latest KM and HOURS readings in compact rows within a full-width card, each with its own observed date and time in the vehicle timezone. Missing readings are omitted; the empty state is shown only after loading completes. No query, data or permissions changed.
+
+Validation: `npm run typecheck`, `npx eslint src/features/garage/screens.tsx src/lib/i18n.ts --max-warnings=0`, `npx prettier --check src/features/garage/screens.tsx src/lib/i18n.ts`, and `git diff --check` — PASS. Browser visual testing and Android device testing were not performed; no native build was run for this presentation change.
+
+## Consistent form saves and expense categories — 2026-11-04
+
+Fuel/charging saves now use the shared success toast and navigate directly to Fuel after confirmed save, removing `RecordSavedDialog.tsx`. Shared toast styling uses dark colors and light text for all message types; profile, meter corrections and new expense categories use the success tone. Added `src/components/ui/InlineSelect.tsx` for the expense category's inline, bounded scrollable list, preserving category options and existing selection behavior. Category loading errors now offer retry. No database or save validation changes.
+
+Validation: `npm run typecheck` — PASS; targeted ESLint and Prettier for changed source — PASS; `npx vitest run tests/onlineOnly.test.ts tests/recordDeletion.test.ts --maxWorkers=1` — PASS (10 tests); `git diff --check` — PASS. Browser and Android device interaction/visual testing was not performed; Android build not run for this presentation change.

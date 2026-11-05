@@ -1,7 +1,6 @@
-import { RecordSavedDialog } from "./RecordSavedDialog";
 import { releaseFeatures, supportsVehicle } from "@/src/features/release/scope";
 import { DeferredFeature } from "@/src/features/release/DeferredFeature";
-import { DropdownField } from "@/src/components/ui/DropdownField";
+import { InlineSelect } from "@/src/components/ui/InlineSelect";
 import { AdditionalOptions } from "@/src/components/ui/AdditionalOptions";
 import { ZodError } from "zod";
 import { errorMessage } from "@/src/lib/errors";
@@ -28,7 +27,7 @@ import {
 import { t } from "@/src/lib/i18n";
 import { DateTimeInput } from "@/src/components/ui/fields";
 import { observations as loadObservations } from "@/src/features/meters/api";
-import { type ReactNode, useCallback, useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { Linking, View, Switch } from "react-native";
 import { router, useLocalSearchParams, usePreventRemove } from "expo-router";
 import * as Crypto from "expo-crypto";
@@ -432,10 +431,6 @@ export function RecordForm() {
   const access = usePermissions(v?.id);
   const qc = useQueryClient();
   const toast = useToast();
-  const [saved, setSaved] = useState(false);
-  const completeFuel = useCallback(() => {
-    router.replace("/(tabs)/fuel");
-  }, []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [additionalOpen, setAdditionalOpen] = useState(false);
@@ -725,7 +720,7 @@ export function RecordForm() {
     });
   };
   const submit = async (another = false) => {
-    if (busy || saved || !user || !v) return;
+    if (busy || !user || !v) return;
     setBusy(true);
     setError("");
     try {
@@ -822,13 +817,7 @@ export function RecordForm() {
         status,
       );
       await qc.invalidateQueries();
-      if (kind === "fuel") {
-        active.select(v.id);
-        setLeaving(true);
-        disablePrevention();
-        setSaved(true);
-        return;
-      }
+      if (kind === "fuel") active.select(v.id);
       toast(r("saved"), "success");
       if (another) {
         form.reset({
@@ -839,7 +828,8 @@ export function RecordForm() {
       } else {
         setLeaving(true);
         disablePrevention();
-        router.back();
+        if (kind === "fuel") router.replace("/(tabs)/fuel");
+        else router.back();
       }
     } catch (e) {
       if (
@@ -1047,7 +1037,6 @@ export function RecordForm() {
               label={r(kind === "progress" ? "submit" : "save")}
               disabled={
                 busy ||
-                saved ||
                 !ready ||
                 (kind === "progress" &&
                   (forms.isPending || !values.form_version_id))
@@ -1058,7 +1047,6 @@ export function RecordForm() {
         </View>
       }
     >
-      {saved && <RecordSavedDialog onContinue={completeFuel} />}
       {id ? (
         <VehicleHeader vehicleId={v.id} allowSwitch={false} />
       ) : (
@@ -1242,7 +1230,7 @@ export function RecordForm() {
         <>
           {field("amount", r("amount"), true)}
           {field("title", r("title"))}
-          <DropdownField
+          <InlineSelect
             label={r("category")}
             value={values.category}
             disabled={busy}
@@ -1256,6 +1244,12 @@ export function RecordForm() {
               form.setValue("category", category, { shouldDirty: true })
             }
           />
+          {categories.error && (
+            <ErrorState
+              message={categories.error.message}
+              retry={() => void categories.refetch()}
+            />
+          )}
         </>
       )}
       {["fuel", "expenses"].includes(kind) && field("event_at", r("event"))}
@@ -1351,6 +1345,7 @@ export function RecordForm() {
                       .then(() => {
                         setCustomCategory("");
                         void categories.refetch();
+                        toast(r("saved"), "success");
                       })
                       .catch((e) => setError(String(e)));
                   }}

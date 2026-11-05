@@ -12,7 +12,6 @@ import { useVehicleAccess } from "@/src/hooks/useVehicleAccess";
 import { useState } from "react";
 import { View, Text, useWindowDimensions } from "react-native";
 import {
-  ColorIcon,
   SectionHeading,
   MotionPress,
   TextAction,
@@ -391,6 +390,10 @@ export function Home() {
     },
   });
   const colors = useTheme();
+  const latestReadings = (["KM", "HOURS"] as const)
+    .filter((kind) => v?.meter_mode === "BOTH" || v?.meter_mode === kind)
+    .map((kind) => readings.data?.find((row) => row.reading_type === kind))
+    .filter((reading) => reading !== undefined);
   return (
     <Screen
       title={t("app")}
@@ -433,63 +436,61 @@ export function Home() {
                     message={readings.error.message}
                     retry={() => void readings.refetch()}
                   />
-                ) : readings.data?.length ? (
-                  <View
-                    style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}
-                  >
-                    {(["KM", "HOURS"] as const)
-                      .filter(
-                        (kind) =>
-                          v.meter_mode === "BOTH" || v.meter_mode === kind,
-                      )
-                      .map((kind) => {
-                        const reading = readings.data.find(
-                          (row) => row.reading_type === kind,
-                        );
-                        return (
-                          <Card
-                            key={kind}
+                ) : latestReadings.length ? (
+                  <Card style={{ padding: 0, gap: 0, overflow: "hidden" }}>
+                    {latestReadings.map((reading, index) => (
+                      <View
+                        key={reading.id}
+                        style={{
+                          flexDirection: "row",
+                          flexWrap: "wrap",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          columnGap: 12,
+                          rowGap: 4,
+                          paddingHorizontal: 14,
+                          paddingVertical: 10,
+                          borderTopWidth: index === 0 ? 0 : 1,
+                          borderTopColor: colors.line,
+                        }}
+                      >
+                        <Text
+                          accessibilityLabel={`${t(reading.reading_type)}: ${reading.value.toLocaleString("en-IN", { maximumFractionDigits: 3 })}`}
+                          style={{
+                            color: colors.ink,
+                            fontSize: 22,
+                            fontWeight: "800",
+                            flexShrink: 1,
+                          }}
+                        >
+                          {reading.value.toLocaleString("en-IN", {
+                            maximumFractionDigits: 3,
+                          })}
+                          <Text
                             style={{
-                              flexBasis: "45%",
-                              flexGrow: 1,
-                              padding: 16,
-                              borderWidth: 0,
-                              shadowColor: "#192D48",
-                              shadowOpacity: 0.06,
-                              shadowOffset: { width: 0, height: 4 },
-                              shadowRadius: 12,
-                              elevation: 2,
+                              color: colors.muted,
+                              fontSize: 13,
+                              fontWeight: "600",
                             }}
                           >
-                            <ColorIcon
-                              name={kind === "KM" ? "speedometer" : "time"}
-                              tone={kind === "KM" ? "cyan" : "violet"}
-                            />
-                            <Text
-                              style={{
-                                color: colors.ink,
-                                fontSize: 24,
-                                fontWeight: "800",
-                              }}
-                            >
-                              {reading ? reading.value.toLocaleString() : "—"}
-                            </Text>
-                            <AppText muted>{t(kind)}</AppText>
-                            {reading ? (
-                              <Timestamp
-                                value={reading.observed_at}
-                                timezone={v.timezone}
-                              />
-                            ) : (
-                              <AppText muted>{t("noReadings")}</AppText>
+                            {" "}
+                            {t(
+                              reading.reading_type === "KM"
+                                ? "unitKmShort"
+                                : "unitHoursShort",
                             )}
-                          </Card>
-                        );
-                      })}
-                  </View>
-                ) : (
+                          </Text>
+                        </Text>
+                        <Timestamp
+                          value={reading.observed_at}
+                          timezone={v.timezone}
+                        />
+                      </View>
+                    ))}
+                  </Card>
+                ) : !readings.isPending ? (
                   <AppText muted>{t("noReadings")}</AppText>
-                )}
+                ) : null}
               </>
             )
           )}

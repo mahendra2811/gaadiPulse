@@ -5,11 +5,6 @@ export const en = {
   readingBelowPreviousServer:
     "Reading must be at least the previous reading for the selected time. Check the reading and try again.",
   closePopup: "Close popup",
-  fuelSavedTitle: "Record saved",
-  fuelSavedRedirect:
-    "Your fuel or charging record was saved successfully. Returning to Fuel in 4 seconds, or tap OK to continue now.",
-  savedDialogOk: "OK",
-
   fuelPrimaryRequired:
     "Enter the total amount and quantity to save this record.",
   fuelQuickHelp:
@@ -417,6 +412,8 @@ export const en = {
   OTHER: "Other",
   KM: "Kilometres",
   HOURS: "Engine hours",
+  unitKmShort: "km",
+  unitHoursShort: "hrs",
   BOTH: "Kilometres and hours",
   profile: "Profile",
   name: "Display name",

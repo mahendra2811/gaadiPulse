@@ -109,7 +109,7 @@ export const recordCopy = {
   analytics: "Analysis",
   save: "Save",
   saveAnother: "Save and add another",
-  saved: "Saved",
+  saved: "Saved successfully",
   noData: "No records yet",
   noVehicle: "Choose or add a vehicle first.",
   permission: "You do not have permission for this action.",

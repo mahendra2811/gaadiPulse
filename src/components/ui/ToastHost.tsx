@@ -16,19 +16,17 @@ import {
   subscribeToast,
   TOAST_DURATION_MS,
 } from "@/src/lib/toast";
-import { useTheme } from "@/src/lib/theme";
 import { useReducedMotion } from "@/src/hooks/useReducedMotion";
 import { t } from "@/src/lib/i18n";
 const tones = {
-  success: { ink: "#087565", background: "#D9F5EB", icon: "checkmark-circle" },
-  error: { ink: "#B44752", background: "#FFE7E8", icon: "alert-circle" },
-  warning: { ink: "#9B5A0A", background: "#FFF0D1", icon: "warning" },
-  info: { ink: "#3157BF", background: "#E5ECFF", icon: "information-circle" },
-  reminder: { ink: "#7750B7", background: "#F0E7FF", icon: "notifications" },
+  success: { background: "#075A4C", icon: "checkmark-circle" },
+  error: { background: "#8D2635", icon: "alert-circle" },
+  warning: { background: "#754500", icon: "warning" },
+  info: { background: "#294B87", icon: "information-circle" },
+  reminder: { background: "#593B82", icon: "notifications" },
 } as const;
 export function ToastHost() {
   const toast = useSyncExternalStore(subscribeToast, getToast, () => null);
-  const c = useTheme();
   const inset = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const reduced = useReducedMotion();
@@ -80,9 +78,7 @@ export function ToastHost() {
           alignSelf: "center",
           maxWidth: Math.min(300, width - 24),
           borderRadius: 14,
-          backgroundColor: c.surface,
-          borderWidth: 1,
-          borderColor: c.line,
+          backgroundColor: tone.background,
           shadowColor: "#102438",
           shadowOpacity: 0.1,
           shadowOffset: { width: 0, height: 3 },
@@ -107,18 +103,18 @@ export function ToastHost() {
               width: 25,
               height: 25,
               borderRadius: 9,
-              backgroundColor: tone.background,
+              backgroundColor: "#FFFFFF24",
               alignItems: "center",
               justifyContent: "center",
             }}
           >
-            <Ionicons name={tone.icon} size={16} color={tone.ink} />
+            <Ionicons name={tone.icon} size={16} color="#FFFFFF" />
           </View>
           <Text
             accessibilityRole="alert"
             numberOfLines={2}
             style={{
-              color: c.ink,
+              color: "#FFFFFF",
               fontSize: 12,
               lineHeight: 17,
               fontWeight: "500",
@@ -141,18 +137,18 @@ export function ToastHost() {
               opacity: pressed ? 0.5 : 1,
             })}
           >
-            <Ionicons name="close" size={15} color={c.muted} />
+            <Ionicons name="close" size={15} color="#FFFFFF" />
           </Pressable>
         </View>
         {!reduced && (
           <View
             pointerEvents="none"
-            style={{ height: 2, backgroundColor: tone.background }}
+            style={{ height: 2, backgroundColor: "#FFFFFF30" }}
           >
             <Animated.View
               style={{
                 height: 2,
-                backgroundColor: tone.ink,
+                backgroundColor: "#FFFFFF",
                 transform: [{ scaleX: countdown }],
               }}
             />

@@ -163,7 +163,7 @@ export function Profile() {
       await qc.invalidateQueries({
         queryKey: [user, "profile"],
       });
-      toast(t("saved"));
+      toast(t("saved"), "success");
       setLeaving(true);
       disablePrevention();
       if (!query.data?.display_name) router.replace("/(tabs)");

@@ -91,7 +91,7 @@ export default function MeterHistory() {
       setOperation(Crypto.randomUUID());
       await qc.invalidateQueries();
       setSelected(null);
-      toast(r("saved"));
+      toast(r("saved"), "success");
     } catch (e) {
       setError(String(e));
     } finally {

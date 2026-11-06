@@ -9,7 +9,6 @@ import {
   Text,
   TextInput,
   View,
-  useWindowDimensions,
   type TextInputProps,
 } from "react-native";
 import {
@@ -40,11 +39,7 @@ export function PremiumAuthLayout({
   children: ReactNode;
 }) {
   const c = useTheme();
-  const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const heroWidth = width;
-  const heroHeight =
-    Math.max(220, Math.min(295, heroWidth / 2 + 48)) + insets.top;
   const features: { label: string; icon: IconName }[] = [
     { label: t("authFuelCharging"), icon: "flash-outline" },
     { label: t("authTrackExpenses"), icon: "wallet-outline" },
@@ -79,7 +74,8 @@ export function PremiumAuthLayout({
           <View style={{ width: "100%" }}>
             <View
               style={{
-                height: heroHeight,
+                width: "100%",
+                aspectRatio: 1514 / 1039,
                 backgroundColor: "#006F63",
                 overflow: "hidden",
                 borderBottomLeftRadius: 28,
@@ -88,12 +84,13 @@ export function PremiumAuthLayout({
             >
               <Image
                 source={hero}
-                resizeMode={heroWidth > 490 ? "cover" : "contain"}
+                resizeMode="cover"
                 style={{
-                  width: "100%",
-                  height: Math.min(heroWidth / 2, 245),
                   position: "absolute",
-                  bottom: 0,
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "100%",
                 }}
               />
               <View

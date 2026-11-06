@@ -258,7 +258,7 @@ export function RecordsList({
       title={kind === "fuel" && v?.energy_type === "ELECTRIC" ? t("charging") : r(kind)}
       compact
       loading={active.isPending || (!!v && (permissions.isPending || query.isPending))}
-      banner={kind === "fuel" || kind === "expenses" || kind === "progress" ? kind : undefined}
+      // banner={kind === "progress" ? kind : undefined}
     >
       <VehicleHeader vehicleId={v?.id} allowSwitch={!contextVehicle} />
       {active.error && (

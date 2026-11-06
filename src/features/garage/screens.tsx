@@ -72,7 +72,6 @@ export function Garage() {
       title={t("garage")}
       loading={query.isPending}
       compact
-      banner="garage"
     >
       <AppText muted>{t("uiGarageHint")}</AppText>
       <AppButton label={t("add")} onPress={() => router.push("/garage/add")} />

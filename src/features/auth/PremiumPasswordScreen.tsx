@@ -151,7 +151,7 @@ export function PremiumPasswordScreen({ mode }: { mode: "login" | "signup" }) {
           />
           {mode === "signup" && (
             <>
-              <AppText muted>{t("passwordRules")}</AppText>
+              
               <AuthTextField
                 label={t("confirmPassword")}
                 icon="shield-checkmark-outline"

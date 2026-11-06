@@ -317,7 +317,7 @@ export const en = {
     "If an account exists for this email, a reset code has been sent. Check your inbox and spam folder.",
   signupSent:
     "Check your inbox for a verification code. If you already have an account, sign in or reset your password.",
-  passwordRules: "Use 12–128 characters. A long, unique passphrase is recommended.",
+  passwordRules: "Use 5–128 characters.",
   passwordMismatch: "Passwords do not match.",
   passwordUpdated: "Your password was updated.",
   invalidEmail: "Enter a valid email address.",

@@ -13,7 +13,7 @@ export const accountEmail = z
   .pipe(z.email(t("invalidEmail")));
 export const newPassword = z
   .string()
-  .min(12, t("passwordRules"))
+  .min(5, t("passwordRules"))
   .max(128, t("passwordRules"));
 export const passwordPair = z
   .object({

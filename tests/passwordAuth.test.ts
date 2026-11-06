@@ -29,7 +29,8 @@ beforeEach(() => {
 describe("password account boundaries", () => {
   it("normalizes email and validates a matching password without changing its contents", () => {
     expect(accountEmail.parse(" user@example.com ")).toBe("user@example.com");
-    expect(newPassword.safeParse("short").success).toBe(false);
+    expect(newPassword.safeParse("four").success).toBe(false);
+    expect(newPassword.safeParse("short").success).toBe(true);
     expect(
       passwordPair.safeParse({
         password: "a long passphrase",
@@ -42,13 +43,13 @@ describe("password account boundaries", () => {
   });
   it("allows existing short passwords at login while enforcing policy on new passwords", async () => {
     auth.signInWithPassword.mockResolvedValue({ error: null });
-    await passwordLogin(" user@example.com ", "legacy");
+    await passwordLogin(" user@example.com ", "old");
     expect(auth.signInWithPassword).toHaveBeenCalledWith({
       email: "user@example.com",
-      password: "legacy",
+      password: "old",
     });
     await expect(
-      passwordSignup("user@example.com", "legacy"),
+      passwordSignup("user@example.com", "four"),
     ).rejects.toThrow();
     expect(auth.signUp).not.toHaveBeenCalled();
   });

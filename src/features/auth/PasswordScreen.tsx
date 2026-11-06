@@ -199,7 +199,6 @@ function LegacyPasswordScreen({ mode }: { mode: Mode }) {
               />
               {(mode === "signup" || stage === "password") && (
                 <>
-                  <AppText muted>{t("passwordRules")}</AppText>
                   <PasswordField
                     label={t("confirmPassword")}
                     required

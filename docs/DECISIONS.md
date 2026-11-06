@@ -256,3 +256,6 @@ The intended design fixes each vehicle's currency at creation and remembers the 
 ### Brand and loading states — 5 November 2026
 
 Use the user-supplied logo variants as the brand source, with derived launcher, adaptive, notification and favicon assets generated locally by `scripts/build-brand-assets.mjs`. Home, Garage, Fuel and Expenses use accessible, reduced-motion-aware skeletons only for requests that are actually pending. Existing empty, access and recoverable error states remain authoritative; skeletons do not imply measured progress.
+# Password length — 2026-11-06
+
+At the user's request, new passwords use a five-character minimum and a 128-character maximum in the app and local Supabase configuration. Login continues to accept existing shorter passwords. The hosted Supabase Auth policy must be checked separately; changing local configuration does not change the hosted project, and hosted enforcement may impose a higher minimum. Do not report five-character signup as verified until tested against the actual project.

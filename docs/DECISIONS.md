@@ -259,3 +259,7 @@ Use the user-supplied logo variants as the brand source, with derived launcher, 
 # Password length — 2026-11-06
 
 At the user's request, new passwords use a five-character minimum and a 128-character maximum in the app and local Supabase configuration. Login continues to accept existing shorter passwords. The hosted Supabase Auth policy must be checked separately; changing local configuration does not change the hosted project, and hosted enforcement may impose a higher minimum. Do not report five-character signup as verified until tested against the actual project.
+
+## Authentication shell and missing routes — 2026-11-06
+
+The login, signup, password recovery, password login and email verification routes share a navigator-owned, locally bundled hero. It stays mounted while moving among those routes; its height depends on screen width and is capped, while each form scrolls independently. Legal and OAuth callback remain separate screens. Unknown routes have a home/back recovery screen. This presentation change does not alter authentication or authorization rules.

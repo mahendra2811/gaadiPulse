@@ -13,7 +13,17 @@ export default function Callback() {
   useEffect(run, [url]);
   return (
     <Screen title={t("login")} loading={!error}>
-      {error ? <ErrorState message={error} retry={run} /> : <Skeleton />}
+      {error ? (
+        <ErrorState
+          message={error}
+          retry={() => {
+            setError("");
+            run();
+          }}
+        />
+      ) : (
+        <Skeleton />
+      )}
       <AppButton
         secondary
         label={t("login")}

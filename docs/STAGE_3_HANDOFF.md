@@ -655,3 +655,9 @@ Validation: `npm run typecheck`, `npm run lint`, targeted Prettier, `npm test --
 ## Password minimum — 2026-11-06
 
 Changed the new-password validation, displayed guidance, local Supabase Auth configuration and password boundary tests from 12 to 5 characters. Existing shorter passwords remain accepted by the login client. `npm run typecheck` and `npx vitest run tests/passwordAuth.test.ts --maxWorkers=1` PASS (7 tests). Hosted Auth configuration and an actual five-character signup/reset have not been changed or verified. The hosted service may enforce its own minimum; no hosted configuration was pushed. No migration or user data changed.
+
+## Shared authentication shell — 2026-11-06
+
+Added `app/auth/_layout.tsx` and moved the shared hero into the persistent navigator shell in `src/features/auth/PremiumAuth.tsx`; `AuthLayout.tsx` now uses the same form presentation for recovery, verification, session restoration and profile errors. Added `app/+not-found.tsx` and English copy, corrected the verification error dismissal label and deep-link return to login, and cleared the OAuth callback error when retrying. Legal and callback retain their existing separate screens. No schema, provider settings or data were changed.
+
+Validation: `npm run typecheck`, `npm run lint`, `npm test -- --maxWorkers=1` (90 tests), `npx expo config --type public`, targeted Prettier and `git diff --check` PASS. `npx expo export --platform android --output-dir /tmp/gaadipulse-auth-shell` PASS; export and full suite preceded the final small verification/callback error handling changes, which received subsequent targeted lint and typecheck. Browser and physical Android visuals, keyboard, large text, navigation transitions and live auth/error flows were not tested. Android export is a JavaScript bundle, not a native build; SQL/RLS and native builds were not run for this UI change. This is not a comprehensive audit of every application screen.

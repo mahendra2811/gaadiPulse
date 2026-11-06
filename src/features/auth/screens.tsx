@@ -10,11 +10,11 @@ import {
   AppText,
   AppButton,
   InputField,
-  ErrorState,
 } from "@/src/components/ui";
 
 import { t } from "@/src/lib/i18n";
 import { AuthLayout } from "./AuthLayout";
+import { FormError } from "@/src/components/ui/FormError";
 
 import { sendOtp, verifyOtp } from "./api";
 export function Welcome() {
@@ -88,9 +88,9 @@ export function Verify() {
       <AppButton
         secondary
         label={t("changeEmail")}
-        onPress={() => router.back()}
+        onPress={() => router.replace("/auth/login")}
       />
-      {!!error && <ErrorState message={error} retry={() => setError("")} />}
+      {!!error && <FormError message={error} onDismiss={() => setError("")} />}
     </AuthLayout>
   );
 }
@@ -150,7 +150,11 @@ export function Legal() {
           retention and support arrangements before public distribution.
         </AppText>
       </Card>
-      <AppButton secondary label={t("back")} onPress={() => router.back()} />
+      <AppButton
+        secondary
+        label={t("back")}
+        onPress={() => router.replace("/auth/login")}
+      />
     </Screen>
   );
 }

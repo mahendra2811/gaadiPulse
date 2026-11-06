@@ -1,20 +1,8 @@
 import type { ReactNode } from "react";
-import {
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import Ionicons from "@expo/vector-icons/Ionicons";
-import { LoadingLine } from "@/src/components/ui";
-import { GradientSurface } from "@/src/components/ui/GradientSurface";
-import { artwork } from "@/src/lib/assets";
+import { Pressable, Text, View } from "react-native";
 import { useTheme } from "@/src/lib/theme";
 import { t } from "@/src/lib/i18n";
+import { PremiumAuthLayout } from "./PremiumAuth";
 
 export function AuthLayout({
   title,
@@ -29,102 +17,15 @@ export function AuthLayout({
   children: ReactNode;
   onBack?: () => void;
 }) {
-  const c = useTheme();
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: c.background }}>
-      <LoadingLine loading={loading} />
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{
-            flexGrow: 1,
-            padding: 20,
-            justifyContent: "center",
-          }}
-        >
-          <View
-            style={{
-              width: "100%",
-              maxWidth: 460,
-              alignSelf: "center",
-              gap: 24,
-              paddingVertical: 12,
-            }}
-          >
-            <GradientSurface style={{ padding: 24, gap: 16 }}>
-              <View style={{ alignItems: "flex-start", gap: 4 }}>
-                <Image
-                  accessibilityLabel={t("app")}
-                  source={artwork.wordmarkDark}
-                  style={{ width: 180, height: 48 }}
-                  resizeMode="contain"
-                />
-                <Text
-                  style={{ color: "#D6F5EA", fontSize: 13, lineHeight: 20 }}
-                >
-                  {t("authTagline")}
-                </Text>
-              </View>
-              <View
-                style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
-              >
-                <Ionicons
-                  name="shield-checkmark-outline"
-                  size={18}
-                  color="#D6F5EA"
-                />
-                <Text style={{ color: "#D6F5EA", fontSize: 14, flex: 1 }}>
-                  {t("authBrandHint")}
-                </Text>
-              </View>
-            </GradientSurface>
-            <View style={{ gap: 8 }}>
-              {onBack && (
-                <AuthLink
-                  label={t("back")}
-                  onPress={onBack}
-                  disabled={loading}
-                />
-              )}
-              <Text
-                accessibilityRole="header"
-                style={{
-                  fontSize: 30,
-                  lineHeight: 38,
-                  fontWeight: "700",
-                  color: c.ink,
-                }}
-              >
-                {title}
-              </Text>
-              <Text style={{ color: c.muted, fontSize: 16, lineHeight: 24 }}>
-                {subtitle}
-              </Text>
-            </View>
-            <View
-              style={{
-                padding: 20,
-                borderRadius: 24,
-                backgroundColor: c.surface,
-                borderColor: c.line,
-                borderWidth: 1,
-                gap: 18,
-              }}
-            >
-              {children}
-            </View>
-            {/* <AuthLink
-              label={t("legal")}
-              onPress={() => router.push("/auth/legal")}
-              disabled={loading}
-            /> */}
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+    <PremiumAuthLayout
+      title={title}
+      subtitle={subtitle}
+      loading={loading}
+      onBack={onBack}
+    >
+      {children}
+    </PremiumAuthLayout>
   );
 }
 export function AuthLink({

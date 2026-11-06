@@ -1,4 +1,10 @@
-import { useState, type ReactNode, type ComponentProps } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  type ReactNode,
+  type ComponentProps,
+} from "react";
 import {
   ActivityIndicator,
   Image,
@@ -9,6 +15,7 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
   type TextInputProps,
 } from "react-native";
 import {
@@ -27,17 +34,82 @@ import { t } from "@/src/lib/i18n";
 
 const hero = require("@/assets/images/auth/gaadipulse-auth-hero.png");
 type IconName = ComponentProps<typeof Ionicons>["name"];
+const AuthShellContext = createContext(false);
+
+/** Mounted by the auth navigator, so route changes do not recreate the artwork. */
+export function AuthShell({ children }: { children: ReactNode }) {
+  const c = useTheme();
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  return (
+    <AuthShellContext.Provider value>
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: c.background }}
+        edges={[]}
+      >
+        <StatusBar style="light" />
+        <View
+          style={{
+            width: "100%",
+            height: Math.min(width * 0.5, 240),
+            backgroundColor: "#006F63",
+            overflow: "hidden",
+            borderBottomLeftRadius: 28,
+            borderBottomRightRadius: 28,
+          }}
+        >
+          <Image
+            source={hero}
+            resizeMode="cover"
+            style={{ width: "100%", height: "100%", position: "absolute" }}
+          />
+          <View
+            style={{
+              position: "absolute",
+              left: 18 + insets.left,
+              right: 18 + insets.right,
+              top: insets.top + 24,
+              alignItems: "flex-start",
+            }}
+          >
+            <Image
+              accessibilityLabel={t("app")}
+              source={artwork.wordmarkDark}
+              resizeMode="contain"
+              style={{ width: 184, height: 46 }}
+            />
+            <Text
+              style={{
+                color: "#E0FAF1",
+                fontSize: 12,
+                fontWeight: "600",
+                paddingLeft: 8,
+              }}
+            >
+              {t("tagline")}
+            </Text>
+          </View>
+        </View>
+        <View style={{ flex: 1, minHeight: 0 }}>{children}</View>
+      </SafeAreaView>
+    </AuthShellContext.Provider>
+  );
+}
+
 export function PremiumAuthLayout({
   title,
   subtitle,
   loading,
   children,
+  onBack,
 }: {
   title: string;
   subtitle: string;
   loading: boolean;
   children: ReactNode;
+  onBack?: () => void;
 }) {
+  const inShell = useContext(AuthShellContext);
   const c = useTheme();
   const insets = useSafeAreaInsets();
   const features: { label: string; icon: IconName }[] = [
@@ -46,182 +118,120 @@ export function PremiumAuthLayout({
     { label: t("authInsights"), icon: "analytics-outline" },
     { label: t("authAllVehicles"), icon: "car-sport-outline" },
   ];
-  return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: c.background }} edges={[]}>
-      <StatusBar style="light" />
-      <View
-        style={{
-          position: "absolute",
-          top: insets.top,
-          left: 0,
-          right: 0,
-          zIndex: 2,
+  const content = (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={{ flex: 1, minHeight: 0 }}
+    >
+      <LoadingLine loading={loading} />
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingBottom: 32 + insets.bottom,
         }}
       >
-        <LoadingLine loading={loading} />
-      </View>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
-      >
         <ScrollView
-          keyboardShouldPersistTaps="handled"
+          horizontal
+          showsHorizontalScrollIndicator={false}
           contentContainerStyle={{
-            flexGrow: 1,
-            paddingBottom: 32 + insets.bottom,
+            gap: 8,
+            paddingHorizontal: 18,
+            paddingVertical: 15,
+          }}
+          style={{
+            flexGrow: 0,
+            width: "100%",
+            maxWidth: 520,
+            alignSelf: "center",
           }}
         >
-          <View style={{ width: "100%" }}>
+          {features.map((feature) => (
             <View
+              key={feature.label}
               style={{
-                width: "100%",
-                aspectRatio: 1514 / 1039,
-                backgroundColor: "#006F63",
-                overflow: "hidden",
-                borderBottomLeftRadius: 28,
-                borderBottomRightRadius: 28,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 6,
+                paddingHorizontal: 10,
+                paddingVertical: 8,
+                borderRadius: 13,
+                backgroundColor: c.surface,
+                borderWidth: 1,
+                borderColor: c.line,
               }}
             >
-              <Image
-                source={hero}
-                resizeMode="cover"
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  height: "100%",
-                }}
-              />
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 10,
-                  position: "absolute",
-                  left: 18 + insets.left,
-                  top: insets.top + 24,
-                  right: 18 + insets.right,
-                }}
-              >
-                <View style={{ flexShrink: 1, alignItems: "flex-start" }}>
-                  <Image
-                    accessibilityLabel={t("app")}
-                    source={artwork.wordmarkDark}
-                    resizeMode="contain"
-                    style={{ width: 184, height: 46 }}
-                  />
-                  <Text
-                    style={{
-                      color: "#E0FAF1",
-                      fontSize: 12,
-                      fontWeight: "600",
-                      paddingLeft: 8,
-                    }}
-                  >
-                    {t("tagline")}
-                  </Text>
-                </View>
-              </View>
+              <Ionicons name={feature.icon} color={c.primary} size={18} />
+              <Text style={{ color: c.ink, fontSize: 12, fontWeight: "600" }}>
+                {feature.label}
+              </Text>
             </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{
-                gap: 8,
-                paddingHorizontal: 18,
-                paddingVertical: 15,
-              }}
-              style={{
-                flexGrow: 0,
-                width: "100%",
-                maxWidth: 520,
-                alignSelf: "center",
-              }}
-            >
-              {features.map((feature) => (
-                <View
-                  key={feature.label}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 6,
-                    paddingHorizontal: 10,
-                    paddingVertical: 8,
-                    borderRadius: 13,
-                    backgroundColor: c.surface,
-                    borderWidth: 1,
-                    borderColor: c.line,
-                  }}
-                >
-                  <Ionicons name={feature.icon} color={c.primary} size={18} />
-                  <Text
-                    style={{ color: c.ink, fontSize: 12, fontWeight: "600" }}
-                  >
-                    {feature.label}
-                  </Text>
-                </View>
-              ))}
-            </ScrollView>
-            <View
-              style={{
-                paddingHorizontal: 18,
-                gap: 16,
-                width: "100%",
-                maxWidth: 520,
-                alignSelf: "center",
-              }}
-            >
-              <View style={{ gap: 5 }}>
-                <Text
-                  accessibilityRole="header"
-                  style={{
-                    fontSize: 29,
-                    lineHeight: 36,
-                    color: c.ink,
-                    fontWeight: "800",
-                  }}
-                >
-                  {title}
-                </Text>
-                <Text style={{ color: c.muted, lineHeight: 21, fontSize: 14 }}>
-                  {subtitle}
-                </Text>
-              </View>
-              <View
-                style={{
-                  backgroundColor: c.surface,
-                  borderColor: c.line,
-                  borderWidth: 1,
-                  borderRadius: 22,
-                  padding: 18,
-                  gap: 15,
-                  shadowColor: "#173E3A",
-                  shadowOpacity: 0.08,
-                  shadowRadius: 16,
-                  shadowOffset: { width: 0, height: 6 },
-                  elevation: 3,
-                }}
-              >
-                {children}
-              </View>
-              {/* <Pressable
-                accessibilityRole="link"
-                onPress={() => router.push("/auth/legal")}
-                style={{
-                  minHeight: 44,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Text style={{ color: c.primary, fontWeight: "600" }}>{t("legal")}</Text>
-              </Pressable> */}
-            </View>
-          </View>
+          ))}
         </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        <View
+          style={{
+            paddingHorizontal: 18,
+            gap: 16,
+            width: "100%",
+            maxWidth: 520,
+            alignSelf: "center",
+          }}
+        >
+          {onBack && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t("back")}
+              disabled={loading}
+              onPress={onBack}
+              style={{
+                minHeight: 44,
+                justifyContent: "center",
+                alignSelf: "flex-start",
+              }}
+            >
+              <Text style={{ color: c.primary, fontWeight: "600" }}>
+                {t("back")}
+              </Text>
+            </Pressable>
+          )}
+          <View style={{ gap: 5 }}>
+            <Text
+              accessibilityRole="header"
+              style={{
+                fontSize: 29,
+                lineHeight: 36,
+                color: c.ink,
+                fontWeight: "800",
+              }}
+            >
+              {title}
+            </Text>
+            <Text style={{ color: c.muted, lineHeight: 21, fontSize: 14 }}>
+              {subtitle}
+            </Text>
+          </View>
+          <View
+            style={{
+              backgroundColor: c.surface,
+              borderColor: c.line,
+              borderWidth: 1,
+              borderRadius: 22,
+              padding: 18,
+              gap: 15,
+              shadowColor: "#173E3A",
+              shadowOpacity: 0.08,
+              shadowRadius: 16,
+              shadowOffset: { width: 0, height: 6 },
+              elevation: 3,
+            }}
+          >
+            {children}
+          </View>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
+  return inShell ? content : <AuthShell>{content}</AuthShell>;
 }
 export function AuthTextField({
   label,

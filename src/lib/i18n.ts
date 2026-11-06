@@ -401,6 +401,9 @@ export const en = {
   configBody:
     "Copy .env.example to .env and configure your Supabase project URL and publishable key. Restart Expo after saving. See docs/LOCAL_SETUP.md.",
   retry: "Retry",
+  notFoundTitle: "Page not found",
+  notFoundMessage: "This page is unavailable or the link is incorrect.",
+  notFoundHome: "Go to home",
   loading: "Loading",
   save: "Save",
   saved: "Saved successfully",

@@ -53,7 +53,7 @@ function ReminderFeedback() {
       return;
     }
     let alive = true;
-    void clearDeviceNotifications()
+    void clearDeviceNotifications(user)
       .then(() => {
         if (alive) setError("");
       })

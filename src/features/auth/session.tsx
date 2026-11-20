@@ -1,4 +1,7 @@
-import { clearDeviceNotifications } from "@/src/features/reminders/notifications";
+import {
+  clearDeviceNotifications,
+  invalidateReminderSession,
+} from "@/src/features/reminders/notifications";
 import {
   DEVELOPMENT_USER,
   clearDevelopment,
@@ -46,8 +49,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       setError(null);
       try {
         if (previousUser.current && previousUser.current !== next?.user.id) {
+          invalidateReminderSession(previousUser.current);
           await query.cancelQueries();
-          await clearDeviceNotifications();
+          await clearDeviceNotifications(previousUser.current);
           query.clear();
           useUI.getState().setActive(null);
         }
@@ -118,8 +122,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     const user =
       session?.user.id ?? (development ? DEVELOPMENT_USER : undefined);
+    invalidateReminderSession(user);
     await query.cancelQueries();
-    await clearDeviceNotifications();
+    await clearDeviceNotifications(user);
     if (user) {
       await secureStorage.removeItem(`active.${user}`);
     }

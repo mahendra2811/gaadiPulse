@@ -29,7 +29,7 @@
     {
       "id": "GP-06",
       "name": "Backend and real-account verification",
-      "status": "pending_live_verification"
+      "status": "migrations_deployed_live_auth_jwt_verification_pending"
     },
     {
       "id": "GP-07",
@@ -44,7 +44,12 @@
     {
       "id": "GP-09",
       "name": "Reminder schedule cleanup after confirmed revocation",
-      "status": "in_progress_user_approved"
+      "status": "done"
+    },
+    {
+      "id": "GP-10",
+      "name": "RLS-protected paginated expense history and full-scope totals",
+      "status": "done"
     }
   ]
 }

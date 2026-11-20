@@ -170,6 +170,10 @@ describe("server-only reads", () => {
     );
     expect(backend.from).not.toHaveBeenCalled();
   });
+  it("does not treat a null vehicle-list payload as confirmation of no access", async () => {
+    backend.rpc.mockResolvedValueOnce({ data: null, error: null });
+    await expect(listVehicles()).rejects.toThrow();
+  });
 });
 
 describe("network request lifecycle", () => {

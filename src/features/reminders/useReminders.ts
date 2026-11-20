@@ -7,7 +7,7 @@ import { useRecords, usePermissions } from "@/src/features/records/hooks";
 import { useQuery } from "@/src/lib/query";
 import { client } from "@/src/lib/supabase";
 import { developmentReadings } from "@/src/features/development/repository";
-import { reconcileReminders } from "./notifications";
+import { reconcileAccountReminders, reconcileReminders } from "./notifications";
 export function useReminderReconciliation() {
   const user = useAccountId();
   const { development } = useSession();
@@ -43,15 +43,9 @@ export function useReminderReconciliation() {
     },
   });
   useEffect(() => {
-    if (
-      !releaseFeatures.advancedTools ||
-      !user ||
-      !vehicle ||
-      !reminders.data ||
-      reminders.error ||
-      access.data?.["reminders.read"] !== true
-    )
-      return;
+    if (!releaseFeatures.advancedTools || !user) return;
+    if (vehicle && access.isPending) return;
+    if (vehicle && access.error) return; // Unknown access is never treated as revocation.
     let alive = true;
     const latest = {
       km:
@@ -63,7 +57,23 @@ export function useReminderReconciliation() {
           ? meters.data?.find((r) => r.reading_type === "HOURS")?.value
           : undefined,
     };
-    void reconcileReminders(user, vehicle.id, reminders.data, latest)
+    void reconcileAccountReminders(user, development)
+      .then(() => {
+        if (
+          alive &&
+          vehicle &&
+          reminders.data &&
+          !reminders.error &&
+          access.data?.["reminders.read"] === true
+        )
+          return reconcileReminders(
+            user,
+            vehicle.id,
+            reminders.data,
+            latest,
+            development,
+          );
+      })
       .then(() => {
         if (alive) setFailure(null);
       })
@@ -81,6 +91,9 @@ export function useReminderReconciliation() {
     meters.data,
     meters.error,
     access.data,
+    access.error,
+    access.isPending,
+    development,
     scope,
     attempt,
   ]);

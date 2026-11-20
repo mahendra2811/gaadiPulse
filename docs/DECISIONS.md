@@ -263,3 +263,6 @@ At the user's request, new passwords use a five-character minimum and a 128-char
 ## Authentication shell and missing routes — 2026-11-06
 
 The login, signup, password recovery, password login and email verification routes share a navigator-owned, locally bundled hero. It stays mounted while moving among those routes; its height depends on screen width and is capped, while each form scrolls independently. Legal and OAuth callback remain separate screens. Unknown routes have a home/back recovery screen. This presentation change does not alter authentication or authorization rules.
+## 2026-11-21 — Preserve current Supabase data and roll forward schema
+
+The owner authorized a clean database if needed, but chose the existing linked project for the release. The existing project contains active app data, and the six pending migrations were forward-only, so the deployment used `db push --include-all` rather than a destructive reset. Existing progress/form rows remain stored; the retired progress workflows are revoked as intended. A permission-restricted public-schema/data snapshot was saved outside the repository before the migration push.

@@ -35,14 +35,19 @@ export function HistoryRow({
     >
       <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
         <View style={{ flex: 1, gap: 6 }}>
-          <Text style={{ color: c.primary, fontWeight: "700", fontSize: 19 }}>
-            {primary}
-            {detail ? (
-              <Text
-                style={{ color: c.ink, fontWeight: "500", fontSize: 15 }}
-              >{` (${detail})`}</Text>
-            ) : null}
-          </Text>
+          <View
+            style={{
+              flexDirection: "row",
+              flexWrap: "wrap",
+              alignItems: "baseline",
+              gap: 6,
+            }}
+          >
+            <Text style={{ color: c.ink, fontWeight: "700", fontSize: 19 }}>{primary}</Text>
+            {!!detail && (
+              <Text style={{ color: c.muted, fontWeight: "500", fontSize: 14 }}>{detail}</Text>
+            )}
+          </View>
           <View
             style={{
               flexDirection: "row",
@@ -51,14 +56,13 @@ export function HistoryRow({
               alignItems: "center",
             }}
           >
-            <Text style={{ color: c.primary, fontSize: 11, fontWeight: "600" }}>{secondary}</Text>
-            {status && <Text style={{ color: c.muted, fontSize: 11 }}>{status}</Text>}
+            <Text style={{ color: c.primary, fontSize: 12, fontWeight: "600" }}>{secondary}</Text>
+            {status && <Text style={{ color: c.muted, fontSize: 12 }}>{status}</Text>}
             <Text
               style={{
                 color: c.muted,
-                fontSize: 11,
-                lineHeight: 16,
-                marginLeft: "auto",
+                fontSize: 12,
+                lineHeight: 18,
                 flexShrink: 1,
               }}
             >
@@ -72,7 +76,7 @@ export function HistoryRow({
   );
   return onPress ? (
     <MotionPress
-      label={`${r("detail")}: ${primary}, ${detail ?? ""}, ${secondary}, ${date}${status ? `, ${status}` : ""}`}
+      label={[r("detail"), primary, detail, secondary, date, status].filter(Boolean).join(", ")}
       onPress={onPress}
     >
       {content}

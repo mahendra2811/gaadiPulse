@@ -6,7 +6,6 @@ import { router, usePathname } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme } from "@/src/lib/theme";
 import { t } from "@/src/lib/i18n";
-import { GradientSurface } from "@/src/components/ui/GradientSurface";
 import { useOptionalMoreDrawer } from "./DrawerContext";
 export type NavigationTab = "index" | "fuel" | "expenses" | "more";
 const items = [
@@ -14,29 +13,21 @@ const items = [
     id: "index",
     label: "home",
     icon: "home",
-    ink: "#087565",
-    background: "#D9F5EB",
   },
   {
     id: "fuel",
     label: "fuel",
     icon: "water",
-    ink: "#3157BF",
-    background: "#E5ECFF",
   },
   {
     id: "expenses",
     label: "expenses",
     icon: "receipt",
-    ink: "#9B5A0A",
-    background: "#FFF0D1",
   },
   {
     id: "more",
     label: "more",
     icon: "menu",
-    ink: "#7750B7",
-    background: "#F0E7FF",
   },
 ] as const;
 export function hasBrowseNavigation(path: string) {
@@ -71,21 +62,15 @@ export function FloatingNavigation({
 }) {
   const { vehicle } = useActiveVehicle();
   const tabLabel = (item: (typeof items)[number]) =>
-    item.id === "fuel" && vehicle?.energy_type === "ELECTRIC"
-      ? t("charging")
-      : t(item.label);
+    item.id === "fuel" && vehicle?.energy_type === "ELECTRIC" ? t("charging") : t(item.label);
   const c = useTheme();
   const inset = useSafeAreaInsets();
   const path = usePathname();
   const drawer = useOptionalMoreDrawer();
   const [keyboard, setKeyboard] = useState(false);
   useEffect(() => {
-    const show = Keyboard.addListener("keyboardDidShow", () =>
-      setKeyboard(true),
-    );
-    const hide = Keyboard.addListener("keyboardDidHide", () =>
-      setKeyboard(false),
-    );
+    const show = Keyboard.addListener("keyboardDidShow", () => setKeyboard(true));
+    const hide = Keyboard.addListener("keyboardDidHide", () => setKeyboard(false));
     return () => {
       show.remove();
       hide.remove();
@@ -95,11 +80,7 @@ export function FloatingNavigation({
   const current = drawer.visible
     ? "more"
     : (selected ??
-      (path.includes("/fuel")
-        ? "fuel"
-        : path.includes("/expenses")
-          ? "expenses"
-          : "more"));
+      (path.includes("/fuel") ? "fuel" : path.includes("/expenses") ? "expenses" : "more"));
   return (
     <View
       style={{
@@ -139,19 +120,15 @@ export function FloatingNavigation({
                 paddingHorizontal: 8,
                 paddingVertical: 3,
                 borderRadius: 11,
-                backgroundColor: active ? "transparent" : item.background,
+                backgroundColor: "transparent",
               }}
             >
-              <Ionicons
-                name={item.icon}
-                size={22}
-                color={active ? "#FFF" : item.ink}
-              />
+              <Ionicons name={item.icon} size={22} color={active ? c.primary : c.muted} />
             </View>
             <Text
               style={{
                 fontSize: 12,
-                color: active ? "#FFF" : c.muted,
+                color: active ? c.primary : c.muted,
                 fontWeight: active ? "700" : "500",
               }}
             >
@@ -179,24 +156,17 @@ export function FloatingNavigation({
                   ? "/(tabs)"
                   : item.id === "fuel"
                     ? "/(tabs)/fuel"
-                    : "/(tabs)/expenses",
+                    : "/(tabs)/expenses"
               );
             }}
             style={({ pressed }) => ({
               flex: 1,
               borderRadius: 21,
               opacity: pressed ? 0.75 : 1,
+              backgroundColor: active ? c.background : "transparent",
             })}
           >
-            {active ? (
-              <GradientSurface
-                style={{ borderRadius: 21, elevation: 0, shadowOpacity: 0 }}
-              >
-                {body}
-              </GradientSurface>
-            ) : (
-              body
-            )}
+            {body}
           </Pressable>
         );
       })}

@@ -1,20 +1,27 @@
 export const en = {
   onboardingTitle: "Set up your profile",
   onboardingDescription: "A few details to get started. You can update them later in Settings.",
-  onboardingCountryHint: "Country is optional. The device region may be suggested; choose or clear it if needed.",
-  onboardingTimezoneHint: "Check the suggested time zone. New vehicles use it by default, and each vehicle can be changed later.",
-  onboardingTimezoneMultiple: "This country may have several time zones or no automatic suggestion. Check and choose the right one.",
+  onboardingCountryHint:
+    "Country is optional. The device region may be suggested; choose or clear it if needed.",
+  onboardingTimezoneHint:
+    "Check the suggested time zone. New vehicles use it by default, and each vehicle can be changed later.",
+  onboardingTimezoneMultiple:
+    "This country may have several time zones or no automatic suggestion. Check and choose the right one.",
   onboardingCurrency: "Currency: INR (₹)",
-  onboardingCurrencyHint: "Fuel and expense amounts are currently recorded in Indian rupees. Selecting a country does not change the currency of your records.",
+  onboardingCurrencyHint:
+    "Fuel and expense amounts are currently recorded in Indian rupees. Selecting a country does not change the currency of your records.",
   onboardingContinue: "Continue to Home",
-  onboardingVehicleHint: "Adding a vehicle is optional. You can do it later or access vehicles shared with you.",
+  onboardingVehicleHint:
+    "Adding a vehicle is optional. You can do it later or access vehicles shared with you.",
 
   authFuelCharging: "Fuel & charging",
   authTrackExpenses: "Track expenses",
   authInsights: "Insights",
   authAllVehicles: "All vehicles",
-  authPremiumLoginHint: "Stay connected to every pulse of your vehicles, from fuel and charging to expenses and insights.",
-  authPremiumSignupHint: "Keep track of every pulse of your vehicles, fuel, charging and expenses in one place.",
+  authPremiumLoginHint:
+    "Stay connected to every pulse of your vehicles, from fuel and charging to expenses and insights.",
+  authPremiumSignupHint:
+    "Keep track of every pulse of your vehicles, fuel, charging and expenses in one place.",
   authFullName: "Full name",
   authFullNameRequired: "Enter your name (up to 120 characters).",
   authAgree: "I agree to the privacy and terms",
@@ -206,6 +213,8 @@ export const en = {
   uiStep: "Step",
   uiOf: "of",
   uiVehicleSetup: "Vehicle setup",
+  uiStepLockedHint: "Complete the current step to continue.",
+  uiStepPreviousHint: "Return to this step.",
   uiGarageHint: "Your vehicles, ready to go.",
   emptyFuelTitle: "No fuel records found",
   emptyChargingTitle: "No charging records found",
@@ -231,6 +240,18 @@ export const en = {
   uiMeterHint: "Choose what you track. Initial readings are optional and can be added later.",
   uiDetailsHint: "Identify your vehicle and choose the fuel or energy it uses.",
   uiReviewHint: "Review your details before saving. You can go back to any step.",
+  fuelFillType: "Fill type",
+  chargingFillType: "Charging type",
+  fuelFillTypeHelp:
+    "Full-to-full entries with valid meter readings can be used to calculate efficiency.",
+  insightsScope: "Insights include only the record types you can access:",
+  insightsNoRecordsAccess: "You do not have access to fuel or expense records for this vehicle.",
+  insightsNoFuelAccess: "Fuel records are unavailable for your role.",
+  insightsNoExpenseAccess: "Expense records are unavailable for your role.",
+  insightsNoMeterAccess: "Meter readings are unavailable for your role.",
+  insightsNoReportAccess: "You do not have permission to view insights for this vehicle.",
+  insightsChartShowDetails: "Show chart details",
+  insightsChartHideDetails: "Hide chart details",
   uiRecentActivity: "Recent activity",
   uiMoreActivity: "Show more activity",
   uiQuickAdd: "Quick add",

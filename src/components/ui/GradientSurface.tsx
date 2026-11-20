@@ -1,5 +1,5 @@
 import { useId, type ReactNode } from "react";
-import { View, type StyleProp, type ViewStyle } from "react-native";
+import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 import { Svg, Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 export function GradientSurface({
   children,
@@ -11,6 +11,7 @@ export function GradientSurface({
   style?: StyleProp<ViewStyle>;
 }) {
   const id = useId().replace(/[^a-zA-Z0-9]/g, "");
+  const radius = StyleSheet.flatten(style)?.borderRadius ?? 28;
   return (
     <View
       style={[
@@ -34,7 +35,7 @@ export function GradientSurface({
           position: "absolute",
           inset: 0,
           overflow: "hidden",
-          borderRadius: 28,
+          borderRadius: radius,
         }}
       >
         <Svg width="100%" height="100%">

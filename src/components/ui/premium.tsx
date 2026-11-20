@@ -1,19 +1,7 @@
-import {
-  useEffect,
-  useState,
-  type ReactNode,
-  type ComponentProps,
-} from "react";
-import {
-  Animated,
-  Pressable,
-  Text,
-  View,
-  type StyleProp,
-  type ViewStyle,
-} from "react-native";
+import { useEffect, useState, type ReactNode, type ComponentProps } from "react";
+import { Animated, Pressable, Text, View, type StyleProp, type ViewStyle } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { useTheme } from "@/src/lib/theme";
+import { palettes, useTheme } from "@/src/lib/theme";
 import { useReducedMotion } from "@/src/hooks/useReducedMotion";
 import { AppText } from "./index";
 import { GradientSurface } from "./GradientSurface";
@@ -26,6 +14,14 @@ export const iconTones = {
   coral: { ink: "#B44752", background: "#FFE7E8" },
   cyan: { ink: "#087B91", background: "#DDF5FA" },
 } as const;
+const darkIconTones: Record<keyof typeof iconTones, { ink: string; background: string }> = {
+  mint: { ink: "#9DE4CE", background: "#24483F" },
+  blue: { ink: "#B3CBFF", background: "#293C5F" },
+  amber: { ink: "#F7D497", background: "#4D3C29" },
+  violet: { ink: "#D7C3FF", background: "#403552" },
+  coral: { ink: "#FFBEC3", background: "#50363D" },
+  cyan: { ink: "#A1DDE9", background: "#28444D" },
+};
 export type IconTone = keyof typeof iconTones;
 export function ColorIcon({
   name,
@@ -36,7 +32,8 @@ export function ColorIcon({
   tone?: IconTone;
   size?: number;
 }) {
-  const color = iconTones[tone];
+  const theme = useTheme();
+  const color = theme === palettes.dark ? darkIconTones[tone] : iconTones[tone];
   return (
     <View
       style={{
@@ -60,6 +57,7 @@ export function MotionPress({
   style,
   disabled = false,
   expanded,
+  selected,
 }: {
   children: ReactNode;
   onPress: () => void;
@@ -67,6 +65,7 @@ export function MotionPress({
   style?: StyleProp<ViewStyle>;
   disabled?: boolean;
   expanded?: boolean;
+  selected?: boolean;
 }) {
   const reduced = useReducedMotion();
   const [scale] = useState(() => new Animated.Value(1));
@@ -86,6 +85,7 @@ export function MotionPress({
         accessibilityLabel={label}
         accessibilityState={{
           disabled,
+          ...(selected === undefined ? {} : { selected }),
           ...(expanded === undefined ? {} : { expanded }),
         }}
         disabled={disabled}
@@ -127,9 +127,7 @@ export function TextAction({
           paddingHorizontal: 4,
         }}
       >
-        <Text style={{ color, fontSize: 14, fontWeight: "700", flexShrink: 1 }}>
-          {label}
-        </Text>
+        <Text style={{ color, fontSize: 14, fontWeight: "700", flexShrink: 1 }}>{label}</Text>
         <Ionicons name={icon} size={16} color={color} />
       </View>
     </MotionPress>
@@ -185,23 +183,16 @@ export function ActionTile({
 }) {
   const c = useTheme();
   return (
-    <MotionPress
-      label={label}
-      onPress={onPress}
-      style={{ flexBasis: "45%", flexGrow: 1 }}
-    >
+    <MotionPress label={label} onPress={onPress} style={{ flexBasis: "45%", flexGrow: 1 }}>
       <View
         style={{
           minHeight: 106,
           padding: 14,
           borderRadius: 22,
           backgroundColor: c.surface,
+          borderWidth: 1,
+          borderColor: c.line,
           gap: 10,
-          shadowColor: "#13283C",
-          shadowOpacity: 0.06,
-          shadowOffset: { width: 0, height: 4 },
-          shadowRadius: 10,
-          elevation: 2,
         }}
       >
         <ColorIcon name={icon} tone={tone} />
@@ -267,9 +258,7 @@ export function GradientButton({
 }) {
   return (
     <MotionPress label={label} onPress={onPress} disabled={disabled}>
-      <GradientSurface
-        style={{ borderRadius: 18, shadowOpacity: 0.12, elevation: 3 }}
-      >
+      <GradientSurface style={{ borderRadius: 18, shadowOpacity: 0.12, elevation: 3 }}>
         <View
           style={{
             minHeight: 52,
@@ -308,7 +297,7 @@ export function ChoiceChip({
 }) {
   const c = useTheme();
   return (
-    <MotionPress label={label} onPress={onPress}>
+    <MotionPress label={label} onPress={onPress} selected={selected}>
       <View
         style={{
           minHeight: 44,
@@ -334,13 +323,7 @@ export function ChoiceChip({
   );
 }
 
-export function Expandable({
-  expanded,
-  children,
-}: {
-  expanded: boolean;
-  children: ReactNode;
-}) {
+export function Expandable({ expanded, children }: { expanded: boolean; children: ReactNode }) {
   const reduced = useReducedMotion();
   const [progress] = useState(() => new Animated.Value(expanded ? 1 : 0));
   useEffect(() => {
@@ -373,11 +356,7 @@ export function Expandable({
     </Animated.View>
   );
 }
-export function InfoRows({
-  items,
-}: {
-  items: { label: string; value: string }[];
-}) {
+export function InfoRows({ items }: { items: { label: string; value: string }[] }) {
   const c = useTheme();
   return (
     <View>

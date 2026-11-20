@@ -123,7 +123,9 @@ export function RecordCard({
     const title = String(row.payload.title ?? "");
     const category = String(row.payload.category ?? "");
     const categoryLabel = r(category as keyof typeof recordCopy) ?? category;
-    const secondaryLabel = kind === "expenses" ? categoryLabel : fillLabel;
+    const energyLabel = r(energy as keyof typeof recordCopy) ?? energy;
+    const secondaryLabel =
+      kind === "expenses" ? categoryLabel : [energyLabel, fillLabel].filter(Boolean).join(" · ");
     const primaryDetail = kind === "expenses" ? title : quantityLabel;
     const amount = money(Number(row.payload.amount_paise ?? 0));
     const date = recordDate(row, kind, timezone);

@@ -1,0 +1,50 @@
+{
+  "project": "GaadiPulse premium and reliability improvements",
+  "tasks": [
+    {
+      "id": "GP-01",
+      "name": "Home and navigation hierarchy and error recovery",
+      "status": "done"
+    },
+    {
+      "id": "GP-02",
+      "name": "Read-only cross-app UI, functionality and security audit",
+      "status": "done"
+    },
+    {
+      "id": "GP-03",
+      "name": "Theme-aware shared UI and accessibility",
+      "status": "done"
+    },
+    {
+      "id": "GP-04",
+      "name": "Vehicle setup, garage and primary ledger flows",
+      "status": "done"
+    },
+    {
+      "id": "GP-05",
+      "name": "Insights, reports and remaining user-facing states",
+      "status": "done"
+    },
+    {
+      "id": "GP-06",
+      "name": "Backend and real-account verification",
+      "status": "pending_live_verification"
+    },
+    {
+      "id": "GP-07",
+      "name": "Android and accessibility verification and handoff",
+      "status": "pending"
+    },
+    {
+      "id": "GP-08",
+      "name": "Accurate recent fuel activity, with server permission regression tests",
+      "status": "done"
+    },
+    {
+      "id": "GP-09",
+      "name": "Reminder schedule cleanup after confirmed revocation",
+      "status": "in_progress_user_approved"
+    }
+  ]
+}

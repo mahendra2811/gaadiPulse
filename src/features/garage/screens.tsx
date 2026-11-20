@@ -11,11 +11,7 @@ import { useVehicleAccess } from "@/src/hooks/useVehicleAccess";
 import { useCallback, useState } from "react";
 import { View, Text, Pressable, useWindowDimensions } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import {
-  SectionHeading,
-  MotionPress,
-  InfoRows,
-} from "@/src/components/ui/premium";
+import { SectionHeading, MotionPress, InfoRows } from "@/src/components/ui/premium";
 import { useTheme } from "@/src/lib/theme";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useQueryClient } from "@tanstack/react-query";
@@ -39,23 +35,19 @@ import { t } from "@/src/lib/i18n";
 import { useSession, useAccountId } from "@/src/features/auth/session";
 export function Garage() {
   const query = useVehicles();
+  const active = useActiveVehicle();
   const [search, setSearch] = useState("");
   const [gridWidth, setGridWidth] = useState(0);
   const { fontScale } = useWindowDimensions();
   const columns =
-    gridWidth < 260 || fontScale >= 1.8
-      ? 1
-      : gridWidth >= 540 && fontScale < 1.5
-        ? 3
-        : 2;
-  const cardWidth =
-    gridWidth > 0 ? (gridWidth - (columns - 1) * 10) / columns : undefined;
+    gridWidth < 260 || fontScale >= 1.8 ? 1 : gridWidth >= 540 && fontScale < 1.5 ? 3 : 2;
+  const cardWidth = gridWidth > 0 ? (gridWidth - (columns - 1) * 10) / columns : undefined;
   const colors = useTheme();
   const vehicles =
     query.data?.filter((v) =>
       `${v.nickname} ${v.registration_number ?? ""} ${v.model} ${subtypeLabel(v.subtype)}`
         .toLowerCase()
-        .includes(search.toLowerCase()),
+        .includes(search.toLowerCase())
     ) ?? [];
   const groups = [
     {
@@ -68,19 +60,12 @@ export function Garage() {
     },
   ];
   return (
-    <Screen
-      title={t("garage")}
-      loading={query.isPending}
-      compact
-    >
+    <Screen title={t("garage")} loading={query.isPending} compact>
       <AppText muted>{t("uiGarageHint")}</AppText>
       <AppButton label={t("add")} onPress={() => router.push("/garage/add")} />
       <SearchField value={search} onChange={setSearch} />
       {query.error ? (
-        <ErrorState
-          message={query.error.message}
-          retry={() => void query.refetch()}
-        />
+        <ErrorState message={query.error.message} retry={() => void query.refetch()} />
       ) : query.isPending ? (
         <PageSkeleton shape="garage" />
       ) : query.data?.length === 0 ? (
@@ -93,11 +78,7 @@ export function Garage() {
               title={t("emptySearchTitle")}
               body={t("uiNoSearchResults")}
               action={
-                <AppButton
-                  secondary
-                  label={t("uiClearSearch")}
-                  onPress={() => setSearch("")}
-                />
+                <AppButton secondary label={t("uiClearSearch")} onPress={() => setSearch("")} />
               }
             />
           )}
@@ -107,9 +88,7 @@ export function Garage() {
               <View key={group.title} style={{ gap: 10 }}>
                 <SectionHeading title={group.title} />
                 <View
-                  onLayout={(event) =>
-                    setGridWidth(event.nativeEvent.layout.width)
-                  }
+                  onLayout={(event) => setGridWidth(event.nativeEvent.layout.width)}
                   style={{
                     width: "100%",
                     maxWidth: 640,
@@ -121,12 +100,9 @@ export function Garage() {
                   }}
                 >
                   {group.items.map((v) => (
-                    <View
-                      key={v.id}
-                      style={{ width: cardWidth, minWidth: 0, gap: 6 }}
-                    >
+                    <View key={v.id} style={{ width: cardWidth, minWidth: 0, gap: 6 }}>
                       <MotionPress
-                        label={`${t("details")}: ${v.nickname || v.registration_number || v.model || subtypeLabel(v.subtype)}`}
+                        label={`${t("details")}: ${v.nickname || v.registration_number || v.model || subtypeLabel(v.subtype)}${v.nickname && v.registration_number && v.registration_number !== v.nickname ? `, ${v.registration_number}` : ""}, ${t(v.role === "OWNER" ? "owner" : "pilot")}${v.archived_at ? `, ${t("archived")}` : active.vehicle?.id === v.id ? `, ${t("uiActiveVehicle")}` : ""}`}
                         onPress={() =>
                           router.push({
                             pathname: "/garage/[id]",
@@ -149,14 +125,11 @@ export function Garage() {
                             elevation: 1,
                           }}
                         >
-                          <SquareArtwork
-                            source={vehicleArt(v.category, v.subtype)}
-                            radius={0}
-                          />
+                          <SquareArtwork source={vehicleArt(v.category, v.subtype)} radius={0} />
                           <View
                             style={{
                               paddingLeft: 10,
-                              paddingRight: 58,
+                              paddingRight: v.role === "OWNER" && !v.archived_at ? 58 : 10,
                               paddingBottom: 10,
                               minHeight: 80,
                               gap: 5,
@@ -174,6 +147,16 @@ export function Garage() {
                                 v.model ||
                                 subtypeLabel(v.subtype)}
                             </Text>
+                            {!!v.registration_number &&
+                              v.registration_number !==
+                                (v.nickname ||
+                                  v.registration_number ||
+                                  v.model ||
+                                  subtypeLabel(v.subtype)) && (
+                                <Text style={{ fontSize: 12, color: colors.muted }}>
+                                  {v.registration_number}
+                                </Text>
+                              )}
                             <Text style={{ fontSize: 12, color: colors.muted }}>
                               {subtypeLabel(v.subtype)}
                             </Text>
@@ -201,9 +184,21 @@ export function Garage() {
                                     ? "meterModeShortKm"
                                     : v.meter_mode === "HOURS"
                                       ? "meterModeShortHours"
-                                      : "meterModeShortBoth",
+                                      : "meterModeShortBoth"
                                 )}
                               </Text>
+                              {!v.archived_at && active.vehicle?.id === v.id && (
+                                <Text
+                                  style={{
+                                    fontSize: 11,
+                                    fontWeight: "600",
+                                    color: colors.primary,
+                                    paddingVertical: 4,
+                                  }}
+                                >
+                                  {t("uiActiveVehicle")}
+                                </Text>
+                              )}
                               {v.archived_at && (
                                 <Text
                                   style={{
@@ -241,11 +236,7 @@ export function Garage() {
                             backgroundColor: colors.background,
                           }}
                         >
-                          <Ionicons
-                            name="create-outline"
-                            size={22}
-                            color={colors.primary}
-                          />
+                          <Ionicons name="create-outline" size={22} color={colors.primary} />
                         </Pressable>
                       )}
                     </View>
@@ -283,10 +274,7 @@ export function VehicleDetails() {
   return (
     <Screen compact title={t("details")} loading={query.isPending || busy}>
       {query.error ? (
-        <ErrorState
-          message={query.error.message}
-          retry={() => void query.refetch()}
-        />
+        <ErrorState message={query.error.message} retry={() => void query.refetch()} />
       ) : vehicle ? (
         <>
           {vehicle.role === "OWNER" && (
@@ -302,9 +290,7 @@ export function VehicleDetails() {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={t("edit")}
-                    onPress={() =>
-                      router.push({ pathname: "/garage/edit", params: { id } })
-                    }
+                    onPress={() => router.push({ pathname: "/garage/edit", params: { id } })}
                     style={{
                       width: 48,
                       height: 48,
@@ -314,29 +300,19 @@ export function VehicleDetails() {
                       backgroundColor: colors.background,
                     }}
                   >
-                    <Ionicons
-                      name="create-outline"
-                      size={22}
-                      color={colors.primary}
-                    />
+                    <Ionicons name="create-outline" size={22} color={colors.primary} />
                   </Pressable>
                 </>
               )}
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={t(
-                  vehicle.archived_at ? "recover" : "archive",
-                )}
+                accessibilityLabel={t(vehicle.archived_at ? "recover" : "archive")}
                 disabled={busy}
                 onPress={() =>
                   ConfirmDialog(
                     t(vehicle.archived_at ? "recover" : "archive"),
-                    t(
-                      vehicle.archived_at
-                        ? "recoverVehicleBody"
-                        : "archiveVehicleBody",
-                    ),
-                    () => void archive(),
+                    t(vehicle.archived_at ? "recoverVehicleBody" : "archiveVehicleBody"),
+                    () => void archive()
                   )
                 }
                 style={{
@@ -350,9 +326,7 @@ export function VehicleDetails() {
                 }}
               >
                 <Ionicons
-                  name={
-                    vehicle.archived_at ? "refresh-outline" : "archive-outline"
-                  }
+                  name={vehicle.archived_at ? "refresh-outline" : "archive-outline"}
                   size={22}
                   color={colors.primary}
                 />
@@ -375,9 +349,7 @@ export function VehicleDetails() {
               ]}
             />
           </Card>
-          {vehicle.archived_at && (
-            <AppText muted>{t("archivedVehicleReadOnly")}</AppText>
-          )}
+          {vehicle.archived_at && <AppText muted>{t("archivedVehicleReadOnly")}</AppText>}
           {vehicle.role === "OWNER" && (
             <VehicleMembersSection
               key={`${vehicle.id}:${add ?? ""}`}
@@ -389,9 +361,7 @@ export function VehicleDetails() {
       ) : (
         !query.isPending && <AppText>{t("denied")}</AppText>
       )}
-      {error ? (
-        <ErrorState message={error} retry={() => void archive()} />
-      ) : null}
+      {error ? <ErrorState message={error} retry={() => void archive()} /> : null}
     </Screen>
   );
 }
@@ -410,7 +380,7 @@ export function Home() {
         void queryClient.invalidateQueries({
           queryKey: [user, vehicleId, "latest-observations"],
         });
-    }, [queryClient, user, vehicleId]),
+    }, [queryClient, user, vehicleId])
   );
   const colors = useTheme();
   const latestReadings = (["KM", "HOURS"] as const)
@@ -419,25 +389,19 @@ export function Home() {
     .filter((reading) => reading !== undefined)
     .filter(
       (reading) =>
-        v?.role !== "PILOT" ||
-        isPilotHistoryVisible(reading.observed_at, v.timezone, now),
+        v?.role !== "PILOT" || isPilotHistoryVisible(reading.observed_at, v.timezone, now)
     );
   return (
     <Screen
       title={t("app")}
       loading={
         query.isPending ||
-        (!!v &&
-          (access.isPending ||
-            (access.data?.metersRead === true && readings.isPending)))
+        (!!v && (access.isPending || (access.data?.metersRead === true && readings.isPending)))
       }
     >
       <AppText muted>{t("uiOverview")}</AppText>
       {query.error ? (
-        <ErrorState
-          message={query.error.message}
-          retry={() => void query.refetch()}
-        />
+        <ErrorState message={query.error.message} retry={() => void query.refetch()} />
       ) : query.isPending ? (
         <PageSkeleton shape="home" />
       ) : v ? (
@@ -449,10 +413,7 @@ export function Home() {
           />
           <VehicleHeader hero />
           {access.error ? (
-            <ErrorState
-              message={access.error.message}
-              retry={() => void access.refetch()}
-            />
+            <ErrorState message={access.error.message} retry={() => void access.refetch()} />
           ) : access.isPending ? (
             <PageSkeleton shape="reading" />
           ) : (
@@ -506,17 +467,10 @@ export function Home() {
                             }}
                           >
                             {" "}
-                            {t(
-                              reading.reading_type === "KM"
-                                ? "unitKmShort"
-                                : "unitHoursShort",
-                            )}
+                            {t(reading.reading_type === "KM" ? "unitKmShort" : "unitHoursShort")}
                           </Text>
                         </Text>
-                        <Timestamp
-                          value={reading.observed_at}
-                          timezone={v.timezone}
-                        />
+                        <Timestamp value={reading.observed_at} timezone={v.timezone} />
                       </View>
                     ))}
                   </Card>
@@ -539,12 +493,7 @@ export function Home() {
           <EmptyState
             title={t("empty")}
             body={t("emptyBody")}
-            action={
-              <AppButton
-                label={t("add")}
-                onPress={() => router.push("/garage/add")}
-              />
-            }
+            action={<AppButton label={t("add")} onPress={() => router.push("/garage/add")} />}
           />
         )
       )}

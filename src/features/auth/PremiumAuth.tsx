@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  type ReactNode,
-  type ComponentProps,
-} from "react";
+import { createContext, useContext, useState, type ReactNode, type ComponentProps } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -18,10 +12,7 @@ import {
   useWindowDimensions,
   type TextInputProps,
 } from "react-native";
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { Svg, Path } from "react-native-svg";
@@ -43,10 +34,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
   const { width } = useWindowDimensions();
   return (
     <AuthShellContext.Provider value>
-      <SafeAreaView
-        style={{ flex: 1, backgroundColor: c.background }}
-        edges={[]}
-      >
+      <SafeAreaView style={{ flex: 1, backgroundColor: c.background }} edges={[]}>
         <StatusBar style="light" />
         <View
           style={{
@@ -102,12 +90,14 @@ export function PremiumAuthLayout({
   loading,
   children,
   onBack,
+  showFeatures = true,
 }: {
   title: string;
-  subtitle: string;
+  subtitle?: string;
   loading: boolean;
   children: ReactNode;
   onBack?: () => void;
+  showFeatures?: boolean;
 }) {
   const inShell = useContext(AuthShellContext);
   const c = useTheme();
@@ -121,7 +111,7 @@ export function PremiumAuthLayout({
   const content = (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={{ flex: 1, minHeight: 0 }}
+      style={{ flex: 1, minHeight: 0, backgroundColor: c.background }}
     >
       <LoadingLine loading={loading} />
       <ScrollView
@@ -131,46 +121,49 @@ export function PremiumAuthLayout({
           paddingBottom: 32 + insets.bottom,
         }}
       >
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{
-            gap: 8,
-            paddingHorizontal: 18,
-            paddingVertical: 15,
-          }}
-          style={{
-            flexGrow: 0,
-            width: "100%",
-            maxWidth: 520,
-            alignSelf: "center",
-          }}
-        >
-          {features.map((feature) => (
-            <View
-              key={feature.label}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 6,
-                paddingHorizontal: 10,
-                paddingVertical: 8,
-                borderRadius: 13,
-                backgroundColor: c.surface,
-                borderWidth: 1,
-                borderColor: c.line,
-              }}
-            >
-              <Ionicons name={feature.icon} color={c.primary} size={18} />
-              <Text style={{ color: c.ink, fontSize: 12, fontWeight: "600" }}>
-                {feature.label}
-              </Text>
-            </View>
-          ))}
-        </ScrollView>
+        {showFeatures && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{
+              gap: 8,
+              paddingHorizontal: 18,
+              paddingVertical: 15,
+            }}
+            style={{
+              flexGrow: 0,
+              width: "100%",
+              maxWidth: 520,
+              alignSelf: "center",
+            }}
+          >
+            {features.map((feature) => (
+              <View
+                key={feature.label}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 6,
+                  paddingHorizontal: 10,
+                  paddingVertical: 8,
+                  borderRadius: 13,
+                  backgroundColor: c.surface,
+                  borderWidth: 1,
+                  borderColor: c.line,
+                }}
+              >
+                <Ionicons name={feature.icon} color={c.primary} size={18} />
+                <Text style={{ color: c.ink, fontSize: 12, fontWeight: "600" }}>
+                  {feature.label}
+                </Text>
+              </View>
+            ))}
+          </ScrollView>
+        )}
         <View
           style={{
             paddingHorizontal: 18,
+            paddingTop: showFeatures ? 0 : 24,
             gap: 16,
             width: "100%",
             maxWidth: 520,
@@ -189,9 +182,7 @@ export function PremiumAuthLayout({
                 alignSelf: "flex-start",
               }}
             >
-              <Text style={{ color: c.primary, fontWeight: "600" }}>
-                {t("back")}
-              </Text>
+              <Text style={{ color: c.primary, fontWeight: "600" }}>{t("back")}</Text>
             </Pressable>
           )}
           <View style={{ gap: 5 }}>
@@ -206,9 +197,9 @@ export function PremiumAuthLayout({
             >
               {title}
             </Text>
-            <Text style={{ color: c.muted, lineHeight: 21, fontSize: 14 }}>
-              {subtitle}
-            </Text>
+            {!!subtitle && (
+              <Text style={{ color: c.muted, lineHeight: 21, fontSize: 14 }}>{subtitle}</Text>
+            )}
           </View>
           <View
             style={{
@@ -349,9 +340,7 @@ export function GoogleAuthButton({
       })}
     >
       <GoogleMark />
-      <Text style={{ color: c.primary, fontWeight: "700", fontSize: 15 }}>
-        {t("google")}
-      </Text>
+      <Text style={{ color: c.primary, fontWeight: "700", fontSize: 15 }}>{t("google")}</Text>
     </Pressable>
   );
 }
@@ -391,9 +380,7 @@ export function AuthPrimaryButton({
           <ActivityIndicator color="#FFF" />
         ) : (
           <>
-            <Text style={{ color: "white", fontSize: 16, fontWeight: "700" }}>
-              {label}
-            </Text>
+            <Text style={{ color: "white", fontSize: 16, fontWeight: "700" }}>{label}</Text>
             <Ionicons name="arrow-forward" size={20} color="white" />
           </>
         )}
@@ -426,11 +413,7 @@ export function AuthConsent({
           minHeight: 44,
         }}
       >
-        <Ionicons
-          name={checked ? "checkbox" : "square-outline"}
-          size={23}
-          color={c.primary}
-        />
+        <Ionicons name={checked ? "checkbox" : "square-outline"} size={23} color={c.primary} />
         <Text style={{ flex: 1, color: c.ink }}>{t("authAgree")}</Text>
       </Pressable>
       <Pressable
@@ -438,9 +421,7 @@ export function AuthConsent({
         onPress={() => router.push("/auth/legal")}
         style={{ minHeight: 44, justifyContent: "center", paddingLeft: 32 }}
       >
-        <Text style={{ color: c.primary, fontWeight: "600" }}>
-          {t("legal")}
-        </Text>
+        <Text style={{ color: c.primary, fontWeight: "600" }}>{t("legal")}</Text>
       </Pressable>
     </View>
   );

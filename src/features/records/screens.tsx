@@ -267,7 +267,8 @@ export function RecordsList({
       {permissions.error && (
         <ErrorState message={permissions.error.message} retry={() => void permissions.refetch()} />
       )}
-      {active.error || permissions.error ? null : active.isPending || (!!v && permissions.isPending) ? (
+      {active.error || permissions.error ? null : active.isPending ||
+        (!!v && permissions.isPending) ? (
         <PageSkeleton shape="records" />
       ) : !v ? (
         <EmptyState title={r("noVehicle")} />
@@ -288,17 +289,20 @@ export function RecordsList({
           )}
           {permissions.data?.owner &&
             ["fuel", "expenses"].includes(kind) &&
-            permissions.data?.[`${kind}.read`] && (
-              query.isPending ? <PageSkeleton shape="summary" /> : query.error ? null : <RecordSummary
+            permissions.data?.[`${kind}.read`] &&
+            (query.isPending ? (
+              <PageSkeleton shape="summary" />
+            ) : query.error ? null : (
+              <RecordSummary
                 kind={kind}
                 value={money(
-                  kind === "fuel" ? fuelQuery.total : confirmed.reduce(
-                    (sum, row) => sum + Number(row.payload.amount_paise ?? 0), 0
-                  )
+                  kind === "fuel"
+                    ? fuelQuery.total
+                    : confirmed.reduce((sum, row) => sum + Number(row.payload.amount_paise ?? 0), 0)
                 )}
                 subtitle={`${r("cash")} · ${r(period as keyof typeof recordCopy)} · ${kind === "fuel" ? fuelQuery.count : confirmed.length} ${r("confirmed")}`}
               />
-            )}
+            ))}
           <SearchField
             label={r("search")}
             value={search}
@@ -437,8 +441,40 @@ export function RecordsList({
           ) : !rows.length ? (
             <EmptyState
               kind={kind === "fuel" && v.energy_type === "ELECTRIC" ? "charging" : kind}
-              title={t(kind === "fuel" ? (v.energy_type === "ELECTRIC" ? "emptyChargingTitle" : "emptyFuelTitle") : kind === "expenses" ? "emptyExpensesTitle" : kind === "documents" ? "emptyDocumentsTitle" : kind === "reminders" ? "emptyRemindersTitle" : "emptyRecordsTitle")}
-              body={t(search || statusFilter !== "ALL" || (permissions.data?.owner !== false && period !== "all") || fromDate || toDate || minimumAmount || maximumAmount ? "emptyRecordsBody" : kind === "fuel" ? (v.energy_type === "ELECTRIC" ? "emptyChargingBody" : "emptyFuelBody") : kind === "expenses" ? "emptyExpensesBody" : kind === "documents" ? "emptyDocumentsBody" : kind === "reminders" ? "emptyRemindersBody" : "emptyMeterReadOnlyBody")}
+              title={t(
+                kind === "fuel"
+                  ? v.energy_type === "ELECTRIC"
+                    ? "emptyChargingTitle"
+                    : "emptyFuelTitle"
+                  : kind === "expenses"
+                    ? "emptyExpensesTitle"
+                    : kind === "documents"
+                      ? "emptyDocumentsTitle"
+                      : kind === "reminders"
+                        ? "emptyRemindersTitle"
+                        : "emptyRecordsTitle"
+              )}
+              body={t(
+                search ||
+                  statusFilter !== "ALL" ||
+                  (permissions.data?.owner !== false && period !== "all") ||
+                  fromDate ||
+                  toDate ||
+                  minimumAmount ||
+                  maximumAmount
+                  ? "emptyRecordsBody"
+                  : kind === "fuel"
+                    ? v.energy_type === "ELECTRIC"
+                      ? "emptyChargingBody"
+                      : "emptyFuelBody"
+                    : kind === "expenses"
+                      ? "emptyExpensesBody"
+                      : kind === "documents"
+                        ? "emptyDocumentsBody"
+                        : kind === "reminders"
+                          ? "emptyRemindersBody"
+                          : "emptyMeterReadOnlyBody"
+              )}
             />
           ) : kind === "fuel" || kind === "expenses" ? (
             <Card style={{ padding: 0, gap: 0, overflow: "hidden" }}>
@@ -819,7 +855,12 @@ export function RecordForm() {
           }
         }
       }
-      if (kind === "fuel" && (values.km !== "" || values.hours !== "") && Date.parse(values.observed_at) === Date.parse(values.event_at) && !values.confirmed_observation) {
+      if (
+        kind === "fuel" &&
+        (values.km !== "" || values.hours !== "") &&
+        Date.parse(values.observed_at) === Date.parse(values.event_at) &&
+        !values.confirmed_observation
+      ) {
         const message = t("fillConfirmationRequired");
         form.setError("confirmed_observation", { message });
         throw new Error(message);
@@ -955,7 +996,12 @@ export function RecordForm() {
       </Screen>
     );
   if (v.archived_at)
-    return <Screen title={r(kind)}><AppText>{t("archivedVehicleReadOnly")}</AppText><AppButton secondary label={r("back")} onPress={() => router.back()} /></Screen>;
+    return (
+      <Screen title={r(kind)}>
+        <AppText>{t("archivedVehicleReadOnly")}</AppText>
+        <AppButton secondary label={r("back")} onPress={() => router.back()} />
+      </Screen>
+    );
   if (access.data && !allowed)
     return (
       <Screen title={r(kind)}>
@@ -1042,7 +1088,15 @@ export function RecordForm() {
       {kind === "fuel" &&
         (values.km !== "" || values.hours !== "") &&
         Date.parse(values.observed_at) === Date.parse(values.event_at) && (
-          <View style={{ gap: 8, borderWidth: form.formState.errors.confirmed_observation ? 1 : 0, borderColor: formColors.danger, borderRadius: 14, padding: form.formState.errors.confirmed_observation ? 10 : 0 }}>
+          <View
+            style={{
+              gap: 8,
+              borderWidth: form.formState.errors.confirmed_observation ? 1 : 0,
+              borderColor: formColors.danger,
+              borderRadius: 14,
+              padding: form.formState.errors.confirmed_observation ? 10 : 0,
+            }}
+          >
             <AppText>{t("fillConfirmationHelp")}</AppText>
             <AppText>{r("fillConfirmation")}</AppText>
             <Switch
@@ -1072,7 +1126,11 @@ export function RecordForm() {
           {!!error && <FormError message={error} onDismiss={() => setError("")} />}
           <GradientButton
             label={r(kind === "progress" ? "submit" : "save")}
-            disabled={busy || !ready || (kind === "progress" && (forms.isPending || !values.form_version_id))}
+            disabled={
+              busy ||
+              !ready ||
+              (kind === "progress" && (forms.isPending || !values.form_version_id))
+            }
             onPress={() => void submit()}
           />
         </View>
@@ -1223,6 +1281,31 @@ export function RecordForm() {
             true
           )}
           {!!derived && <AppText muted>{derived}</AppText>}
+          <View style={{ gap: 8 }}>
+            <AppText>
+              {t(values.energy_type === "ELECTRIC" ? "chargingFillType" : "fuelFillType")}
+            </AppText>
+            <FilterChips
+              items={[
+                {
+                  id: "partial",
+                  label: r(values.energy_type === "ELECTRIC" ? "partialCharge" : "partial"),
+                },
+                {
+                  id: "full",
+                  label: r(values.energy_type === "ELECTRIC" ? "fullCharge" : "full"),
+                },
+              ]}
+              value={values.is_full_tank ? "full" : "partial"}
+              onChange={(value) => {
+                if (!busy)
+                  form.setValue("is_full_tank", value === "full", {
+                    shouldDirty: true,
+                  });
+              }}
+            />
+            <AppText muted>{t("fuelFillTypeHelp")}</AppText>
+          </View>
         </>
       )}
       {kind === "expenses" && (
@@ -1270,25 +1353,6 @@ export function RecordForm() {
       >
         {kind === "fuel" && (
           <>
-            <FilterChips
-              items={[
-                {
-                  id: "partial",
-                  label: r(values.energy_type === "ELECTRIC" ? "partialCharge" : "partial"),
-                },
-                {
-                  id: "full",
-                  label: r(values.energy_type === "ELECTRIC" ? "fullCharge" : "full"),
-                },
-              ]}
-              value={values.is_full_tank ? "full" : "partial"}
-              onChange={(value) => {
-                if (!busy)
-                  form.setValue("is_full_tank", value === "full", {
-                    shouldDirty: true,
-                  });
-              }}
-            />
             {field(
               "unit_price",
               t(
@@ -1604,12 +1668,17 @@ export function RecordDetail({
     queryFn: async () => {
       if (kind !== "fuel") return recordAuthorName(kind, vehicle!, id!, development);
       if (development) return recordAuthorName(kind, vehicle!, id!, true);
-      const { data, error } = await client().rpc("fuel_record_author", { p_vehicle: vehicle!, p_record: id! });
+      const { data, error } = await client().rpc("fuel_record_author", {
+        p_vehicle: vehicle!,
+        p_record: id!,
+      });
       if (error) throw error;
       return data?.[0]?.display_name ?? null;
     },
   });
-  const vehicleIsActive = !!vehicleQuery.data?.some((item) => item.id === vehicle && !item.archived_at);
+  const vehicleIsActive = !!vehicleQuery.data?.some(
+    (item) => item.id === vehicle && !item.archived_at
+  );
   const mutate = async (status: string, payload = row?.payload) => {
     if (!row || !user || !payload || busy || !vehicleIsActive) return;
     setBusy(true);
@@ -1652,7 +1721,8 @@ export function RecordDetail({
     }
   };
   const editAllowed =
-    vehicleIsActive && row?.status !== "ARCHIVED" &&
+    vehicleIsActive &&
+    row?.status !== "ARCHIVED" &&
     (owner ||
       (kind === "progress" &&
         row?.created_by === user &&
@@ -1694,51 +1764,52 @@ export function RecordDetail({
       ) : row ? (
         <>
           {!context && <VehicleHeader vehicleId={row.vehicle_id} allowSwitch={false} />}
-          {kind === "fuel" && (editAllowed || (owner && vehicleIsActive && row.status !== "ARCHIVED")) && (
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "flex-end",
-                gap: 8,
-              }}
-            >
-              {editAllowed && (
-                <MotionPress
-                  label={r("edit")}
-                  onPress={() => {
-                    onClose?.();
-                    router.push({
-                      pathname: "/records/[kind]/[action]",
-                      params: {
-                        kind,
-                        action: "edit",
-                        id: row.id,
-                        vehicle: row.vehicle_id,
-                      },
-                    });
-                  }}
-                >
-                  <View style={{ padding: 10 }}>
-                    <Ionicons name="create-outline" size={23} color={colors.primary} />
-                  </View>
-                </MotionPress>
-              )}
-              {owner && row.status !== "ARCHIVED" && (
-                <MotionPress
-                  label={r("deleteRecord")}
-                  disabled={busy}
-                  onPress={() => {
-                    setError("");
-                    setConfirmDelete(true);
-                  }}
-                >
-                  <View style={{ padding: 10 }}>
-                    <Ionicons name="trash-outline" size={23} color={colors.danger} />
-                  </View>
-                </MotionPress>
-              )}
-            </View>
-          )}
+          {kind === "fuel" &&
+            (editAllowed || (owner && vehicleIsActive && row.status !== "ARCHIVED")) && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "flex-end",
+                  gap: 8,
+                }}
+              >
+                {editAllowed && (
+                  <MotionPress
+                    label={r("edit")}
+                    onPress={() => {
+                      onClose?.();
+                      router.push({
+                        pathname: "/records/[kind]/[action]",
+                        params: {
+                          kind,
+                          action: "edit",
+                          id: row.id,
+                          vehicle: row.vehicle_id,
+                        },
+                      });
+                    }}
+                  >
+                    <View style={{ padding: 10 }}>
+                      <Ionicons name="create-outline" size={23} color={colors.primary} />
+                    </View>
+                  </MotionPress>
+                )}
+                {owner && row.status !== "ARCHIVED" && (
+                  <MotionPress
+                    label={r("deleteRecord")}
+                    disabled={busy}
+                    onPress={() => {
+                      setError("");
+                      setConfirmDelete(true);
+                    }}
+                  >
+                    <View style={{ padding: 10 }}>
+                      <Ionicons name="trash-outline" size={23} color={colors.danger} />
+                    </View>
+                  </MotionPress>
+                )}
+              </View>
+            )}
           <RecordCard row={row} kind={kind} timezone={timezone} />
           {author.error && (
             <ErrorState message={errorMessage(author.error)} retry={() => void author.refetch()} />
@@ -1771,7 +1842,16 @@ export function RecordDetail({
                         : []),
                     ]
                   : []),
-                ...(kind !== "progress" ? [{ label: r("author"), value: author.isPending ? t("loading") : author.data || t("authorUnavailable") }] : []),
+                ...(kind !== "progress"
+                  ? [
+                      {
+                        label: r("author"),
+                        value: author.isPending
+                          ? t("loading")
+                          : author.data || t("authorUnavailable"),
+                      },
+                    ]
+                  : []),
                 ...(row.payload.reading_at
                   ? [
                       {
@@ -1900,18 +1980,23 @@ export function RecordDetail({
               }}
             />
           )}
-          {owner && vehicleIsActive && row.status !== "ARCHIVED" && kind !== "progress" && kind !== "fuel" && (
-            <TextAction
-              icon="trash-outline"
-              disabled={busy}
-              label={r("deleteRecord")}
-              onPress={() => {
-                setError("");
-                setConfirmDelete(true);
-              }}
-            />
-          )}
-          {releaseFeatures.advancedTools && vehicleIsActive &&
+          {owner &&
+            vehicleIsActive &&
+            row.status !== "ARCHIVED" &&
+            kind !== "progress" &&
+            kind !== "fuel" && (
+              <TextAction
+                icon="trash-outline"
+                disabled={busy}
+                label={r("deleteRecord")}
+                onPress={() => {
+                  setError("");
+                  setConfirmDelete(true);
+                }}
+              />
+            )}
+          {releaseFeatures.advancedTools &&
+            vehicleIsActive &&
             kind === "expenses" &&
             ["SERVICE", "REPAIR", "INSURANCE", "EMI"].includes(String(row.payload.category)) && (
               <AppButton

@@ -35,20 +35,26 @@ export function WizardSteps({
       >
         <Text
           accessibilityLiveRegion="polite"
+          accessibilityLabel={`${t("uiStep")} ${step + 1} ${t("uiOf")} ${titles.length}: ${titles[step]}`}
           style={{ color: c.primary, fontSize: 13, fontWeight: "700" }}
         >
           {t("uiStep")} {step + 1} {t("uiOf")} {titles.length}
         </Text>
-        <Text style={{ fontSize: 12, color: c.muted }}>
-          {t("uiVehicleSetup")}
-        </Text>
+        <Text style={{ fontSize: 12, color: c.muted }}>{t("uiVehicleSetup")}</Text>
       </View>
       <View style={{ flexDirection: "row", gap: 6 }}>
         {titles.map((title, index) => (
           <Pressable
             key={title}
             accessibilityRole="button"
-            accessibilityLabel={`${t("uiStep")} ${index + 1}: ${title}`}
+            accessibilityLabel={`${t("uiStep")} ${index + 1} ${t("uiOf")} ${titles.length}: ${title}`}
+            accessibilityHint={
+              index > step
+                ? t("uiStepLockedHint")
+                : index < step
+                  ? t("uiStepPreviousHint")
+                  : undefined
+            }
             accessibilityState={{
               selected: step === index,
               disabled: disabled || index > step,

@@ -1,6 +1,6 @@
 import { Pressable, Text, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { GradientSurface } from "@/src/components/ui/GradientSurface";
+import { useTheme } from "@/src/lib/theme";
 
 type Format = "json" | "csv" | "pdf";
 const formats = [
@@ -8,19 +8,16 @@ const formats = [
     id: "json",
     label: "JSON",
     icon: "code-slash-outline",
-    colors: ["#3555AA", "#4F62BD", "#6955AD"],
   },
   {
     id: "csv",
     label: "CSV",
     icon: "grid-outline",
-    colors: ["#086B5C", "#12816A", "#15957B"],
   },
   {
     id: "pdf",
     label: "PDF",
     icon: "document-text-outline",
-    colors: ["#A13E4C", "#B94C55", "#CE6A58"],
   },
 ] as const;
 export function ExportActions({
@@ -30,8 +27,9 @@ export function ExportActions({
   disabled: boolean;
   onExport: (format: Format) => void;
 }) {
+  const colors = useTheme();
   return (
-    <View style={{ flexDirection: "row", gap: 8 }}>
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
       {formats.map((format) => (
         <Pressable
           key={format.id}
@@ -41,29 +39,31 @@ export function ExportActions({
           disabled={disabled}
           onPress={() => onExport(format.id)}
           style={({ pressed }) => ({
-            flex: 1,
+            flexBasis: 80,
+            flexGrow: 1,
             minWidth: 0,
             opacity: disabled ? 0.45 : pressed ? 0.8 : 1,
           })}
         >
-          <GradientSurface
-            colors={format.colors}
+          <View
             style={{
-              minHeight: 104,
+              minHeight: 88,
+              borderRadius: 18,
+              borderWidth: 1,
+              borderColor: colors.line,
+              backgroundColor: colors.surface,
               alignItems: "center",
               justifyContent: "center",
               gap: 7,
               paddingVertical: 14,
               paddingHorizontal: 4,
-              shadowOpacity: 0,
-              elevation: 0,
             }}
           >
-            <Ionicons name={format.icon} color="#FFFFFF" size={30} />
-            <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 14 }}>
+            <Ionicons name={format.icon} color={colors.primary} size={25} />
+            <Text style={{ color: colors.ink, fontWeight: "700", fontSize: 14 }}>
               {format.label}
             </Text>
-          </GradientSurface>
+          </View>
         </Pressable>
       ))}
     </View>

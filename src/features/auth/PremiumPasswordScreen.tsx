@@ -1,25 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { Text, View } from "react-native";
 import { router } from "expo-router";
 import { ZodError } from "zod";
 import { AppButton, AppText, InputField } from "@/src/components/ui";
 import { FormError } from "@/src/components/ui/FormError";
 import { t } from "@/src/lib/i18n";
-import { useTheme } from "@/src/lib/theme";
 import { env } from "@/src/lib/env";
 import { AuthLink } from "./AuthLayout";
-import {
-  PremiumAuthLayout,
-  AuthTextField,
-  AuthPrimaryButton,
-  GoogleAuthButton,
-  AuthConsent,
-} from "./PremiumAuth";
-import { googleSignIn } from "./api";
+import { PremiumAuthLayout, AuthTextField, AuthPrimaryButton, AuthConsent } from "./PremiumAuth";
 import { accountEmail, emailCode, passwordPair, signupName } from "./passwordSchema";
 import { passwordLogin, passwordSignup, resendSignup, verifyAccountCode } from "./passwordApi";
 export function PremiumPasswordScreen({ mode }: { mode: "login" | "signup" }) {
-  const c = useTheme();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -86,30 +76,23 @@ export function PremiumPasswordScreen({ mode }: { mode: "login" | "signup" }) {
         stage === "verify"
           ? t("authCheckEmail")
           : mode === "login"
-            ? t("authLoginTitle")
+            ? t("login")
             : t("createAccount")
       }
       subtitle={
         stage === "verify"
           ? t("authVerifyStep")
-          : t(mode === "login" ? "authPremiumLoginHint" : "authPremiumSignupHint")
+          : mode === "signup"
+            ? t("authPremiumSignupHint")
+            : undefined
       }
+      showFeatures={false}
       loading={busy}
     >
       {!env && <AppText>{t("configBody")}</AppText>}
       {stage === "details" ? (
         <>
-          <GoogleAuthButton
-            disabled={disabled || (mode === "signup" && !consent)}
-            onPress={() => void run(googleSignIn)}
-          />
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <View style={{ flex: 1, height: 1, backgroundColor: c.line }} />
-            <Text style={{ color: c.muted, fontSize: 12 }}>
-              {t(mode === "login" ? "authOrSignIn" : "authOrSignUp")}
-            </Text>
-            <View style={{ flex: 1, height: 1, backgroundColor: c.line }} />
-          </View>
+          {/* Google sign-in is temporarily hidden; the provider integration remains available. */}
           {mode === "signup" && (
             <AuthTextField
               label={t("authFullName")}
@@ -151,7 +134,6 @@ export function PremiumPasswordScreen({ mode }: { mode: "login" | "signup" }) {
           />
           {mode === "signup" && (
             <>
-              
               <AuthTextField
                 label={t("confirmPassword")}
                 icon="shield-checkmark-outline"

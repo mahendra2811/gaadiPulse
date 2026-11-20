@@ -38,7 +38,8 @@ yarn-error.*
 /my docs/
 /supabase/
 /tests/
-/config/
+/config/*
+!/config/vehicle-catalog.seed.json
 /AGENTS.md
 /PROJECT_REFERENCE.md
 /ANDROID_RELEASE_COMMANDS.md

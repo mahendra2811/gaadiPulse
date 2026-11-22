@@ -38,7 +38,7 @@ import {
 import { suggestedCurrency, type CurrencyCode } from "@/src/utils/currency";
 import { setLocale, type SupportedLocale } from "@/src/lib/i18n";
 
-const banner = require("@/assets/media/Premium Fleet Management Onboarding Illustration.png");
+const banner = require("@/assets/media/all_vehicle.png");
 export default function OnboardingScreen() {
   const c = useTheme(),
     auth = useSession(),

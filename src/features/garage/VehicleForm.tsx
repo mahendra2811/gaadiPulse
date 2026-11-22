@@ -7,6 +7,7 @@ import { SquareArtwork } from "@/src/components/ui/SquareArtwork";
 import { AdditionalOptions } from "@/src/components/ui/AdditionalOptions";
 import { allowedFuelTypes, fuelUnit, vehicleEnergyTypes } from "./energy";
 import { TimezoneField } from "./TimezoneField";
+import { CurrencyField } from "@/src/features/auth/CurrencyField";
 import { defaultVehicleTimezone, timezoneLabel } from "./timezone";
 import { readableDateTime } from "@/src/utils/dateDisplay";
 import { DateTimeInput } from "@/src/components/ui/fields";
@@ -66,6 +67,7 @@ const initial: VehicleInput = {
   km: "",
   hours: "",
   observed_at: new Date().toISOString(),
+  default_currency_code: "INR",
 };
 export default function VehicleForm() {
   const { id } = useLocalSearchParams<{ id?: string }>();
@@ -105,8 +107,13 @@ export default function VehicleForm() {
         registration_number: vehicle.registration_number ?? "",
         observed_at: new Date().toISOString(),
       });
-    else if (!id && profile.data)
+    else if (!id && profile.data) {
       form.setValue("timezone", profile.data.timezone);
+      form.setValue(
+        "default_currency_code",
+        profile.data.preferred_currency_code,
+      );
+    }
     // Initialize this editable form once from the confirmed server response.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setReady(true);
@@ -641,6 +648,16 @@ export default function VehicleForm() {
               }
             >
               {timezoneField}
+              <CurrencyField
+                value={values.default_currency_code ?? "INR"}
+                onChange={(currency) =>
+                  form.setValue("default_currency_code", currency, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+                disabled={busy || !ready}
+              />
             </AdditionalOptions>
           </>
         )}
@@ -701,6 +718,7 @@ export default function VehicleForm() {
                 [t("uiEnergyType"), t(values.energy_type)],
                 [t("meters"), t(values.meter_mode)],
                 [t("timezone"), timezoneLabel(values.timezone)],
+                [t("currency"), values.default_currency_code],
                 ...(!id && values.km ? [[t("km"), `${values.km} km`]] : []),
                 ...(!id && values.hours
                   ? [[t("hours"), `${values.hours} hrs`]]

@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { router } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import {
@@ -25,6 +31,7 @@ export function MoreDrawerProvider({ children }: { children: ReactNode }) {
   const [visible, setVisible] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [progress] = useState(() => new Animated.Value(0));
+  const afterClose = useRef<(() => void) | null>(null);
   const reduced = useReducedMotion();
   const inset = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -35,6 +42,10 @@ export function MoreDrawerProvider({ children }: { children: ReactNode }) {
     setVisible(true);
   }, []);
   const close = useCallback(() => setVisible(false), []);
+  const closeAndThen = useCallback((callback: () => void) => {
+    afterClose.current = callback;
+    setVisible(false);
+  }, []);
 
   useEffect(() => {
     const animation = Animated.timing(progress, {
@@ -43,13 +54,20 @@ export function MoreDrawerProvider({ children }: { children: ReactNode }) {
       useNativeDriver: true,
     });
     animation.start(({ finished }) => {
-      if (finished && !visible) setMounted(false);
+      if (finished && !visible) {
+        setMounted(false);
+        const callback = afterClose.current;
+        afterClose.current = null;
+        // Let React Native dismiss the drawer's native Modal window before
+        // opening the root confirmation Modal, which must appear above it.
+        if (callback) setTimeout(callback, 100);
+      }
     });
     return () => animation.stop();
   }, [progress, reduced, visible]);
 
   return (
-    <DrawerContext.Provider value={{ open, close, visible }}>
+    <DrawerContext.Provider value={{ open, close, closeAndThen, visible }}>
       {children}
       <Modal
         visible={mounted}
@@ -163,7 +181,10 @@ export function MoreDrawerProvider({ children }: { children: ReactNode }) {
                 borderTopColor: c.line,
               }}
             >
-              <SignOutButton onSignedOut={close} />
+              <SignOutButton
+                onSignedOut={close}
+                afterDrawerClose={closeAndThen}
+              />
             </View>
           </Animated.View>
         </View>

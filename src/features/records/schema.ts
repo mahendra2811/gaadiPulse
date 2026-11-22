@@ -4,8 +4,22 @@ import { fuelTypes, fuelUnit } from "@/src/features/garage/energy";
 import { t } from "@/src/lib/i18n";
 import { domainCopy as c } from "@/src/lib/domainCopy";
 import { z } from "zod";
-import { solveFuel, paise, nonnegativePaise } from "@/src/utils/money";
-export const kinds = ["fuel", "expenses", "meters", "reminders", "documents", "progress"] as const;
+import {
+  currencyDecimals,
+  isCurrencyCode,
+  minorUnitsDecimal,
+  parseMinorUnits,
+  solveCurrencyFuel,
+  type CurrencyCode,
+} from "@/src/utils/currency";
+export const kinds = [
+  "fuel",
+  "expenses",
+  "meters",
+  "reminders",
+  "documents",
+  "progress",
+] as const;
 export type Kind = (typeof kinds)[number];
 export const expenseCategories = [
   "SERVICE",
@@ -35,11 +49,38 @@ export const recordSchema = z.object({
   payload: z.record(z.string(), z.unknown()),
 });
 export type RecordEntry = z.infer<typeof recordSchema>;
+const currencyCode = z.enum([
+  "AED",
+  "AUD",
+  "BHD",
+  "CAD",
+  "CHF",
+  "CNY",
+  "EUR",
+  "GBP",
+  "IDR",
+  "INR",
+  "JPY",
+  "KRW",
+  "KWD",
+  "MYR",
+  "NZD",
+  "OMR",
+  "SAR",
+  "SGD",
+  "THB",
+  "USD",
+  "ZAR",
+] as const);
 const positive = z.coerce.number().positive().finite();
-const optionalReading = z.union([z.literal(""), z.string().regex(/^\d+(\.\d{1,3})?$/)]);
+const optionalReading = z.union([
+  z.literal(""),
+  z.string().regex(/^\d+(\.\d{1,3})?$/),
+]);
 export const baseFormSchema = z.object({
   event_at: z.iso.datetime({ offset: true }),
   title: z.string().trim().max(160),
+  currency_code: currencyCode.default("INR"),
   amount: z.string(),
   quantity: z.string(),
   unit_price: z.string(),
@@ -71,10 +112,11 @@ export const baseFormSchema = z.object({
   confirmed_observation: z.boolean(),
 });
 export type EntryForm = z.infer<typeof baseFormSchema>;
-export function defaultEntry(): EntryForm {
+export function defaultEntry(currency: CurrencyCode = "INR"): EntryForm {
   return {
     event_at: new Date().toISOString(),
     title: "",
+    currency_code: currency,
     amount: "",
     quantity: "",
     unit_price: "",
@@ -119,26 +161,37 @@ export function recordInputSchema(kind: Kind, context: RecordFormContext = {}) {
 export function entryPayload(
   kind: Kind,
   input: EntryForm,
-  context: RecordFormContext = {}
+  context: RecordFormContext = {},
 ): Payload {
   const v = recordInputSchema(kind, context).parse(input);
   let metadata: Payload;
-  let items: { title: string; amount_paise: number }[];
+  let items: { title: string; amount_minor: number }[];
   try {
     metadata = z.record(z.string(), z.unknown()).parse(JSON.parse(v.metadata));
     items = z
       .array(
         z.object({
           title: z.string().trim().min(1).max(160),
-          amount_paise: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
-        })
+          amount_minor: z
+            .number()
+            .int()
+            .positive()
+            .max(Number.MAX_SAFE_INTEGER),
+        }),
       )
-      .parse(JSON.parse(v.items));
+      .parse(
+        JSON.parse(v.items).map((item: Record<string, unknown>) => ({
+          title: item.title,
+          amount_minor: item.amount_minor ?? item.amount_paise,
+        })),
+      );
   } catch {
     throw new Error(c.payload);
   }
   const payload: Payload = {
     ...v,
+    currency_code: v.currency_code ?? "INR",
+    currency_exponent: currencyDecimals(v.currency_code ?? "INR"),
     metadata,
     items,
     km: v.km === "" ? null : Number(v.km),
@@ -160,53 +213,99 @@ export function entryPayload(
   )
     throw new Error(t("fillConfirmationRequired"));
   if (kind === "fuel") {
-    if (!fuelTypes.some((type) => type === v.energy_type) || v.unit !== fuelUnit(v.energy_type))
+    if (
+      !fuelTypes.some((type) => type === v.energy_type) ||
+      v.unit !== fuelUnit(v.energy_type)
+    )
       throw new Error(t("fuelMismatch"));
-    Object.assign(payload, solveFuel(v.amount, v.quantity, v.unit_price));
+    const solved = solveCurrencyFuel(
+      v.amount,
+      v.quantity,
+      v.unit_price,
+      v.currency_code ?? "INR",
+    );
+    Object.assign(payload, solved);
+    if ((v.currency_code ?? "INR") === "INR")
+      Object.assign(payload, {
+        amount_paise: solved.amount_minor,
+        unit_price_paise: solved.unit_price_minor,
+      });
   }
   if (kind === "expenses") {
     if (!v.title.trim()) throw new Error(c.expenseTitle);
     Object.assign(payload, {
-      amount_paise: paise(v.amount),
-      principal_paise: v.principal ? nonnegativePaise(v.principal) : null,
-      interest_paise: v.interest ? nonnegativePaise(v.interest) : null,
+      amount_minor: parseMinorUnits(v.amount, v.currency_code ?? "INR"),
+      principal_minor: v.principal
+        ? parseMinorUnits(v.principal, v.currency_code ?? "INR", true)
+        : null,
+      interest_minor: v.interest
+        ? parseMinorUnits(v.interest, v.currency_code ?? "INR", true)
+        : null,
     });
-    if (items.length && items.reduce((s, i) => s + i.amount_paise, 0) !== payload.amount_paise)
+    if (
+      items.length &&
+      items.reduce((s, i) => s + i.amount_minor, 0) !== payload.amount_minor
+    )
       throw new Error(c.items);
+    if ((v.currency_code ?? "INR") === "INR")
+      Object.assign(payload, {
+        amount_paise: payload.amount_minor,
+        principal_paise: payload.principal_minor,
+        interest_paise: payload.interest_minor,
+        items: items.map((item) => ({
+          title: item.title,
+          amount_paise: item.amount_minor,
+        })),
+      });
     if (
       v.category === "EMI" &&
-      Number(payload.principal_paise ?? 0) + Number(payload.interest_paise ?? 0) >
-        Number(payload.amount_paise)
+      Number(payload.principal_minor ?? 0) +
+        Number(payload.interest_minor ?? 0) >
+        Number(payload.amount_minor)
     )
       throw new Error(c.emi);
   }
   if (kind === "meters" && payload.km === null && payload.hours === null)
     throw new Error(c.reading);
-  if (["documents", "reminders"].includes(kind) && !v.title.trim()) throw new Error(c.title);
+  if (["documents", "reminders"].includes(kind) && !v.title.trim())
+    throw new Error(c.title);
   if (v.due_at && !z.iso.datetime({ offset: true }).safeParse(v.due_at).success)
     throw new Error(c.due);
   for (const key of ["threshold_km", "threshold_hours"] as const)
-    if (v[key] && !positive.safeParse(v[key]).success) throw new Error(c.threshold);
+    if (v[key] && !positive.safeParse(v[key]).success)
+      throw new Error(c.threshold);
   return payload;
 }
-export function formFromRecord(record: RecordEntry, timezone = "Asia/Kolkata"): EntryForm {
+export function formFromRecord(
+  record: RecordEntry,
+  timezone = "Asia/Kolkata",
+): EntryForm {
   const p = record.payload;
+  const currency = isCurrencyCode(String(p.currency_code))
+    ? (p.currency_code as CurrencyCode)
+    : "INR";
+  const amountMinor = Number(p.amount_minor ?? p.amount_paise ?? 0);
+  const unitPriceMinor = Number(p.unit_price_minor ?? p.unit_price_paise ?? 0);
+  const principalMinor = p.principal_minor ?? p.principal_paise;
+  const interestMinor = p.interest_minor ?? p.interest_paise;
   return {
-    ...defaultEntry(),
+    ...defaultEntry(currency),
     ...p,
     due_at: p.due_at ? canonicalDeadline(String(p.due_at), timezone) : "",
-    amount: p.amount_paise ? String(Number(p.amount_paise) / 100) : "",
-    unit_price: p.unit_price_paise ? String(Number(p.unit_price_paise) / 100) : "",
+    amount: amountMinor ? minorUnitsDecimal(amountMinor, currency) : "",
+    unit_price: unitPriceMinor
+      ? minorUnitsDecimal(unitPriceMinor, currency)
+      : "",
     quantity: p.quantity ? String(p.quantity) : "",
     km: p.km === null ? "" : String(p.km ?? ""),
     hours: p.hours === null ? "" : String(p.hours ?? ""),
     principal:
-      p.principal_paise !== null && p.principal_paise !== undefined
-        ? String(Number(p.principal_paise) / 100)
+      principalMinor !== null && principalMinor !== undefined
+        ? minorUnitsDecimal(Number(principalMinor), currency)
         : "",
     interest:
-      p.interest_paise !== null && p.interest_paise !== undefined
-        ? String(Number(p.interest_paise) / 100)
+      interestMinor !== null && interestMinor !== undefined
+        ? minorUnitsDecimal(Number(interestMinor), currency)
         : "",
     metadata: JSON.stringify(p.metadata ?? {}),
     items: JSON.stringify(p.items ?? []),

@@ -36,7 +36,8 @@ import {
   AppText,
   AppButton,
 } from "@/src/components/ui";
-import { t } from "@/src/lib/i18n";
+import { setLocale, t } from "@/src/lib/i18n";
+import { useLocaleSubscription } from "@/src/hooks/useLocale";
 const query = new QueryClient({
   defaultOptions: {
     queries: { retry: false, staleTime: 0, gcTime: 0, networkMode: "always" },
@@ -74,8 +75,12 @@ function ReminderFeedback() {
 function Routes() {
   useConnectivity();
   useMembershipUpdates();
+  useLocaleSubscription();
   const auth = useSession();
   const profile = useProfile();
+  useEffect(() => {
+    if (profile.data?.locale) setLocale(profile.data.locale);
+  }, [profile.data?.locale]);
   useEffect(() => {
     if (Platform.OS !== "web")
       Appearance.setColorScheme(

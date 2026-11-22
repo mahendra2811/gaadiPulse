@@ -15,7 +15,7 @@ export async function listVehicles(development = false): Promise<Vehicle[]> {
   const session = await client().auth.getSession();
   const user = session.data.session?.user.id;
   if (!user) throw new Error("NOT_AUTHENTICATED");
-  const { data, error } = await client().rpc("list_my_vehicles");
+  const { data, error } = await client().rpc("list_my_vehicles_v2");
   if (error) throw new Error(error.message);
   // Null is an unknown/malformed response, not confirmation of no access.
   return vehicleRecordSchema.array().parse(data);
@@ -30,7 +30,7 @@ export async function saveVehicle(
   if (development)
     return saveDevelopmentVehicle(input, operation, id, expected);
   const value = vehicleSchema.parse(input);
-  const { data, error } = await client().rpc("save_vehicle", {
+  const { data, error } = await client().rpc("save_vehicle_v2", {
     p_data: value,
     p_operation: operation,
     p_id: id ?? null,

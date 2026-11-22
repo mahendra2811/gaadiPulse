@@ -1,12 +1,12 @@
 import { onlineManager, useInfiniteQuery } from "@tanstack/react-query";
 import { useSyncExternalStore } from "react";
-import { client } from "@/src/lib/supabase";
 import { useAccountId, useSession } from "@/src/features/auth/session";
 import { dateInZone } from "@/src/features/progress/schema";
 import { listRecords } from "./api";
-import { recordSchema, type RecordEntry } from "./schema";
-import { validatePayload } from "./payloadSchemas";
+import type { RecordEntry } from "./schema";
 import { t } from "@/src/lib/i18n";
+import { recordCurrency, recordMinorAmount } from "./currency";
+import type { CurrencyCode } from "@/src/utils/currency";
 
 type Cursor = { created_at: string; id: string } | null;
 type ExpensePage = {
@@ -20,6 +20,7 @@ export type ExpenseFilters = {
   status: string;
   timezone: string;
   localDate: string;
+  currency?: CurrencyCode;
 };
 const pageSize = 30;
 
@@ -63,7 +64,13 @@ function pageFromLegacy(
       })
     : filtered;
   const total = filtered.reduce(
-    (sum, row) => sum + BigInt(String(row.payload.amount_paise ?? 0)),
+    (sum, row) =>
+      sum +
+      BigInt(
+        !filters.currency || recordCurrency(row.payload) === filters.currency
+          ? recordMinorAmount(row.payload)
+          : 0,
+      ),
     0n,
   );
   return {
@@ -75,7 +82,13 @@ function pageFromLegacy(
 
 export function useExpenseHistory(
   vehicle:
-    { id: string; role: "OWNER" | "PILOT"; timezone: string } | undefined,
+    | {
+        id: string;
+        role: "OWNER" | "PILOT";
+        timezone: string;
+        default_currency_code: CurrencyCode;
+      }
+    | undefined,
   enabled: boolean,
   allowed: boolean,
   filters: ExpenseFilters,
@@ -109,45 +122,11 @@ export function useExpenseHistory(
           pageParam,
         );
       }
-      const result = await client().rpc("expense_history_page", {
-        p_vehicle: vehicle!.id,
-        p_start: filters.start,
-        p_status: filters.status,
-        p_search: filters.search,
-        p_before_created_at: pageParam?.created_at ?? null,
-        p_before_id: pageParam?.id ?? null,
-        p_limit: pageSize,
-      });
-      if (result.error) {
-        if (result.error.code === "PGRST202" || result.error.code === "42883") {
-          const legacy = await listRecords(
-            user!,
-            vehicle!.id,
-            "expenses",
-            false,
-          );
-          return pageFromLegacy(legacy, filters, pageParam);
-        }
-        throw result.error;
-      }
-      if (!result.data || typeof result.data !== "object")
-        throw new Error("EXPENSE_HISTORY_RESPONSE_INVALID");
-      const data = result.data as {
-        rows?: unknown;
-        count?: unknown;
-        total_paise?: unknown;
-      };
-      const rows = recordSchema
-        .array()
-        .parse(data.rows)
-        .map((row) => ({
-          ...row,
-          payload: validatePayload("expenses", row.payload),
-        }));
-      const count = Number(data.count);
-      if (!Number.isSafeInteger(count) || count < 0)
-        throw new Error("EXPENSE_COUNT_INVALID");
-      return { rows, count, total: safePaise(data.total_paise) };
+      return pageFromLegacy(
+        await listRecords(user!, vehicle!.id, "expenses", false),
+        filters,
+        pageParam,
+      );
     },
     getNextPageParam: (last, pages): Cursor | undefined => {
       const loaded = pages.reduce((sum, page) => sum + page.rows.length, 0);

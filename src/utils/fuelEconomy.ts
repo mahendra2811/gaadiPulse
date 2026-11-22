@@ -10,6 +10,7 @@ export type FuelPoint = {
   reading_at: string | null;
   status?: string;
   amount_paise?: number;
+  amount_minor?: number;
   reset?: boolean;
 };
 export type FuelInterval = {
@@ -63,8 +64,9 @@ export function fuelIntervals(
     if (anchor) {
       quantity += e.quantity;
       amount =
-        amount !== null && typeof e.amount_paise === "number"
-          ? amount + e.amount_paise
+        amount !== null &&
+        typeof (e.amount_minor ?? e.amount_paise) === "number"
+          ? amount + Number(e.amount_minor ?? e.amount_paise)
           : null;
     }
     const truthful =

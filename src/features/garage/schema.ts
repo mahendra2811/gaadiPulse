@@ -3,6 +3,7 @@ import { vehicleEnergyTypes } from "./energy";
 import { t } from "../../lib/i18n";
 import { z } from "zod";
 import { suggestedSubtypeMeter } from "./subtypes";
+import { type CurrencyCode } from "@/src/utils/currency";
 export const categories = [
   "two_wheeler",
   "four_wheeler",
@@ -28,6 +29,29 @@ export function defaultMeter(category: string, subtype: string) {
 const reading = z
   .union([z.literal(""), z.string().regex(/^\d+(\.\d{1,3})?$/)])
   .optional();
+const currencyCode = z.enum([
+  "AED",
+  "AUD",
+  "BHD",
+  "CAD",
+  "CHF",
+  "CNY",
+  "EUR",
+  "GBP",
+  "IDR",
+  "INR",
+  "JPY",
+  "KRW",
+  "KWD",
+  "MYR",
+  "NZD",
+  "OMR",
+  "SAR",
+  "SGD",
+  "THB",
+  "USD",
+  "ZAR",
+] as const);
 export const vehicleSchema = z
   .object({
     nickname: z.string().trim().max(120),
@@ -46,6 +70,7 @@ export const vehicleSchema = z
         return false;
       }
     }, t("invalidTimezone")),
+    default_currency_code: currencyCode.default("INR"),
     km: reading,
     hours: reading,
     observed_at: z.iso.datetime({ offset: true }),
@@ -81,6 +106,7 @@ export type Vehicle = {
   energy_type: VehicleInput["energy_type"];
   meter_mode: VehicleInput["meter_mode"];
   timezone: string;
+  default_currency_code: CurrencyCode;
   archived_at: string | null;
   updated_at: string;
   role: "OWNER" | "PILOT";
@@ -104,6 +130,7 @@ export const vehicleRecordSchema = z.object({
   energy_type: vehicleSchema.shape.energy_type,
   meter_mode: z.enum(meterModes),
   timezone: z.string(),
+  default_currency_code: currencyCode.default("INR"),
   archived_at: z.string().nullable(),
   updated_at: z.string(),
   role: z.enum(["OWNER", "PILOT"]),

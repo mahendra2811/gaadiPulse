@@ -17,13 +17,15 @@ export function recordsCsv(
   }[],
 ) {
   return [
-    "kind,id,event_at,title,amount_paise,quantity,unit,status,recorded_at,payload",
+    "kind,id,event_at,title,currency_code,amount_minor,amount_paise,quantity,unit,status,recorded_at,payload",
     ...records.map((row) =>
       [
         row.kind,
         row.id,
         row.payload.event_at ?? row.payload.progress_date,
         row.payload.title,
+        row.payload.currency_code ?? "INR",
+        row.payload.amount_minor,
         row.payload.amount_paise,
         row.payload.quantity,
         row.payload.unit,
@@ -55,6 +57,12 @@ export function reportCsv(report: import("./reportData").Report) {
     ...report.summary,
     included_record_types: report.included_record_types,
   });
+  for (const summary of report.summary_by_currency)
+    rows.push({
+      row_type: "summary_by_currency",
+      ...context,
+      ...summary,
+    });
   for (const record of report.records) {
     const { payload, ...metadata } = record;
     rows.push({

@@ -88,20 +88,31 @@ export async function listRecords(
             p_offset: offset,
             p_limit: 250,
           })
-        : client()
-            .from(tables[kind])
-            .select(
-              "id,vehicle_id,created_by,revision,status,payload,created_at,updated_at",
-            )
-            .eq("vehicle_id", vehicle)
-            .order("created_at", { ascending: false })
-            .order("id", { ascending: false })
-            .range(offset, offset + 249);
+        : ["fuel", "expenses"].includes(kind)
+          ? client().rpc("read_financial_records_v2", {
+              p_kind: kind,
+              p_vehicle: vehicle,
+              p_offset: offset,
+              p_limit: 250,
+            })
+          : client()
+              .from(tables[kind])
+              .select(
+                "id,vehicle_id,created_by,revision,status,payload,created_at,updated_at",
+              )
+              .eq("vehicle_id", vehicle)
+              .order("created_at", { ascending: false })
+              .order("id", { ascending: false })
+              .range(offset, offset + 249);
     const { data, error } = await request;
     if (error) throw new Error(error.message);
+    const responseRows =
+      ["fuel", "expenses"].includes(kind) && data && !Array.isArray(data)
+        ? (data as { rows?: unknown }).rows
+        : data;
     const page = recordSchema
       .array()
-      .parse(data)
+      .parse(responseRows)
       .map((record) => ({
         ...record,
         payload: validatePayload(kind, record.payload),
@@ -126,18 +137,10 @@ export async function fuelRecord(
     );
   const permissions = await access(vehicle, false);
   if (!permissions["fuel.read"]) throw new Error("PERMISSION_DENIED");
-  const { data, error } = await client()
-    .from("fuel_logs")
-    .select(
-      "id,vehicle_id,created_by,revision,status,payload,created_at,updated_at",
-    )
-    .eq("vehicle_id", vehicle)
-    .eq("id", id)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  if (!data) return null;
-  const row = recordSchema.parse(data);
-  return { ...row, payload: validatePayload("fuel", row.payload) };
+  const row = (await listRecords(user, vehicle, "fuel", false)).find(
+    (item) => item.id === id,
+  );
+  return row ?? null;
 }
 
 let localWrites: Promise<unknown> = Promise.resolve();
@@ -317,7 +320,12 @@ type OnlineOperation = {
   record_status: string;
 };
 export async function sendOperation(op: OnlineOperation, signal?: AbortSignal) {
-  const rpc = op.kind === "progress" ? "submit_progress" : "save_record";
+  const rpc =
+    op.kind === "progress"
+      ? "submit_progress"
+      : ["fuel", "expenses"].includes(op.kind)
+        ? "save_record_v2"
+        : "save_record";
   const args =
     op.kind === "progress"
       ? {

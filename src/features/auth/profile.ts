@@ -10,10 +10,13 @@ import { useSession, useAccountId } from "./session";
 import type { ThemeMode } from "@/src/lib/theme";
 import { isProfileCountry } from "./countries";
 import { defaultProfileIcon, isProfileIcon, type ProfileIcon } from "./avatars";
+import { isCurrencyCode, type CurrencyCode } from "@/src/utils/currency";
+import { supportedLocales, type SupportedLocale } from "@/src/lib/i18n";
 export type Profile = {
   id: string;
   display_name: string;
-  locale: "en";
+  locale: SupportedLocale;
+  preferred_currency_code: CurrencyCode;
   theme: ThemeMode;
   timezone: string;
   avatar_icon: ProfileIcon;
@@ -38,6 +41,11 @@ export function useProfile() {
           avatar_available: true,
           country_code: profile.country_code ?? null,
           country_available: true,
+          preferred_currency_code: isCurrencyCode(
+            profile.preferred_currency_code,
+          )
+            ? profile.preferred_currency_code
+            : "INR",
         };
       }
       const { data, error } = await client()
@@ -50,7 +58,10 @@ export function useProfile() {
         .object({
           id: z.uuid(),
           display_name: z.string(),
-          locale: z.literal("en"),
+          locale: z.preprocess(
+            (value) => (value === "en" ? "en-IN" : (value ?? "en-IN")),
+            z.enum(supportedLocales),
+          ),
           theme: z.enum(["system", "light", "dark"]),
           timezone: z.string(),
         })
@@ -70,6 +81,9 @@ export function useProfile() {
           data,
           "country_code",
         ),
+        preferred_currency_code: isCurrencyCode(data.preferred_currency_code)
+          ? data.preferred_currency_code
+          : "INR",
       };
     },
   });
@@ -94,12 +108,19 @@ export const profileInputSchema = z.object({
         return false;
       }
     }, t("invalidTimeZone")),
+  locale: z.enum(supportedLocales).optional(),
+  preferred_currency_code: z
+    .string()
+    .refine(isCurrencyCode, t("invalidCurrency"))
+    .optional(),
 });
 export async function updateProfile(
   user: string,
   values: Pick<Profile, "display_name" | "theme" | "timezone"> & {
     avatar_icon?: ProfileIcon;
     country_code?: string | null;
+    locale?: SupportedLocale;
+    preferred_currency_code?: CurrencyCode;
   },
   development = false,
 ) {

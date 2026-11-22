@@ -61,6 +61,7 @@ export function saveDevelopmentVehicle(
       energy_type: value.energy_type,
       meter_mode: value.meter_mode,
       timezone: value.timezone,
+      default_currency_code: value.default_currency_code,
       archived_at: old?.archived_at ?? null,
       updated_at: new Date().toISOString(),
       role: "OWNER",
@@ -200,7 +201,8 @@ export async function developmentProfile(): Promise<Profile> {
     (value as Profile) ?? {
       id: DEVELOPMENT_USER,
       display_name: "Developer",
-      locale: "en",
+      locale: "en-IN",
+      preferred_currency_code: "INR",
       theme: "system",
       timezone: "Asia/Kolkata",
       avatar_icon: "person-circle",
@@ -212,7 +214,12 @@ export async function developmentProfile(): Promise<Profile> {
 }
 export async function saveDevelopmentProfile(
   profile: Pick<Profile, "display_name" | "theme" | "timezone"> &
-    Partial<Pick<Profile, "avatar_icon" | "country_code">>,
+    Partial<
+      Pick<
+        Profile,
+        "avatar_icon" | "country_code" | "locale" | "preferred_currency_code"
+      >
+    >,
 ) {
   await writeDevelopment("profile", {
     ...(await developmentProfile()),

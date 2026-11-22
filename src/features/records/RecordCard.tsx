@@ -12,9 +12,9 @@ import {
   type IconTone,
 } from "@/src/components/ui/premium";
 import { useTheme } from "@/src/lib/theme";
-import { money } from "@/src/utils/money";
 import { r, recordCopy } from "./copy";
 import type { Kind, RecordEntry } from "./schema";
+import { recordMoney } from "./currency";
 export const recordVisuals: Record<
   Kind,
   { icon: IconName; tone: IconTone; colors: readonly [string, string, string] }
@@ -58,13 +58,23 @@ export function recordTimestamp(row: RecordEntry, kind: Kind) {
         ? row.payload.reading_at
         : kind === "reminders" || kind === "documents"
           ? row.payload.due_at
-          : row.payload.event_at) ?? row.created_at
+          : row.payload.event_at) ?? row.created_at,
   );
 }
-export function recordDate(row: RecordEntry, kind: Kind, timezone = "Asia/Kolkata") {
+export function recordDate(
+  row: RecordEntry,
+  kind: Kind,
+  timezone = "Asia/Kolkata",
+) {
   return readableDateTime(recordTimestamp(row, kind), timezone);
 }
-export function RecordBadge({ label, tone = "blue" }: { label: string; tone?: IconTone }) {
+export function RecordBadge({
+  label,
+  tone = "blue",
+}: {
+  label: string;
+  tone?: IconTone;
+}) {
   const c = useTheme();
   return (
     <View
@@ -113,21 +123,25 @@ export function RecordCard({
           : "partialCharge"
         : row.payload.is_full_tank
           ? "full"
-          : "partial"
+          : "partial",
     );
     const unit = String(row.payload.unit ?? "L");
     const unitLabel = unit === "KWH" ? "kWh" : unit === "KG" ? "kg" : "L";
     const quantity = row.payload.quantity;
     const quantityLabel =
-      quantity === null || quantity === undefined ? "" : `${quantity} ${unitLabel}`;
+      quantity === null || quantity === undefined
+        ? ""
+        : `${quantity} ${unitLabel}`;
     const title = String(row.payload.title ?? "");
     const category = String(row.payload.category ?? "");
     const categoryLabel = r(category as keyof typeof recordCopy) ?? category;
     const energyLabel = r(energy as keyof typeof recordCopy) ?? energy;
     const secondaryLabel =
-      kind === "expenses" ? categoryLabel : [energyLabel, fillLabel].filter(Boolean).join(" · ");
+      kind === "expenses"
+        ? categoryLabel
+        : [energyLabel, fillLabel].filter(Boolean).join(" · ");
     const primaryDetail = kind === "expenses" ? title : quantityLabel;
-    const amount = money(Number(row.payload.amount_paise ?? 0));
+    const amount = recordMoney(row.payload);
     const date = recordDate(row, kind, timezone);
     return (
       <HistoryRow
@@ -152,11 +166,14 @@ export function RecordCard({
           </Text>
           <Timestamp value={recordTimestamp(row, kind)} timezone={timezone} />
         </View>
-        {onPress && <Ionicons name="chevron-forward" size={18} color={c.muted} />}
+        {onPress && (
+          <Ionicons name="chevron-forward" size={18} color={c.muted} />
+        )}
       </View>
-      {row.payload.amount_paise !== undefined && (
+      {(row.payload.amount_paise !== undefined ||
+        row.payload.amount_minor !== undefined) && (
         <Text style={{ color: c.ink, fontWeight: "800", fontSize: 23 }}>
-          {money(Number(row.payload.amount_paise))}
+          {recordMoney(row.payload)}
         </Text>
       )}
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
@@ -171,14 +188,15 @@ export function RecordCard({
             )}
           </>
         )}
-        {(kind === "documents" || kind === "reminders") && row.payload.category !== undefined && (
-          <RecordBadge
-            label={
-              r(String(row.payload.category) as keyof typeof recordCopy) ??
-              String(row.payload.category)
-            }
-          />
-        )}
+        {(kind === "documents" || kind === "reminders") &&
+          row.payload.category !== undefined && (
+            <RecordBadge
+              label={
+                r(String(row.payload.category) as keyof typeof recordCopy) ??
+                String(row.payload.category)
+              }
+            />
+          )}
       </View>
     </Card>
   );
@@ -204,12 +222,19 @@ export function RecordSummary({
 }) {
   const visual = recordVisuals[kind];
   return (
-    <GradientSurface colors={visual.colors} style={{ padding: 18, gap: 10, borderRadius: 24 }}>
+    <GradientSurface
+      colors={visual.colors}
+      style={{ padding: 18, gap: 10, borderRadius: 24 }}
+    >
       <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
         <Ionicons name={visual.icon} color="#FFF" size={22} />
-        <Text style={{ color: "#F0F4FF", fontSize: 14, fontWeight: "600" }}>{r(kind)}</Text>
+        <Text style={{ color: "#F0F4FF", fontSize: 14, fontWeight: "600" }}>
+          {r(kind)}
+        </Text>
       </View>
-      <Text style={{ color: "#FFF", fontSize: 28, fontWeight: "800" }}>{value}</Text>
+      <Text style={{ color: "#FFF", fontSize: 28, fontWeight: "800" }}>
+        {value}
+      </Text>
       <Text style={{ color: "#F0F4FF", fontSize: 12 }}>{subtitle}</Text>
     </GradientSurface>
   );

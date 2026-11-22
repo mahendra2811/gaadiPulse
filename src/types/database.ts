@@ -61,6 +61,9 @@ export type VehicleRow = {
   meter_mode: "KM" | "HOURS" | "BOTH";
   default_meter_unit: string;
   timezone: string;
+  currency_code: string;
+  default_currency_code: string;
+  currency_catalog_version: string;
   archived_at: string | null;
   created_at: string;
   updated_at: string;
@@ -72,7 +75,8 @@ export type Database = {
         id: string;
         display_name: string;
         email: string | null;
-        locale: "en";
+        locale: string;
+        preferred_currency_code: string;
         theme: "light" | "dark" | "system";
         timezone: string;
         avatar_icon: string;
@@ -109,8 +113,24 @@ export type Database = {
         progress_policy: Json;
       }>;
       meter_readings: Table<MeterRow>;
-      fuel_logs: Table<LedgerRow & { amount_paise: number; quantity: number }>;
-      expenses: Table<LedgerRow & { amount_paise: number }>;
+      fuel_logs: Table<
+        LedgerRow & {
+          amount_paise: number;
+          amount_minor: number;
+          unit_price_minor: number;
+          currency_code: string;
+          currency_exponent: number;
+          quantity: number;
+        }
+      >;
+      expenses: Table<
+        LedgerRow & {
+          amount_paise: number;
+          amount_minor: number;
+          currency_code: string;
+          currency_exponent: number;
+        }
+      >;
       meter_events: Table<LedgerRow>;
       reminders: Table<LedgerRow>;
       documents: Table<LedgerRow>;
@@ -120,6 +140,9 @@ export type Database = {
         expense_id: string;
         title: string;
         amount_paise: number;
+        amount_minor: number;
+        currency_code: string;
+        currency_exponent: number;
       }>;
       maintenance_records: Table<{
         id: string;
@@ -194,6 +217,40 @@ export type Database = {
           p_status?: string;
         };
         Returns: string;
+      };
+      save_record_v2: {
+        Args: {
+          p_kind: string;
+          p_vehicle: string;
+          p_payload: Json;
+          p_operation: string;
+          p_id?: string | null;
+          p_expected?: number | null;
+          p_status?: string;
+        };
+        Returns: string;
+      };
+      save_vehicle_v2: {
+        Args: {
+          p_data: Json;
+          p_operation: string;
+          p_id?: string | null;
+          p_expected?: string | null;
+        };
+        Returns: string;
+      };
+      list_my_vehicles_v2: {
+        Args: Record<string, never>;
+        Returns: VehicleRow[];
+      };
+      read_financial_records_v2: {
+        Args: {
+          p_kind: string;
+          p_vehicle: string;
+          p_offset?: number;
+          p_limit?: number;
+        };
+        Returns: Json;
       };
       submit_progress: {
         Args: {

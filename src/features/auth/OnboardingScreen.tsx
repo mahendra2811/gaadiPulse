@@ -25,6 +25,8 @@ import { errorMessage } from "@/src/lib/errors";
 import { t } from "@/src/lib/i18n";
 import { TimezoneField } from "@/src/features/garage/TimezoneField";
 import { CountryField } from "./CountryField";
+import { CurrencyField } from "./CurrencyField";
+import { LocaleField } from "./LocaleField";
 import { SignOutButton } from "./SignOutButton";
 import { useProfile, updateProfile } from "./profile";
 import { useAccountId, useSession } from "./session";
@@ -33,6 +35,8 @@ import {
   singleCountryTimezone,
   timezoneAfterCountryChange,
 } from "./onboardingDefaults";
+import { suggestedCurrency, type CurrencyCode } from "@/src/utils/currency";
+import { setLocale, type SupportedLocale } from "@/src/lib/i18n";
 
 const banner = require("@/assets/media/Premium Fleet Management Onboarding Illustration.png");
 export default function OnboardingScreen() {
@@ -44,6 +48,8 @@ export default function OnboardingScreen() {
     toast = useToast();
   const [name, setName] = useState("");
   const [country, setCountry] = useState<string | null>(null);
+  const [currency, setCurrency] = useState<CurrencyCode>("INR");
+  const [locale, setProfileLocale] = useState<SupportedLocale>("en-IN");
   const [timezone, setTimezone] = useState("Asia/Kolkata");
   const [manualZone, setManualZone] = useState(false);
   const [ready, setReady] = useState(false);
@@ -67,6 +73,11 @@ export default function OnboardingScreen() {
           : ""),
     );
     setCountry(profile.data.country_code ?? suggestions.country);
+    setCurrency(
+      profile.data.preferred_currency_code ??
+        suggestedCurrency(profile.data.country_code ?? suggestions.country),
+    );
+    setProfileLocale(profile.data.locale);
     setTimezone(
       profile.data.country_code ? profile.data.timezone : suggestions.timezone,
     );
@@ -95,9 +106,12 @@ export default function OnboardingScreen() {
           ...(country !== current.country_code
             ? { country_code: country }
             : {}),
+          locale,
+          preferred_currency_code: currency,
         },
         auth.development,
       );
+      setLocale(locale);
       await qc.invalidateQueries({ queryKey: [user, "profile"] });
       toast(t("saved"), "success");
       router.replace("/(tabs)");
@@ -209,6 +223,12 @@ export default function OnboardingScreen() {
                   disabled={busy || !ready}
                   onChange={(value) => {
                     setCountry(value);
+                    setCurrency((current) =>
+                      current === profile.data?.preferred_currency_code ||
+                      current === "INR"
+                        ? suggestedCurrency(value)
+                        : current,
+                    );
                     setTimezone((current) =>
                       timezoneAfterCountryChange(value, current, manualZone),
                     );
@@ -229,21 +249,19 @@ export default function OnboardingScreen() {
                     ? t("onboardingTimezoneMultiple")
                     : t("onboardingTimezoneHint")}
                 </AppText>
-                <View
-                  style={{
-                    padding: 12,
-                    borderRadius: 12,
-                    backgroundColor: c.background,
-                    gap: 4,
-                  }}
-                >
-                  <Text style={{ color: c.ink, fontWeight: "700" }}>
-                    {t("onboardingCurrency")}
-                  </Text>
-                  <Text style={{ color: c.muted, lineHeight: 20 }}>
-                    {t("onboardingCurrencyHint")}
-                  </Text>
-                </View>
+                <CurrencyField
+                  value={currency}
+                  onChange={setCurrency}
+                  disabled={busy || !ready}
+                />
+                <LocaleField
+                  value={locale}
+                  onChange={setProfileLocale}
+                  disabled={busy || !ready}
+                />
+                <Text style={{ color: c.muted, lineHeight: 20 }}>
+                  {t("onboardingCurrencyHint")}
+                </Text>
               </Card>
             )}
             {!!error && (

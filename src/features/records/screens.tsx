@@ -57,7 +57,16 @@ import {
 import { VehicleHeader } from "@/src/components/navigation/VehicleHeader";
 import { useActiveVehicle, useVehicles } from "@/src/features/garage/hooks";
 import { useSession, useAccountId } from "@/src/features/auth/session";
-import { money, solveFuel } from "@/src/utils/money";
+import { money, moneyIn } from "@/src/utils/money";
+import {
+  currencyDecimals,
+  minorUnitsDecimal,
+  parseMinorUnits,
+  solveCurrencyFuel,
+  type CurrencyCode,
+} from "@/src/utils/currency";
+import { CurrencyField } from "@/src/features/auth/CurrencyField";
+import { recordCurrency, recordMinorAmount } from "./currency";
 import { fuelIntervals, type FuelPoint } from "@/src/utils/fuelEconomy";
 import { expenseAccounting } from "@/src/utils/expenseAccounting";
 import {
@@ -215,14 +224,46 @@ export function RecordsList({
           : periodStart(period, v?.timezone ?? "Asia/Kolkata")
         ).replace("0000-01-01", ""),
       end: toDate,
-      min: minimumAmount ? Math.round(Number(minimumAmount) * 100) : null,
-      max: maximumAmount ? Math.round(Number(maximumAmount) * 100) : null,
+      min: minimumAmount
+        ? (() => {
+            try {
+              return parseMinorUnits(
+                minimumAmount,
+                v?.default_currency_code ?? "INR",
+                true,
+              );
+            } catch {
+              return null;
+            }
+          })()
+        : null,
+      max: maximumAmount
+        ? (() => {
+            try {
+              return parseMinorUnits(
+                maximumAmount,
+                v?.default_currency_code ?? "INR",
+                true,
+              );
+            } catch {
+              return null;
+            }
+          })()
+        : null,
       search: search.trim(),
       timezone: v?.timezone ?? "Asia/Kolkata",
+      currency: v?.default_currency_code,
     },
   );
   const expenseQuery = useExpenseHistory(
-    v ? { id: v.id, role: v.role, timezone: v.timezone } : undefined,
+    v
+      ? {
+          id: v.id,
+          role: v.role,
+          timezone: v.timezone,
+          default_currency_code: v.default_currency_code,
+        }
+      : undefined,
     kind === "expenses" && !permissions.isPending && !permissions.error,
     permissions.data?.["expenses.read"] === true,
     {
@@ -234,6 +275,7 @@ export function RecordsList({
       status: statusFilter,
       timezone: v?.timezone ?? "Asia/Kolkata",
       localDate: v ? dateInZone(new Date(now), v.timezone) : "",
+      currency: v?.default_currency_code,
     },
   );
   const query =
@@ -282,11 +324,17 @@ export function RecordsList({
               v?.timezone ?? "Asia/Kolkata",
             ) <= toDate) &&
           (!minimumAmount ||
-            Number(row.payload.amount_paise) >=
-              Math.round(Number(minimumAmount) * 100)) &&
+            recordMinorAmount(row.payload) >=
+              Math.round(
+                Number(minimumAmount) *
+                  10 ** currencyDecimals(v?.default_currency_code ?? "INR"),
+              )) &&
           (!maximumAmount ||
-            Number(row.payload.amount_paise) <=
-              Math.round(Number(maximumAmount) * 100)))) &&
+            recordMinorAmount(row.payload) <=
+              Math.round(
+                Number(maximumAmount) *
+                  10 ** currencyDecimals(v?.default_currency_code ?? "INR"),
+              )))) &&
       (kind === "fuel" ||
         `${row.payload.title ?? ""} ${row.payload.notes ?? ""} ${row.payload.category ?? ""} ${row.payload.station_name ?? ""}`
           .toLowerCase()
@@ -711,7 +759,7 @@ export function RecordForm() {
     if (existing) form.reset(formFromRecord(existing, v.timezone));
     else
       form.reset({
-        ...defaultEntry(),
+        ...defaultEntry(v.default_currency_code),
         title: title ?? "",
         category:
           kind === "expenses" && category === "SERVICE" ? "SERVICE" : "OTHER",
@@ -827,7 +875,14 @@ export function RecordForm() {
               keyboardType={numeric ? "decimal-pad" : "default"}
               numeric={
                 numeric
-                  ? { scale: money ? 2 : 3, wholeDigits: money ? 15 : 12 }
+                  ? {
+                      scale: money
+                        ? currencyDecimals(
+                            (values.currency_code ?? "INR") as CurrencyCode,
+                          )
+                        : 3,
+                      wholeDigits: money ? 15 : 12,
+                    }
                   : undefined
               }
               maxLength={
@@ -1184,19 +1239,22 @@ export function RecordForm() {
   let derived = "";
   if (kind === "fuel") {
     try {
-      const solved = solveFuel(
+      const currency = (values.currency_code ?? "INR") as CurrencyCode;
+      const solved = solveCurrencyFuel(
         values.amount,
         values.quantity,
         values.unit_price,
+        currency,
       );
-      derived = `${r("unit_price")}: ${money(solved.unit_price_paise)}/${values.unit}`;
+      derived = `${r("unit_price")}: ${moneyIn(solved.unit_price_minor, currency)}/${values.unit}`;
     } catch {}
   }
   let metadata: Record<string, unknown> = {};
   try {
     metadata = JSON.parse(values.metadata);
   } catch {}
-  let items: { title: string; amount_paise: number }[] = [];
+  let items: { title: string; amount_minor?: number; amount_paise?: number }[] =
+    [];
   try {
     items = JSON.parse(values.items) as typeof items;
   } catch {}
@@ -1419,6 +1477,37 @@ export function RecordForm() {
           />
         </>
       ) : null}
+      {(kind === "fuel" || kind === "expenses") && (
+        <CurrencyField
+          value={(values.currency_code ?? "INR") as CurrencyCode}
+          onChange={(currency) => {
+            if (existing) return;
+            const hasMoney = [
+              values.amount,
+              values.unit_price,
+              values.principal,
+              values.interest,
+            ].some(Boolean);
+            const apply = () => {
+              form.setValue("currency_code", currency, { shouldDirty: true });
+              form.setValue("amount", "", { shouldDirty: true });
+              form.setValue("unit_price", "", { shouldDirty: true });
+              form.setValue("principal", "", { shouldDirty: true });
+              form.setValue("interest", "", { shouldDirty: true });
+              form.setValue("items", "[]", { shouldDirty: true });
+              setItemAmounts({});
+            };
+            if (hasMoney)
+              ConfirmDialog(
+                t("currency"),
+                t("currencyChangeClearsAmounts"),
+                apply,
+              );
+            else apply();
+          }}
+          disabled={busy || !ready || !!existing}
+        />
+      )}
       {kind === "fuel" && (
         <>
           {(allowedFuelTypes(v.energy_type).length > 1 ||
@@ -1712,10 +1801,23 @@ export function RecordForm() {
                   label={r("itemAmount")}
                   required
                   numeric={{ scale: 2, wholeDigits: 15 }}
-                  value={itemAmounts[index] ?? String(item.amount_paise / 100)}
+                  value={
+                    itemAmounts[index] ??
+                    minorUnitsDecimal(
+                      item.amount_minor ?? item.amount_paise ?? 0,
+                      (values.currency_code ?? "INR") as CurrencyCode,
+                    )
+                  }
                   keyboardType="decimal-pad"
                   onChangeText={(text) => {
-                    if (/^(?:\d+(?:\.\d{0,2})?)?$/.test(text)) {
+                    const decimals = currencyDecimals(
+                      (values.currency_code ?? "INR") as CurrencyCode,
+                    );
+                    if (
+                      new RegExp(`^(?:\\d+(?:\\.\\d{0,${decimals}})?)?$`).test(
+                        text,
+                      )
+                    ) {
                       setItemAmounts((amounts) => ({
                         ...amounts,
                         [index]: text,
@@ -1727,7 +1829,14 @@ export function RecordForm() {
                             i === index
                               ? {
                                   ...v,
-                                  amount_paise: Math.round(Number(text) * 100),
+                                  amount_minor: text
+                                    ? parseMinorUnits(
+                                        text,
+                                        (values.currency_code ??
+                                          "INR") as CurrencyCode,
+                                        true,
+                                      )
+                                    : 0,
                                 }
                               : v,
                           ),
@@ -1759,7 +1868,7 @@ export function RecordForm() {
               onPress={() =>
                 form.setValue(
                   "items",
-                  JSON.stringify([...items, { title: "", amount_paise: 0 }]),
+                  JSON.stringify([...items, { title: "", amount_minor: 0 }]),
                   {
                     shouldDirty: true,
                   },
@@ -2162,11 +2271,12 @@ export function RecordDetail({
                               : "partial",
                         ),
                       },
-                      ...(row.payload.unit_price_paise != null
+                      ...((row.payload.unit_price_minor ??
+                        row.payload.unit_price_paise) != null
                         ? [
                             {
                               label: r("unit_price"),
-                              value: `${money(Number(row.payload.unit_price_paise))}/${row.payload.unit === "KWH" ? "kWh" : row.payload.unit === "KG" ? "kg" : "L"}`,
+                              value: `${moneyIn(Number(row.payload.unit_price_minor ?? row.payload.unit_price_paise), recordCurrency(row.payload))}/${row.payload.unit === "KWH" ? "kWh" : row.payload.unit === "KG" ? "kg" : "L"}`,
                             },
                           ]
                         : []),
@@ -2225,21 +2335,37 @@ export function RecordDetail({
               <SectionHeading title={r("expenses")} />
               <InfoRows
                 items={[
-                  ...(row.payload.principal_paise !== null &&
-                  row.payload.principal_paise !== undefined
+                  ...((row.payload.principal_minor ??
+                    row.payload.principal_paise) !== null &&
+                  (row.payload.principal_minor ??
+                    row.payload.principal_paise) !== undefined
                     ? [
                         {
                           label: r("principal"),
-                          value: money(Number(row.payload.principal_paise)),
+                          value: moneyIn(
+                            Number(
+                              row.payload.principal_minor ??
+                                row.payload.principal_paise,
+                            ),
+                            recordCurrency(row.payload),
+                          ),
                         },
                       ]
                     : []),
-                  ...(row.payload.interest_paise !== null &&
-                  row.payload.interest_paise !== undefined
+                  ...((row.payload.interest_minor ??
+                    row.payload.interest_paise) !== null &&
+                  (row.payload.interest_minor ?? row.payload.interest_paise) !==
+                    undefined
                     ? [
                         {
                           label: r("interest"),
-                          value: money(Number(row.payload.interest_paise)),
+                          value: moneyIn(
+                            Number(
+                              row.payload.interest_minor ??
+                                row.payload.interest_paise,
+                            ),
+                            recordCurrency(row.payload),
+                          ),
                         },
                       ]
                     : []),
@@ -2264,9 +2390,16 @@ export function RecordDetail({
                     })),
                   ...(Array.isArray(row.payload.items)
                     ? row.payload.items.map(
-                        (item: { title: string; amount_paise: number }) => ({
+                        (item: {
+                          title: string;
+                          amount_minor?: number;
+                          amount_paise?: number;
+                        }) => ({
                           label: item.title,
-                          value: money(item.amount_paise),
+                          value: moneyIn(
+                            Number(item.amount_minor ?? item.amount_paise ?? 0),
+                            recordCurrency(row.payload),
+                          ),
                         }),
                       )
                     : []),
@@ -2471,18 +2604,24 @@ export function RecordAnalytics() {
     v?.timezone ?? "Asia/Kolkata",
     kind,
   ).filter((row) => row.status !== "ARCHIVED");
-  const total = rows.reduce(
-    (sum, row) => sum + Number(row.payload.amount_paise ?? 0),
+  const currency = v?.default_currency_code ?? "INR";
+  const financialRows = rows.filter(
+    (row) => recordCurrency(row.payload) === currency,
+  );
+  const total = financialRows.reduce(
+    (sum, row) => sum + recordMinorAmount(row.payload),
     0,
   );
-  const operating = rows.reduce(
+  const operating = financialRows.reduce(
     (sum, row) =>
       sum +
       expenseAccounting(
-        Number(row.payload.amount_paise ?? 0),
+        recordMinorAmount(row.payload),
         String(row.payload.category),
-        row.payload.principal_paise as number | null,
-        row.payload.interest_paise as number | null,
+        (row.payload.principal_minor ?? row.payload.principal_paise) as
+          number | null,
+        (row.payload.interest_minor ?? row.payload.interest_paise) as
+          number | null,
       ).operating,
     0,
   );
@@ -2503,8 +2642,8 @@ export function RecordAnalytics() {
                 new Date(String(row.payload.event_at ?? row.created_at)),
                 v?.timezone ?? "Asia/Kolkata",
               ).slice(0, 7);
-        result[name] =
-          (result[name] ?? 0) + Number(row.payload.amount_paise ?? 0);
+        if (recordCurrency(row.payload) === currency)
+          result[name] = (result[name] ?? 0) + recordMinorAmount(row.payload);
         return result;
       }, {}),
     );
@@ -2541,11 +2680,11 @@ export function RecordAnalytics() {
                 {["fuel", "expenses"].includes(kind) && (
                   <>
                     <AppText>
-                      {r("cash")}: {money(total)}
+                      {r("cash")}: {moneyIn(total, currency)}
                     </AppText>
                     {kind === "expenses" && (
                       <AppText>
-                        {r("operating")}: {money(operating)}
+                        {r("operating")}: {moneyIn(operating, currency)}
                       </AppText>
                     )}
                   </>
@@ -2585,7 +2724,8 @@ export function RecordAnalytics() {
                         )}
                         {interval.costPerKm !== null && (
                           <AppText>
-                            {r("costKm")}: {money(interval.costPerKm)}
+                            {r("costKm")}:{" "}
+                            {moneyIn(interval.costPerKm, currency)}
                           </AppText>
                         )}
                       </Card>
@@ -2603,7 +2743,7 @@ export function RecordAnalytics() {
                       <AppText>
                         {r(category as keyof typeof recordCopy) ?? category}
                       </AppText>
-                      <AppText>{money(value)}</AppText>
+                      <AppText>{moneyIn(value, currency)}</AppText>
                       <View
                         accessible={false}
                         style={{
@@ -2621,7 +2761,7 @@ export function RecordAnalytics() {
               {grouped("month").map(([month, value]) => (
                 <Card key={month}>
                   <AppText>{month}</AppText>
-                  <AppText>{money(value)}</AppText>
+                  <AppText>{moneyIn(value, currency)}</AppText>
                 </Card>
               ))}
             </>

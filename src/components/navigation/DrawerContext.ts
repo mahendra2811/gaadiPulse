@@ -2,6 +2,7 @@ import { createContext, useContext } from "react";
 export const DrawerContext = createContext<{
   open: () => void;
   close: () => void;
+  closeAndThen: (callback: () => void) => void;
   visible: boolean;
 } | null>(null);
 export function useOptionalMoreDrawer() {

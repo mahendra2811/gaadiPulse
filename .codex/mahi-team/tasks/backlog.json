@@ -50,6 +50,68 @@
       "id": "GP-10",
       "name": "RLS-protected paginated expense history and full-scope totals",
       "status": "done"
+    },
+    {
+      "id": "GP-I18N-01",
+      "name": "Architecture and catalog contract for country, locale, timezone and currency",
+      "status": "in_progress",
+      "priority": "must-have",
+      "dependencies": [],
+      "acceptance_criteria": [
+        "Architecture ADRs define independent ISO 3166 country, BCP-47 locale, ISO 4217 currency and IANA timezone values.",
+        "Currency precision, historical record semantics, per-entry currency behavior, export shape and legacy-client gate are specified.",
+        "Catalog source, versioning, licensing and refresh procedure are recorded.",
+        "Human architecture approval is recorded before source or database implementation begins."
+      ]
+    },
+    {
+      "id": "GP-I18N-02",
+      "name": "Versioned catalogs and exact currency arithmetic",
+      "status": "backlog",
+      "priority": "must-have",
+      "dependencies": ["GP-I18N-01"]
+    },
+    {
+      "id": "GP-I18N-03",
+      "name": "Additive Supabase schema, RLS and versioned financial RPCs",
+      "status": "backlog",
+      "priority": "must-have",
+      "dependencies": ["GP-I18N-01", "GP-I18N-02"]
+    },
+    {
+      "id": "GP-I18N-04",
+      "name": "Profile, onboarding and vehicle country/locale/currency settings",
+      "status": "backlog",
+      "priority": "must-have",
+      "dependencies": ["GP-I18N-02", "GP-I18N-03"]
+    },
+    {
+      "id": "GP-I18N-05",
+      "name": "Currency-aware fuel, expenses, history, dashboards and reports",
+      "status": "backlog",
+      "priority": "must-have",
+      "dependencies": ["GP-I18N-03", "GP-I18N-04"]
+    },
+    {
+      "id": "GP-I18N-06",
+      "name": "Locale catalogs, language switching and RTL readiness",
+      "status": "backlog",
+      "priority": "must-have",
+      "dependencies": ["GP-I18N-02", "GP-I18N-04"]
+    },
+    {
+      "id": "GP-I18N-07",
+      "name": "Localized CSV/JSON/PDF exports and compatibility gate",
+      "status": "backlog",
+      "priority": "must-have",
+      "dependencies": ["GP-I18N-03", "GP-I18N-05", "GP-I18N-06"]
+    },
+    {
+      "id": "GP-I18N-08",
+      "name": "Security, regression, Android and release verification",
+      "status": "backlog",
+      "priority": "must-have",
+      "dependencies": ["GP-I18N-05", "GP-I18N-06", "GP-I18N-07"]
     }
   ]
 }

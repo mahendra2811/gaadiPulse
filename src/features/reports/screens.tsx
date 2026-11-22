@@ -14,7 +14,8 @@ import {
 import { usePermissions } from "@/src/features/records/hooks";
 import { observations as loadObservations } from "@/src/features/meters/api";
 import { useQuery } from "@/src/lib/query";
-import { money } from "@/src/utils/money";
+import { moneyIn } from "@/src/utils/money";
+import type { CurrencyCode } from "@/src/utils/currency";
 import { r } from "@/src/features/records/copy";
 import { exportText, exportPdf } from "./export";
 import { reportCsv } from "./csv";
@@ -222,22 +223,27 @@ export function Reports() {
                   </AppText>
                   <InfoRows
                     items={[
-                      {
-                        label: r("cash"),
-                        value: money(report.summary.cash_paise),
-                      },
-                      {
-                        label: r("operating"),
-                        value: money(report.summary.operating_paise),
-                      },
-                      {
-                        label: r("financing"),
-                        value: money(report.summary.financing_paise),
-                      },
-                      {
-                        label: r("unclassified"),
-                        value: money(report.summary.unclassified_paise),
-                      },
+                      ...report.summary_by_currency.flatMap((summary) => {
+                        const code = summary.currency_code as CurrencyCode;
+                        return [
+                          {
+                            label: `${r("cash")} (${code})`,
+                            value: moneyIn(summary.cash_minor, code),
+                          },
+                          {
+                            label: `${r("operating")} (${code})`,
+                            value: moneyIn(summary.operating_minor, code),
+                          },
+                          {
+                            label: `${r("financing")} (${code})`,
+                            value: moneyIn(summary.financing_minor, code),
+                          },
+                          {
+                            label: `${r("unclassified")} (${code})`,
+                            value: moneyIn(summary.unclassified_minor, code),
+                          },
+                        ];
+                      }),
                       {
                         label: r("confirmed"),
                         value: String(report.summary.record_count),

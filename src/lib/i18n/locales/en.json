@@ -1,0 +1,5 @@
+{
+  "_locale": "en-IN",
+  "_status": "source-catalog",
+  "_note": "Product strings currently live in ../i18n.ts and will be moved here without changing keys."
+}

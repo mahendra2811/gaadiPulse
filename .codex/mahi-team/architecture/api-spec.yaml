@@ -1,0 +1,77 @@
+openapi: 3.1.0
+info:
+  title: GaadiPulse International API Contract
+  version: 2.0.0
+  description: Versioned Supabase RPC contract for locale, country, timezone and native-currency records.
+paths:
+  /rpc/update_profile_preferences_v2:
+    post:
+      summary: Save the authenticated user's independent preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [locale, country_code, timezone, preferred_currency_code]
+              properties:
+                locale: { type: string, example: en-IN }
+                country_code: { type: string, nullable: true, example: IN }
+                timezone: { type: string, example: Asia/Kolkata }
+                preferred_currency_code: { type: string, example: INR }
+                onboarding_version: { type: integer }
+      responses:
+        '200': { description: Saved }
+        '400': { description: Invalid catalog value }
+        '401': { description: Unauthenticated or unverified }
+
+  /rpc/list_reference_catalogs_v1:
+    post:
+      summary: Return server versions for supported country, locale, timezone and currency catalogs
+      responses:
+        '200': { description: Catalog metadata and active values }
+
+  /rpc/save_vehicle_v2:
+    post:
+      summary: Create or edit a vehicle with an Owner-controlled future default currency
+      responses:
+        '200': { description: Vehicle id and saved default }
+        '409': { description: Revision or currency conflict }
+
+  /rpc/upsert_fuel_entry_v2:
+    post:
+      summary: Save fuel using exact native currency minor units
+      responses:
+        '200': { description: Record id, currency code and precision snapshot }
+        '426': { description: CLIENT_UPDATE_REQUIRED on an incompatible legacy path }
+
+  /rpc/upsert_expense_v2:
+    post:
+      summary: Save an expense and same-currency line items
+      responses:
+        '200': { description: Record id and currency metadata }
+        '426': { description: CLIENT_UPDATE_REQUIRED on an incompatible legacy path }
+
+  /rpc/read_financial_summary_v2:
+    post:
+      summary: Return vehicle-scoped records and totals grouped by currency
+      responses:
+        '200': { description: Currency-grouped totals and authorized rows }
+        '403': { description: Permission denied }
+
+components:
+  schemas:
+    Money:
+      type: object
+      required: [currency_code, currency_exponent, amount_minor]
+      properties:
+        currency_code: { type: string, example: USD }
+        currency_exponent: { type: integer, minimum: 0, example: 2 }
+        amount_minor: { type: integer, example: 1250 }
+    Error:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+          enum: [INVALID_CURRENCY, INVALID_LOCALE, INVALID_TIMEZONE, CLIENT_UPDATE_REQUIRED, PERMISSION_DENIED, CONFLICT, AMOUNT_INVALID]

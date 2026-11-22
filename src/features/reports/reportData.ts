@@ -5,6 +5,11 @@ import { measuredIntervals } from "@/src/utils/meter";
 import { fuelIntervals, type FuelPoint } from "@/src/utils/fuelEconomy";
 import { expenseAccounting } from "@/src/utils/expenseAccounting";
 import type { InsightPeriod } from "./insightPeriods";
+import {
+  recordCurrency,
+  recordMinorAmount,
+} from "@/src/features/records/currency";
+import type { CurrencyCode } from "@/src/utils/currency";
 
 export type ReportKind =
   "fuel" | "expenses" | "meters" | "reminders" | "documents";
@@ -102,32 +107,64 @@ export function buildReport({
   const financial = selected.filter(
     (row) => row.kind === "fuel" || row.kind === "expenses",
   );
-  const summary = financial.reduce(
-    (sum, row) => {
-      const amount = Number(row.payload.amount_paise ?? 0);
-      const parts =
-        row.kind === "fuel"
-          ? { cash: amount, operating: amount, financing: 0, unclassified: 0 }
-          : expenseAccounting(
-              amount,
-              String(row.payload.category),
+  const summaries: Partial<
+    Record<
+      CurrencyCode,
+      {
+        cash_minor: number;
+        operating_minor: number;
+        financing_minor: number;
+        unclassified_minor: number;
+      }
+    >
+  > = {};
+  for (const row of financial) {
+    const currency = recordCurrency(row.payload);
+    const amount = recordMinorAmount(row.payload);
+    const parts =
+      row.kind === "fuel"
+        ? { cash: amount, operating: amount, financing: 0, unclassified: 0 }
+        : expenseAccounting(
+            amount,
+            String(row.payload.category),
+            (row.payload.principal_minor as number | null | undefined) ??
               (row.payload.principal_paise as number | null | undefined) ??
-                null,
-              (row.payload.interest_paise as number | null | undefined) ?? null,
-            );
-      return {
-        cash_paise: sum.cash_paise + parts.cash,
-        operating_paise: sum.operating_paise + parts.operating,
-        financing_paise: sum.financing_paise + parts.financing,
-        unclassified_paise: sum.unclassified_paise + parts.unclassified,
-      };
-    },
-    {
-      cash_paise: 0,
-      operating_paise: 0,
-      financing_paise: 0,
-      unclassified_paise: 0,
-    },
+              null,
+            (row.payload.interest_minor as number | null | undefined) ??
+              (row.payload.interest_paise as number | null | undefined) ??
+              null,
+          );
+    const current = summaries[currency] ?? {
+      cash_minor: 0,
+      operating_minor: 0,
+      financing_minor: 0,
+      unclassified_minor: 0,
+    };
+    summaries[currency] = {
+      cash_minor: current.cash_minor + parts.cash,
+      operating_minor: current.operating_minor + parts.operating,
+      financing_minor: current.financing_minor + parts.financing,
+      unclassified_minor: current.unclassified_minor + parts.unclassified,
+    };
+  }
+  const inr = summaries.INR ?? {
+    cash_minor: 0,
+    operating_minor: 0,
+    financing_minor: 0,
+    unclassified_minor: 0,
+  };
+  const summary = {
+    cash_paise: inr.cash_minor,
+    operating_paise: inr.operating_minor,
+    financing_paise: inr.financing_minor,
+    unclassified_paise: inr.unclassified_minor,
+    record_count: selected.length,
+  };
+  const summaryByCurrency = Object.entries(summaries).map(
+    ([currency_code, values]) => ({
+      currency_code,
+      ...values,
+    }),
   );
   return {
     schema_version: 1,
@@ -145,8 +182,12 @@ export function buildReport({
       timezone: vehicle.timezone,
     },
     included_record_types: includedKinds,
-    currency: "INR",
-    summary: { ...summary, record_count: selected.length },
+    currency:
+      summaryByCurrency.length === 1
+        ? summaryByCurrency[0].currency_code
+        : "MIXED",
+    summary,
+    summary_by_currency: summaryByCurrency,
     records: selected,
     meter_observations: selectedObservations,
     fuel_intervals: fuelIntervalsInPeriod,
@@ -154,7 +195,7 @@ export function buildReport({
     notes: [
       "Dates use the vehicle time zone. Reminders and documents without an event date are grouped by creation date.",
       "Fuel and measured intervals are included by their closing timestamp and may start before the selected period.",
-      "Financial amounts ending in _paise are integer INR paise. Only records available to this account are included.",
+      "Financial amounts are integer minor units grouped by currency. No exchange-rate conversion is applied. Only records available to this account are included.",
     ],
   };
 }

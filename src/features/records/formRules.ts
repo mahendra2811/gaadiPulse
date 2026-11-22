@@ -2,7 +2,11 @@ import { z } from "zod";
 import type { EntryForm, Kind, Payload } from "./schema";
 import { t } from "@/src/lib/i18n";
 import { domainCopy as c } from "@/src/lib/domainCopy";
-import { paise, nonnegativePaise, solveFuel } from "@/src/utils/money";
+import {
+  parseMinorUnits,
+  solveCurrencyFuel,
+  type CurrencyCode,
+} from "@/src/utils/currency";
 import { isCalendarDate, isReading } from "@/src/utils/formInput";
 export type RecordFormContext = {
   meterMode?: "KM" | "HOURS" | "BOTH";
@@ -61,7 +65,12 @@ export function recordFormIssues(
     issue("notes", t("requiredValue"));
   if (kind === "fuel") {
     try {
-      solveFuel(v.amount, v.quantity, v.unit_price);
+      solveCurrencyFuel(
+        v.amount,
+        v.quantity,
+        v.unit_price,
+        (v.currency_code ?? "INR") as CurrencyCode,
+      );
     } catch (error) {
       issue("amount", error instanceof Error ? error.message : c.twoValues);
     }
@@ -71,15 +80,21 @@ export function recordFormIssues(
     if (!v.category.trim() || v.category.trim().length > 60)
       issue("category", t("requiredValue"));
     try {
-      paise(v.amount);
+      parseMinorUnits(v.amount, (v.currency_code ?? "INR") as CurrencyCode);
     } catch (error) {
       issue("amount", error instanceof Error ? error.message : c.amount);
     }
     if (v.category === "EMI") {
       try {
-        const principal = v.principal ? nonnegativePaise(v.principal) : 0;
-        const interest = v.interest ? nonnegativePaise(v.interest) : 0;
-        if (principal + interest > paise(v.amount)) issue("principal", c.emi);
+        const currency = (v.currency_code ?? "INR") as CurrencyCode;
+        const principal = v.principal
+          ? parseMinorUnits(v.principal, currency, true)
+          : 0;
+        const interest = v.interest
+          ? parseMinorUnits(v.interest, currency, true)
+          : 0;
+        if (principal + interest > parseMinorUnits(v.amount, currency))
+          issue("principal", c.emi);
       } catch (error) {
         issue("principal", error instanceof Error ? error.message : c.emi);
       }
@@ -152,22 +167,41 @@ export function recordFormIssues(
   try {
     const items = z
       .array(
-        z.object({
-          title: z.string().trim().min(1).max(160),
-          amount_paise: z
-            .number()
-            .int()
-            .positive()
-            .max(Number.MAX_SAFE_INTEGER),
-        }),
+        z
+          .object({
+            title: z.string().trim().min(1).max(160),
+            amount_minor: z
+              .number()
+              .int()
+              .positive()
+              .max(Number.MAX_SAFE_INTEGER)
+              .optional(),
+            amount_paise: z
+              .number()
+              .int()
+              .positive()
+              .max(Number.MAX_SAFE_INTEGER)
+              .optional(),
+          })
+          .refine(
+            (item) =>
+              item.amount_minor !== undefined ||
+              item.amount_paise !== undefined,
+          ),
       )
       .max(100)
       .parse(JSON.parse(v.items));
     if (
       kind === "expenses" &&
       items.length &&
-      items.reduce((sum, item) => sum + BigInt(item.amount_paise), 0n) !==
-        BigInt(paise(v.amount))
+      items.reduce(
+        (sum, item) =>
+          sum + BigInt(item.amount_minor ?? item.amount_paise ?? 0),
+        0n,
+      ) !==
+        BigInt(
+          parseMinorUnits(v.amount, (v.currency_code ?? "INR") as CurrencyCode),
+        )
     )
       issue("items", c.items);
   } catch {

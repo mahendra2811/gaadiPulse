@@ -1,12 +1,11 @@
 import { onlineManager, useInfiniteQuery } from "@tanstack/react-query";
-import { client } from "@/src/lib/supabase";
 import { useAccountId, useSession } from "@/src/features/auth/session";
 import { dateInZone } from "@/src/features/progress/schema";
 import { listRecords } from "./api";
-import { recordSchema } from "./schema";
-import { validatePayload } from "./payloadSchemas";
 import { useSyncExternalStore } from "react";
 import { t } from "@/src/lib/i18n";
+import { recordCurrency, recordMinorAmount } from "./currency";
+import type { CurrencyCode } from "@/src/utils/currency";
 
 export type FuelFilters = {
   start: string;
@@ -15,6 +14,7 @@ export type FuelFilters = {
   max: number | null;
   search: string;
   timezone: string;
+  currency?: CurrencyCode;
 };
 const pageSize = 30;
 export function useFuelHistory(
@@ -45,7 +45,7 @@ export function useFuelHistory(
               new Date(String(row.payload.event_at)),
               filters.timezone,
             );
-            const amount = Number(row.payload.amount_paise);
+            const amount = recordMinorAmount(row.payload);
             const haystack = [
               row.payload.title,
               row.payload.notes,
@@ -59,6 +59,8 @@ export function useFuelHistory(
               row.status !== "ARCHIVED" &&
               (!filters.start || date >= filters.start) &&
               (!filters.end || date <= filters.end) &&
+              (!filters.currency ||
+                recordCurrency(row.payload) === filters.currency) &&
               (filters.min === null || amount >= filters.min) &&
               (filters.max === null || amount <= filters.max) &&
               haystack.includes(filters.search.toLowerCase())
@@ -73,32 +75,43 @@ export function useFuelHistory(
           rows: all.slice(pageParam, pageParam + pageSize),
           count: all.length,
           total: all.reduce(
-            (sum, row) => sum + Number(row.payload.amount_paise),
+            (sum, row) =>
+              !filters.currency ||
+              recordCurrency(row.payload) === filters.currency
+                ? sum + recordMinorAmount(row.payload)
+                : sum,
             0,
           ),
         };
       }
-      const { data, error } = await client().rpc("fuel_history_page", {
-        p_vehicle: vehicle!,
-        p_start: filters.start || null,
-        p_end: filters.end || null,
-        p_min: filters.min,
-        p_max: filters.max,
-        p_search: filters.search,
-        p_offset: pageParam,
-        p_limit: pageSize,
-      });
-      if (error) throw error;
+      const all = (await listRecords(user!, vehicle!, "fuel", false)).filter(
+        (row) => {
+          const date = dateInZone(
+            new Date(String(row.payload.event_at)),
+            filters.timezone,
+          );
+          const amount = recordMinorAmount(row.payload);
+          return (
+            row.status !== "ARCHIVED" &&
+            (!filters.start || date >= filters.start) &&
+            (!filters.end || date <= filters.end) &&
+            (!filters.currency ||
+              recordCurrency(row.payload) === filters.currency) &&
+            (filters.min === null || amount >= filters.min) &&
+            (filters.max === null || amount <= filters.max) &&
+            `${row.payload.title ?? ""} ${row.payload.notes ?? ""} ${row.payload.station_name ?? ""}`
+              .toLowerCase()
+              .includes(filters.search.toLowerCase())
+          );
+        },
+      );
       return {
-        rows: recordSchema
-          .array()
-          .parse(data.rows)
-          .map((row) => ({
-            ...row,
-            payload: validatePayload("fuel", row.payload),
-          })),
-        count: Number(data.count),
-        total: Number(data.total_paise),
+        rows: all.slice(pageParam, pageParam + pageSize),
+        count: all.length,
+        total: all.reduce(
+          (sum, row) => sum + recordMinorAmount(row.payload),
+          0,
+        ),
       };
     },
     getNextPageParam: (last, pages) => {

@@ -1,5 +1,6 @@
 import type { Report } from "./reportData";
-import { money } from "@/src/utils/money";
+import { moneyIn } from "@/src/utils/money";
+import type { CurrencyCode } from "@/src/utils/currency";
 
 const escape = (value: unknown): string => {
   const text =
@@ -35,7 +36,7 @@ export function reportHtml(report: Report) {
     : "All time";
   return `<!doctype html><html><head><meta charset="utf-8"><style>
   @page { margin: 18mm 14mm; } body { font: 10pt sans-serif; color: #17332d; } h1 { font-size: 22pt; } h2 { font-size: 15pt; margin-top: 20pt; } h3 { font-size: 11pt; margin: 10pt 0 4pt; } p, li { line-height: 1.4; } table { border-collapse: collapse; width: 100%; table-layout: fixed; } th, td { border: 1px solid #d5e2dd; padding: 5px 7px; text-align: left; vertical-align: top; overflow-wrap: anywhere; white-space: pre-wrap; } th { width: 30%; background: #edf5f1; } tr { page-break-inside: avoid; } .entry { margin-bottom: 14pt; } .small { color: #4b625b; }
-  </style></head><body><h1>GaadiPulse report</h1>${details({ vehicle: report.vehicle.nickname || report.vehicle.id, "Vehicle ID": report.vehicle.id, "Meter mode": report.vehicle.meter_mode, period, timezone: report.period.timezone, "Generated at (UTC)": report.generated_at, "Included record types": report.included_record_types.join(", ") || "None" })}<h2>Summary</h2>${details({ "Cash outflow": money(report.summary.cash_paise), "Operating cost": money(report.summary.operating_paise), Financing: money(report.summary.financing_paise), Unclassified: money(report.summary.unclassified_paise), Records: report.summary.record_count })}<ul class="small">${report.notes.map((note) => `<li>${escape(note)}</li>`).join("")}</ul>${section(
+  </style></head><body><h1>GaadiPulse report</h1>${details({ vehicle: report.vehicle.nickname || report.vehicle.id, "Vehicle ID": report.vehicle.id, "Meter mode": report.vehicle.meter_mode, period, timezone: report.period.timezone, "Generated at (UTC)": report.generated_at, "Included record types": report.included_record_types.join(", ") || "None" })}<h2>Summary</h2>${details({ Records: report.summary.record_count, Currencies: report.summary_by_currency.map((summary) => summary.currency_code).join(", ") || "None" })}${report.summary_by_currency.map((summary) => `<h3>${escape(summary.currency_code)}</h3>${details({ "Cash outflow": moneyIn(summary.cash_minor, summary.currency_code as CurrencyCode), "Operating cost": moneyIn(summary.operating_minor, summary.currency_code as CurrencyCode), Financing: moneyIn(summary.financing_minor, summary.currency_code as CurrencyCode), Unclassified: moneyIn(summary.unclassified_minor, summary.currency_code as CurrencyCode) })}`).join("")}<ul class="small">${report.notes.map((note) => `<li>${escape(note)}</li>`).join("")}</ul>${section(
     "Records",
     report.records.map(({ payload, ...meta }) => ({
       ...meta,

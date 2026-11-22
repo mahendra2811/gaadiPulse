@@ -7,7 +7,7 @@ const config: ExpoConfig = {
     eas: { projectId: "ce82f4c1-96f7-4b68-9a4a-7334b3370332" },
   },
   scheme: "gaadipulse",
-  version: "1.0.4",
+  version: "1.0.5",
   orientation: "portrait",
   userInterfaceStyle: "automatic",
   icon: "./assets/brand/generated/app-icon.png",
@@ -44,11 +44,29 @@ const config: ExpoConfig = {
     ],
     "expo-secure-store",
     [
+      "expo-localization",
+      {
+        supportedLocales: {
+          android: ["en"],
+          ios: ["en"],
+        },
+      },
+    ],
+    [
       "expo-splash-screen",
       {
         image: "./assets/media/logo/new/02-square-dark.png",
         imageWidth: 180,
         backgroundColor: "#122C2A",
+      },
+    ],
+    [
+      "expo-build-properties",
+      {
+        android: {
+          enableMinifyInReleaseBuilds: true,
+          enableShrinkResourcesInReleaseBuilds: true,
+        },
       },
     ],
   ],

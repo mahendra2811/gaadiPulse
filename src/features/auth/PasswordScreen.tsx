@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { router } from "expo-router";
 import { ZodError } from "zod";
 import { AppButton, AppText, InputField } from "@/src/components/ui";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { Pressable, Text, View } from "react-native";
 import { t } from "@/src/lib/i18n";
 import { FormError } from "@/src/components/ui/FormError";
 import { PasswordField } from "./PasswordField";
@@ -11,6 +13,7 @@ import { googleSignIn, sendOtp } from "./api";
 import { env } from "@/src/lib/env";
 import { useSession } from "./session";
 import { useProfile } from "./profile";
+import { useTheme } from "@/src/lib/theme";
 import { accountEmail, emailCode, passwordPair } from "./passwordSchema";
 import {
   passwordLogin,
@@ -23,21 +26,30 @@ import {
 
 type Mode = "login" | "signup" | "recovery";
 export function PasswordScreen({ mode }: { mode: Mode }) {
-  return mode === "recovery" ? <RecoveryScreen /> : <PremiumPasswordScreen mode={mode} />;
+  return mode === "recovery" ? (
+    <RecoveryScreen />
+  ) : (
+    <PremiumPasswordScreen mode={mode} />
+  );
 }
 function RecoveryScreen() {
   const mode: Mode = "recovery";
   return <LegacyPasswordScreen mode={mode} />;
 }
 function LegacyPasswordScreen({ mode }: { mode: Mode }) {
+  const colors = useTheme();
   const auth = useSession();
   const profile = useProfile();
-  const [email, setEmail] = useState(mode === "recovery" ? (auth.session?.user.email ?? "") : "");
+  const [email, setEmail] = useState(
+    mode === "recovery" ? (auth.session?.user.email ?? "") : "",
+  );
   const [useCode, setUseCode] = useState(false);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [code, setCode] = useState("");
-  const [stage, setStage] = useState<"details" | "verify" | "password" | "complete">("details");
+  const [stage, setStage] = useState<
+    "details" | "verify" | "password" | "complete"
+  >("details");
   const [busy, setBusy] = useState(false);
   const running = useRef(false);
   const [error, setError] = useState("");
@@ -56,7 +68,11 @@ function LegacyPasswordScreen({ mode }: { mode: Mode }) {
       await action();
     } catch (e) {
       setError(
-        e instanceof ZodError ? e.issues[0].message : e instanceof Error ? e.message : String(e)
+        e instanceof ZodError
+          ? e.issues[0].message
+          : e instanceof Error
+            ? e.message
+            : String(e),
       );
     } finally {
       running.current = false;
@@ -71,7 +87,11 @@ function LegacyPasswordScreen({ mode }: { mode: Mode }) {
   };
   const submit = async () => {
     if (stage === "verify") {
-      await verifyAccountCode(email, code, mode === "recovery" ? "recovery" : "signup");
+      await verifyAccountCode(
+        email,
+        code,
+        mode === "recovery" ? "recovery" : "signup",
+      );
       setCode("");
       if (mode === "recovery") setStage("password");
       return;
@@ -112,7 +132,8 @@ function LegacyPasswordScreen({ mode }: { mode: Mode }) {
         ? t("createAccount")
         : t("resetPassword");
   const editingPassword =
-    stage === "password" || (stage === "details" && mode !== "recovery" && !useCode);
+    stage === "password" ||
+    (stage === "details" && mode !== "recovery" && !useCode);
   return (
     <AuthLayout
       title={mode === "login" ? t("authLoginTitle") : title}
@@ -124,7 +145,9 @@ function LegacyPasswordScreen({ mode }: { mode: Mode }) {
             : t("authRecoveryHint")
       }
       loading={busy}
-      onBack={mode !== "login" ? () => router.replace("/auth/login") : undefined}
+      onBack={
+        mode !== "login" ? () => router.replace("/auth/login") : undefined
+      }
     >
       {!env && <AppText>{t("configBody")}</AppText>}
       {mode !== "recovery" && stage === "details" && (
@@ -144,7 +167,9 @@ function LegacyPasswordScreen({ mode }: { mode: Mode }) {
           <AppButton
             label={t("continue")}
             onPress={() =>
-              router.replace(profile.data?.display_name ? "/(tabs)" : "/settings/profile")
+              router.replace(
+                profile.data?.display_name ? "/(tabs)" : "/settings/profile",
+              )
             }
           />
         </>
@@ -171,7 +196,55 @@ function LegacyPasswordScreen({ mode }: { mode: Mode }) {
           )}
           {stage === "verify" && (
             <>
-              <AppText>{t(mode === "recovery" ? "resetSent" : "signupSent")}</AppText>
+              {mode === "recovery" ? (
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 12,
+                    padding: 14,
+                    borderRadius: 16,
+                    backgroundColor: colors.background,
+                    borderWidth: 1,
+                    borderColor: colors.line,
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: 14,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: colors.surface,
+                    }}
+                  >
+                    <Ionicons
+                      name="mail-open-outline"
+                      size={22}
+                      color={colors.primary}
+                    />
+                  </View>
+                  <View style={{ flex: 1, gap: 2 }}>
+                    <Text style={{ color: colors.muted, fontSize: 13 }}>
+                      {t("email")}
+                    </Text>
+                    <Text
+                      selectable
+                      style={{
+                        color: colors.ink,
+                        fontSize: 16,
+                        fontWeight: "700",
+                      }}
+                    >
+                      {email}
+                    </Text>
+                  </View>
+                </View>
+              ) : (
+                <AppText>{t("signupSent")}</AppText>
+              )}
+              {mode === "recovery" && <AppText muted>{t("resetSent")}</AppText>}
               <InputField
                 label={t("code")}
                 required
@@ -195,7 +268,9 @@ function LegacyPasswordScreen({ mode }: { mode: Mode }) {
                 editable={!busy}
                 autoCapitalize="none"
                 autoCorrect={false}
-                autoComplete={mode === "login" ? "current-password" : "new-password"}
+                autoComplete={
+                  mode === "login" ? "current-password" : "new-password"
+                }
               />
               {(mode === "signup" || stage === "password") && (
                 <>
@@ -238,7 +313,95 @@ function LegacyPasswordScreen({ mode }: { mode: Mode }) {
             }
             onPress={() => void run(submit)}
           />
-          {stage === "verify" && (
+          {stage === "verify" && mode === "recovery" && (
+            <View style={{ gap: 8 }}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ disabled: busy || retryAt > now }}
+                disabled={busy || retryAt > now}
+                onPress={() =>
+                  void run(async () => {
+                    await requestPasswordReset(email);
+                    sent();
+                  })
+                }
+                style={({ pressed }) => ({
+                  minHeight: 58,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 12,
+                  paddingHorizontal: 14,
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: colors.line,
+                  backgroundColor: colors.background,
+                  opacity: busy || retryAt > now ? 0.55 : pressed ? 0.7 : 1,
+                })}
+              >
+                <Ionicons
+                  name="refresh-outline"
+                  size={21}
+                  color={colors.primary}
+                />
+                <Text
+                  style={{
+                    flex: 1,
+                    color: colors.ink,
+                    fontSize: 15,
+                    fontWeight: "600",
+                  }}
+                >
+                  {t("resendAvailable")}
+                </Text>
+                {retryAt > now && (
+                  <Text
+                    style={{
+                      color: colors.muted,
+                      fontSize: 14,
+                      fontVariant: ["tabular-nums"],
+                    }}
+                  >
+                    {Math.ceil((retryAt - now) / 1000)}s
+                  </Text>
+                )}
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ disabled: busy }}
+                disabled={busy}
+                onPress={() => {
+                  setStage("details");
+                  setCode("");
+                  setError("");
+                }}
+                style={({ pressed }) => ({
+                  minHeight: 52,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  paddingHorizontal: 12,
+                  opacity: busy ? 0.45 : pressed ? 0.65 : 1,
+                })}
+              >
+                <Ionicons
+                  name="create-outline"
+                  size={19}
+                  color={colors.muted}
+                />
+                <Text
+                  style={{
+                    color: colors.muted,
+                    fontSize: 15,
+                    fontWeight: "600",
+                  }}
+                >
+                  {t("changeEmail")}
+                </Text>
+              </Pressable>
+            </View>
+          )}
+          {stage === "verify" && mode === "signup" && (
             <>
               <AppButton
                 secondary
@@ -246,8 +409,7 @@ function LegacyPasswordScreen({ mode }: { mode: Mode }) {
                 disabled={busy || retryAt > now}
                 onPress={() =>
                   void run(async () => {
-                    if (mode === "recovery") await requestPasswordReset(email);
-                    else await resendSignup(email);
+                    await resendSignup(email);
                     sent();
                   })
                 }

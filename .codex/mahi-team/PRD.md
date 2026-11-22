@@ -23,3 +23,21 @@ The user chose existing project pamuveulonnbjocfprxh. Local .env.local URL and p
 ## Migration history check — 2026-11-20
 Read-only `supabase migration list --linked` against the selected project found local migrations 013, 014, 016 and 018 absent from remote history, despite 015 and 017 being present. The normal dry run refused out-of-order migrations; an `--include-all` dry run listed those four. This is not proof of actual schema state. No migrations were applied, repaired or deployed. Schema reconciliation, backup and validation are required before any production action.
 Read-only remote catalog inspection found the Daily Progress vehicle triggers still present and none of the inspected 014/016/018 functions, triggers or currency columns present. These observations are partial, not a full schema audit. No hosted write was performed.
+
+## Internationalization, country and multi-currency expansion — 2026-11-21
+
+### Objective
+Expand GaadiPulse so users can independently choose country, language/locale, timezone and currency, while preserving the meaning of all existing INR records and preventing legacy clients from misreading non-INR data.
+
+### Product decisions for architecture review
+- Country, locale, timezone and currency are independent preferences; country only suggests values and is not proof of residence.
+- Existing records retain their original currency and exact value. New records inherit the vehicle default, with an explicit per-entry currency override for genuine foreign-currency purchases.
+- Totals and reports group by currency. Automatic exchange-rate conversion is deferred until a separate rate-provider and rounding design is approved.
+- English remains the fallback. Hindi is the first fully translated additional locale; further locales require reviewed catalogs and RTL testing where applicable.
+- Existing migrations remain unchanged. All schema/API changes are additive and non-INR writes stay blocked until the legacy-client gate is proven.
+
+### Success criteria
+- Existing accounts, vehicles and INR history continue to work without relabeling or data loss.
+- Profile, vehicle setup, fuel, expenses, dashboards, reports and exports show explicit currency codes and locale-aware formatting.
+- Server-side validation, RLS/RPC authorization, idempotency, audit trails and legacy-client compatibility are tested before non-INR enablement.
+- Typecheck, lint, unit/integration/RLS tests, Expo config, Android export and release build are run with truthful PASS/FAIL/BLOCKED reporting.

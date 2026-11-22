@@ -1,4 +1,11 @@
 import { domainCopy as c } from "@/src/lib/domainCopy";
+import {
+  parseMinorUnits,
+  type CurrencyCode,
+  minorUnitsDecimal,
+  solveCurrencyFuel,
+  formatMinorUnits,
+} from "./currency";
 export function paise(value: string): number {
   if (!/^\d+(\.\d{1,2})?$/.test(value.trim())) throw new Error(c.amount);
   const [whole, fraction = ""] = value.trim().split(".");
@@ -13,6 +20,24 @@ export function money(value: number) {
     currency: "INR",
   }).format(value / 100);
 }
+
+export function moneyIn(
+  value: number,
+  currency: CurrencyCode = "INR",
+  locale = "en-IN",
+) {
+  return formatMinorUnits(value, currency, locale);
+}
+
+export function parseMoney(value: string, currency: CurrencyCode = "INR") {
+  return parseMinorUnits(value, currency);
+}
+
+export function decimalMoney(value: number, currency: CurrencyCode = "INR") {
+  return minorUnitsDecimal(value, currency);
+}
+
+export { solveCurrencyFuel };
 const rounded = (n: bigint, d: bigint) => (n + d / 2n) / d;
 export function solveFuel(amount: string, quantity: string, price: string) {
   let a = amount ? BigInt(paise(amount)) : null;

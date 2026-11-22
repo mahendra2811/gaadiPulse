@@ -6,7 +6,11 @@ import { t } from "@/src/lib/i18n";
 
 export function SignOutButton({
   onSignedOut,
-}: { onSignedOut?: () => void } = {}) {
+  afterDrawerClose,
+}: {
+  onSignedOut?: () => void;
+  afterDrawerClose?: (callback: () => void) => void;
+} = {}) {
   const auth = useSession();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -24,6 +28,12 @@ export function SignOutButton({
       setBusy(false);
     }
   };
+  const askToSignOut = () =>
+    ConfirmDialog(
+      t(auth.development ? "exitDevelopment" : "logout"),
+      t(auth.development ? "exitDevelopmentBody" : "signoutBody"),
+      () => void signOut(),
+    );
   return (
     <>
       <AppButton
@@ -31,11 +41,7 @@ export function SignOutButton({
         label={t(auth.development ? "exitDevelopment" : "logout")}
         disabled={busy}
         onPress={() =>
-          ConfirmDialog(
-            t(auth.development ? "exitDevelopment" : "logout"),
-            t(auth.development ? "exitDevelopmentBody" : "signoutBody"),
-            () => void signOut(),
-          )
+          afterDrawerClose ? afterDrawerClose(askToSignOut) : askToSignOut()
         }
       />
       {!!error && <ErrorState message={error} retry={() => void signOut()} />}

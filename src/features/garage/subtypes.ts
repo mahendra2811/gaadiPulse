@@ -10,11 +10,8 @@ export type VehicleSubtypeOption = {
 const agriculturalIds = new Set(["tractor", "harvester"]);
 export function subtypeOptions(category: string): VehicleSubtypeOption[] {
   const group =
-    category === "agricultural" || category === "heavy_machinery"
-      ? "agriculture_heavy"
-      : category;
-  const items =
-    catalog.categories.find((item) => item.id === group)?.subtypes ?? [];
+    category === "agricultural" || category === "heavy_machinery" ? "agriculture_heavy" : category;
+  const items = catalog.categories.find((item) => item.id === group)?.subtypes ?? [];
   const filtered =
     category === "agricultural"
       ? items.filter((item) => agriculturalIds.has(item.id))

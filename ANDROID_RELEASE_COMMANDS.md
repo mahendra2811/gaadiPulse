@@ -150,3 +150,6 @@ npx eas-cli@latest submit --platform android --profile production
 ```
 
 Select the intended AAB/build and inspect the selected track and submission settings. EAS Submit does not itself complete all Play Console declarations or guarantee production publication; a first upload may need to be performed manually. See [Expo Android submission](https://docs.expo.dev/submit/android/).
+
+for play store local pak :-
+npx eas-cli@latest build --platform android --profile production-apk --local

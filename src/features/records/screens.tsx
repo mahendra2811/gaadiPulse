@@ -65,7 +65,6 @@ import {
   solveCurrencyFuel,
   type CurrencyCode,
 } from "@/src/utils/currency";
-import { CurrencyField } from "@/src/features/auth/CurrencyField";
 import { recordCurrency, recordMinorAmount } from "./currency";
 import { fuelIntervals, type FuelPoint } from "@/src/utils/fuelEconomy";
 import { expenseAccounting } from "@/src/utils/expenseAccounting";
@@ -785,6 +784,13 @@ export function RecordForm() {
     category,
     kind,
   ]);
+  useEffect(() => {
+    if (!ready || !v || !["fuel", "expenses"].includes(kind)) return;
+    if (values.currency_code !== v.default_currency_code)
+      form.setValue("currency_code", v.default_currency_code, {
+        shouldDirty: false,
+      });
+  }, [ready, v, kind, values.currency_code, form]);
   const disablePrevention = usePreventRemove(
     form.formState.isDirty && !leaving,
     ({ repeat }) =>
@@ -997,6 +1003,12 @@ export function RecordForm() {
       form.reset(
         {
           ...values,
+          currency_code: next.default_currency_code,
+          amount: "",
+          unit_price: "",
+          principal: "",
+          interest: "",
+          items: "[]",
           km: next.meter_mode === "HOURS" ? "" : values.km,
           hours: next.meter_mode === "KM" ? "" : values.hours,
           ...defaultFuel(next.energy_type),
@@ -1125,12 +1137,23 @@ export function RecordForm() {
         existing?.revision,
         status,
       );
-      await qc.invalidateQueries();
+      // A committed record must not wait for every screen's background query
+      // before the form can navigate away. Mark cached data stale immediately;
+      // active observers can refresh in the background.
+      void qc.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey[0] === user &&
+          query.queryKey[1] === v.id &&
+          ["records", "expense-history", "fuel-history", "observations"].includes(
+            String(query.queryKey[2]),
+          ),
+        refetchType: "active",
+      });
       if (kind === "fuel") active.select(v.id);
       toast(r("saved"), "success");
       if (another) {
         form.reset({
-          ...defaultEntry(),
+          ...defaultEntry(v.default_currency_code),
           ...defaultFuel(v.energy_type),
         });
         setOperation(Crypto.randomUUID());
@@ -1334,17 +1357,19 @@ export function RecordForm() {
         Date.parse(values.observed_at) === Date.parse(values.event_at) && (
           <View
             style={{
-              gap: 8,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
               borderWidth: form.formState.errors.confirmed_observation ? 1 : 0,
               borderColor: formColors.danger,
               borderRadius: 14,
-              padding: form.formState.errors.confirmed_observation ? 10 : 0,
+              padding: 12,
+              backgroundColor: formColors.surface,
             }}
           >
-            <AppText>{t("fillConfirmationHelp")}</AppText>
-            <AppText>{r("fillConfirmation")}</AppText>
             <Switch
-              accessibilityLabel={r("fillConfirmation")}
+              accessibilityLabel={r("fillConfirmationShort")}
+              accessibilityHint={t("fillConfirmationHelp")}
               value={values.confirmed_observation}
               onValueChange={(value) => {
                 form.setValue("confirmed_observation", value, {
@@ -1356,6 +1381,7 @@ export function RecordForm() {
                 }
               }}
             />
+            <AppText>{r("fillConfirmationShort")}</AppText>
           </View>
         )}
     </>
@@ -1477,37 +1503,6 @@ export function RecordForm() {
           />
         </>
       ) : null}
-      {(kind === "fuel" || kind === "expenses") && (
-        <CurrencyField
-          value={(values.currency_code ?? "INR") as CurrencyCode}
-          onChange={(currency) => {
-            if (existing) return;
-            const hasMoney = [
-              values.amount,
-              values.unit_price,
-              values.principal,
-              values.interest,
-            ].some(Boolean);
-            const apply = () => {
-              form.setValue("currency_code", currency, { shouldDirty: true });
-              form.setValue("amount", "", { shouldDirty: true });
-              form.setValue("unit_price", "", { shouldDirty: true });
-              form.setValue("principal", "", { shouldDirty: true });
-              form.setValue("interest", "", { shouldDirty: true });
-              form.setValue("items", "[]", { shouldDirty: true });
-              setItemAmounts({});
-            };
-            if (hasMoney)
-              ConfirmDialog(
-                t("currency"),
-                t("currencyChangeClearsAmounts"),
-                apply,
-              );
-            else apply();
-          }}
-          disabled={busy || !ready || !!existing}
-        />
-      )}
       {kind === "fuel" && (
         <>
           {(allowedFuelTypes(v.energy_type).length > 1 ||

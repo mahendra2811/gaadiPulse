@@ -1,21 +1,21 @@
 # Architecture decision record
 
-| ID | Decision | Reason |
-|---|---|---|
-| ADR-001 | Android-first Expo Router + TypeScript | Mobile-first launch with reusable navigation and native build capability |
-| ADR-002 | Supabase Auth/Postgres/RLS/Edge Functions | Fits shared-vehicle permissions without a permanently hosted custom API |
-| ADR-003 | Local SQLite and idempotent outbox | Offline works for rural/heavy machinery users; prevents duplicate uploads |
-| ADR-004 | `OWNER`/`PILOT` roles are per vehicle | One user can own a bike and pilot a truck; many members per vehicle |
-| ADR-005 | Auto assignment by verified email | Owner grants without invitation acceptance; protect against email impersonation |
-| ADR-006 | KM/HOURS/BOTH at vehicle create/edit | Different machine types, adaptive forms and analytics |
-| ADR-007 | Fuel and expenses save without reading | Reduce friction; explicit late observation metadata preserves correctness |
-| ADR-008 | Versioned custom Daily Progress forms | Each vehicle collects different trip/site information without losing history |
-| ADR-009 | Header progress line shows actual/indeterminate | Honest loading, no fabricated 0–100% |
-| ADR-010 | English first; Hindi later | Avoid fake untranslated copy; establish keys and selectable future locales |
-| ADR-011 | No user photo capture/upload in first implementation round | Product owner deferred; bundled brand illustration assets are included |
-| ADR-012 | Free launch, monetization omitted | Focus on reliability and adoption |
-| ADR-013 | No hamburger navigation; four floating tabs | Avoid redundant navigation controls |
-| ADR-014 | Current account primary admin is not legal RC owner | In-app control distinct from government vehicle title |
+| ID      | Decision                                                   | Reason                                                                          |
+| ------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| ADR-001 | Android-first Expo Router + TypeScript                     | Mobile-first launch with reusable navigation and native build capability        |
+| ADR-002 | Supabase Auth/Postgres/RLS/Edge Functions                  | Fits shared-vehicle permissions without a permanently hosted custom API         |
+| ADR-003 | Local SQLite and idempotent outbox                         | Offline works for rural/heavy machinery users; prevents duplicate uploads       |
+| ADR-004 | `OWNER`/`PILOT` roles are per vehicle                      | One user can own a bike and pilot a truck; many members per vehicle             |
+| ADR-005 | Auto assignment by verified email                          | Owner grants without invitation acceptance; protect against email impersonation |
+| ADR-006 | KM/HOURS/BOTH at vehicle create/edit                       | Different machine types, adaptive forms and analytics                           |
+| ADR-007 | Fuel and expenses save without reading                     | Reduce friction; explicit late observation metadata preserves correctness       |
+| ADR-008 | Versioned custom Daily Progress forms                      | Each vehicle collects different trip/site information without losing history    |
+| ADR-009 | Header progress line shows actual/indeterminate            | Honest loading, no fabricated 0–100%                                            |
+| ADR-010 | English first; Hindi later                                 | Avoid fake untranslated copy; establish keys and selectable future locales      |
+| ADR-011 | No user photo capture/upload in first implementation round | Product owner deferred; bundled brand illustration assets are included          |
+| ADR-012 | Free launch, monetization omitted                          | Focus on reliability and adoption                                               |
+| ADR-013 | No hamburger navigation; four floating tabs                | Avoid redundant navigation controls                                             |
+| ADR-014 | Current account primary admin is not legal RC owner        | In-app control distinct from government vehicle title                           |
 
 Any new implementation decision should be appended by Codex with date, context, alternatives and consequences. Do not silently override earlier decisions.
 
@@ -26,7 +26,7 @@ Any new implementation decision should be appended by Codex with date, context, 
 | ADR-019 | Stage 1 offline garage drafts; collaborative outbox in Stage 3 | Server remains authority for vehicle creation; local draft is never presented as a confirmed vehicle. |
 | ADR-020 | PNG rasterizations of supplied SVG illustrations | Android-resolvable bundled assets retain editable vector sources and no runtime SVG-transformer dependency. |
 | ADR-021 | Restrict privilege revocation to foundation functions | Avoid changing unrelated public-schema RPCs on a configured Supabase project; every new function has explicit execute privileges. |
-| ADR-022 | User explicitly requested debug sign-in bypass | __DEV__ gates a separate local development identity/repository. No Supabase session is fabricated and local test data never uploads. |
+| ADR-022 | User explicitly requested debug sign-in bypass | **DEV** gates a separate local development identity/repository. No Supabase session is fabricated and local test data never uploads. |
 | ADR-023 | User explicitly deferred testing during remaining implementation | Stage 2/3 validation is recorded NOT RUN. Prior baseline results are not reused as evidence for changed code. |
 | ADR-024 | Owner-only progress answers are redacted in SQL RPC | Direct authenticated SELECT on progress rows/form definitions is revoked; safe reads enforce row scope and remove private answers/fields. |
 | ADR-025 | Financial writes use revision checks and payload-bound operation receipts | Retrying the same operation cannot silently replace a different payload or overwrite a newer revision. |
@@ -38,7 +38,6 @@ Any new implementation decision should be appended by Codex with date, context, 
 Secondary pages use the shared PageHeader through Screen, with an accessible top Back action and localized section/title context. URLs, UUIDs and route-group names are not shown as page labels. Primary tabs remain navigation roots. Back follows actual stack history, preserving the originating tab; explicit parent fallbacks cover direct links without history. Vehicle wizard step Back changes the step before leaving the route. Successful vehicle/profile saves return to their caller when history exists.
 
 More exposes sign-out/exit-development at the top, plus Add vehicle, permission-gated Add meter reading and Add maintenance. Vehicle details exposes vehicle-scoped meter and maintenance entry links. Maintenance launches expense entry with SERVICE as its default category; existing drafts take precedence. Confirmation uses browser confirmation on web and native Alert on Android/iOS so sign-out and draft guards have a working confirmation path on both platforms.
-
 
 ## Updated asset pack — 2026-10-24
 
@@ -76,10 +75,10 @@ The latest user request temporarily narrows the larger Phase 1 scope. Implement 
 
 User requested a landscape active vehicle card: bounded square bundled artwork occupies 20% of the inner row, with compact identity, available registration/make/model, role and meter unit to its right. Text wraps for long names and larger fonts. The hero card no longer offers Switch vehicle; the existing top header picker handles active selection. Shared non-hero summaries also use the horizontal arrangement, retaining explicit form vehicle selection where needed. No numeric odometer is inferred from the vehicle's meter mode.
 
-
 ## 2026-11-03 — Online-only account data
 
 Latest user instruction replaces the offline-first requirements in PROJECT_REFERENCE.md, stage prompts and older handoffs. Implement ONLINE_ONLY_PLAN.md: remove SQLite/browser account caching, draft persistence, outbox and background replay. Open forms use memory only; confirmed SQL/RPC writes gate success feedback and list refresh. Read errors/known disconnection hide old query results. Keep secure sessions, selected vehicle preference, atomic RPCs, operation UUID receipts and revisions. Debug frontend preview is visibly labeled and ephemeral, never a production fallback. Preserve migrations/server data and leave legacy device work untouched but inaccessible. Live-backend TODOs remain explicitly OPEN while frontend work proceeds; do not claim integration or release acceptance.
+
 # 3 November 2026 — Confirmed Play Console application identity
 
 The user has created the GaadiPulse app entry in Google Play Console and confirmed the Android package name as `com.pooniya.gaadipulse`. The existing default in `app.config.ts` matches. Keep this application ID for release builds and Android OAuth configuration; do not override `ANDROID_PACKAGE` for this Play app. Creating the Console entry does not establish that a build has been uploaded or published.
@@ -108,7 +107,6 @@ User corrected the Digital Asset Links statement: package `com.pooniya.gaadipuls
   }
 ]
 ```
-
 
 ## 2026-11-04 — Replace initial authentication UI
 
@@ -253,9 +251,11 @@ Authenticated accounts with no saved display name now go to `/onboarding`, inclu
 ### Fixed vehicle currency — implementation in progress — 2026-11-05
 
 The intended design fixes each vehicle's currency at creation and remembers the creator's last-used currency for new vehicles. Existing vehicles remain INR, shared members use the vehicle currency, and there is no per-entry currency override or conversion. `docs/plan/FIXED_VEHICLE_CURRENCY.md` records the implementation and rollout gates. New migration 018 is local only: it adds INR-only vehicle/profile currency columns, an immutability guard and an INR-only legacy API wrapper. Its explicit compatibility constraint prevents enabling non-INR while existing app versions can read financial records as INR. The standalone arithmetic foundation tests INR, USD, JPY and KWD precision but is not wired to app forms or reports; the final catalog remains undecided. Multi-currency is not yet available and migration 018 has NOT been deployed.
+
 ### Brand and loading states — 5 November 2026
 
 Use the user-supplied logo variants as the brand source, with derived launcher, adaptive, notification and favicon assets generated locally by `scripts/build-brand-assets.mjs`. Home, Garage, Fuel and Expenses use accessible, reduced-motion-aware skeletons only for requests that are actually pending. Existing empty, access and recoverable error states remain authoritative; skeletons do not imply measured progress.
+
 # Password length — 2026-11-06
 
 At the user's request, new passwords use a five-character minimum and a 128-character maximum in the app and local Supabase configuration. Login continues to accept existing shorter passwords. The hosted Supabase Auth policy must be checked separately; changing local configuration does not change the hosted project, and hosted enforcement may impose a higher minimum. Do not report five-character signup as verified until tested against the actual project.
@@ -263,6 +263,11 @@ At the user's request, new passwords use a five-character minimum and a 128-char
 ## Authentication shell and missing routes — 2026-11-06
 
 The login, signup, password recovery, password login and email verification routes share a navigator-owned, locally bundled hero. It stays mounted while moving among those routes; its height depends on screen width and is capped, while each form scrolls independently. Legal and OAuth callback remain separate screens. Unknown routes have a home/back recovery screen. This presentation change does not alter authentication or authorization rules.
+
 ## 2026-11-21 — Preserve current Supabase data and roll forward schema
 
 The owner authorized a clean database if needed, but chose the existing linked project for the release. The existing project contains active app data, and the six pending migrations were forward-only, so the deployment used `db push --include-all` rather than a destructive reset. Existing progress/form rows remain stored; the retired progress workflows are revoked as intended. A permission-restricted public-schema/data snapshot was saved outside the repository before the migration push.
+
+### Vehicle-fixed record currency and subtype visibility — 2026-11-26
+
+Fuel and expense forms do not offer a currency override. They use the selected vehicle's `default_currency_code`, which is configured during vehicle creation or vehicle settings. Editing a historical record keeps that record's persisted currency to avoid silently reinterpreting its amount. The vehicle subtype grid shows all types for the chosen category by default, while search remains available. Existing subtype IDs and artwork are retained; add a catalog option when a distinct vehicle type is needed.

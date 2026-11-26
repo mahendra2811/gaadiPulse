@@ -78,6 +78,10 @@ Use the existing upload key for an app already configured in Play Console. Do no
 
 ## 3. Build the Play Store AAB
 
+This repository is Expo-managed and does not check in an `android/` directory or
+Gradle wrapper. Run the EAS build commands below from the project root; `./gradlew`
+is available only after generating/maintaining a native Android project locally.
+
 ### Option A: EAS cloud build
 
 ```bash
@@ -149,4 +153,4 @@ Optionally, after Google Play API access and service-account setup, EAS can subm
 npx eas-cli@latest submit --platform android --profile production
 ```
 
-Select the intended AAB/build and inspect the selected track and submission settings. EAS Submit does not itself complete all Play Console declarations or guarantee production publication; a first upload may need to be performed manually. See [Expo Android submission](https://docs.expo.dev/submit/android/).
+The `production` submit profile in `eas.json` selects the internal testing track and creates a draft release. Configure Google Play service-account credentials in EAS before submitting. EAS Submit does not itself complete all Play Console declarations or guarantee production publication; a first upload may need to be performed manually. See [Expo Android submission](https://docs.expo.dev/submit/android/).

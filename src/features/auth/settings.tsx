@@ -1,7 +1,6 @@
 import { AuthLayout } from "./AuthLayout";
 import { ProfileIconPicker } from "./ProfileIconPicker";
 import { CountryField } from "./CountryField";
-import { CurrencyField } from "./CurrencyField";
 import { LocaleField } from "./LocaleField";
 import { defaultProfileIcon, type ProfileIcon } from "./avatars";
 import { releaseFeatures } from "@/src/features/release/scope";
@@ -33,7 +32,6 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useTheme } from "@/src/lib/theme";
 import { artwork } from "@/src/lib/assets";
 import { setLocale, type SupportedLocale } from "@/src/lib/i18n";
-import type { CurrencyCode } from "@/src/utils/currency";
 export { MoreDrawerRoute as More } from "@/src/components/navigation/MoreDrawer";
 export function Settings() {
   const toast = useToast();
@@ -196,7 +194,6 @@ export function Profile() {
   const [name, setName] = useState("");
   const [country, setCountry] = useState<string | null>(null);
   const [locale, setProfileLocale] = useState<SupportedLocale>("en-IN");
-  const [currency, setCurrency] = useState<CurrencyCode>("INR");
   const [avatar, setAvatar] = useState<ProfileIcon>(defaultProfileIcon);
   const hydrated = useRef(false);
   const [timezone, setTimezone] = useState("Asia/Kolkata");
@@ -217,7 +214,6 @@ export function Profile() {
       );
       setCountry(query.data.country_code);
       setProfileLocale(query.data.locale);
-      setCurrency(query.data.preferred_currency_code);
       setAvatar(query.data.avatar_icon);
       setTimezone(query.data.timezone);
       setInitialized(true);
@@ -234,7 +230,7 @@ export function Profile() {
     initialized &&
     !!query.data &&
     (locale !== query.data.locale ||
-      currency !== query.data.preferred_currency_code);
+      false);
   const isDirty = dirty || preferencesDirty;
   const disablePrevention = usePreventRemove(
     isDirty && !leaving,
@@ -280,7 +276,6 @@ export function Profile() {
           theme: current.theme,
           timezone,
           locale,
-          preferred_currency_code: currency,
         },
         auth.development,
       );
@@ -339,11 +334,6 @@ export function Profile() {
         onChange={setTimezone}
         disabled={busy || !initialized}
         account
-      />
-      <CurrencyField
-        value={currency}
-        onChange={setCurrency}
-        disabled={busy || !initialized}
       />
       <LocaleField
         value={locale}

@@ -1,7 +1,7 @@
 import { SearchField } from "@/src/components/ui/SearchField";
 import { useState } from "react";
 import { View } from "react-native";
-import { AppText, AppButton, InputField } from "@/src/components/ui";
+import { AppText, InputField } from "@/src/components/ui";
 import { getVehicleSubtypeImage } from "@/assets/vehicle-subtypes";
 import { VehicleChoiceGrid } from "./VehicleChoiceGrid";
 import { t } from "@/src/lib/i18n";
@@ -19,7 +19,6 @@ export function VehicleSubtypeSelector({
   disabled?: boolean;
 }) {
   const [search, setSearch] = useState("");
-  const [showAll, setShowAll] = useState(false);
   const options = subtypeOptions(category);
   const manual =
     value === "other" ||
@@ -28,7 +27,7 @@ export function VehicleSubtypeSelector({
   const visible = options.filter((item) =>
     term
       ? `${subtypeLabel(item.id)} ${item.id}`.toLowerCase().includes(term)
-      : showAll || item.recommended || item.id === value,
+      : true,
   );
   return (
     <View style={{ gap: 10 }}>
@@ -48,13 +47,6 @@ export function VehicleSubtypeSelector({
         onChange={onChange}
       />
       {!visible.length && <AppText>{t("subtypeNoMatch")}</AppText>}
-      {!term && (
-        <AppButton
-          secondary
-          label={t(showAll ? "subtypeCommon" : "subtypeSeeAll")}
-          onPress={() => setShowAll((current) => !current)}
-        />
-      )}
       {manual && (
         <InputField
           label={t("subtypeManual")}

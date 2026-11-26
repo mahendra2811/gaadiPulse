@@ -82,6 +82,7 @@ export const recordCopy = {
     "Account deletion is a tracked operator process. Historical financial attribution is retained until the configured retention review completes. Your access is revoked when the request is accepted.",
   authorizedScope: "Only records you are permitted to read are included.",
   fillConfirmation: "I actually observed this reading at the original fill time.",
+  fillConfirmationShort: "Observed at fill time",
   vehicleChanged:
     "Vehicle changed. Readings that do not apply to its meter mode have been cleared.",
   defaultsLabel: "Default answer",

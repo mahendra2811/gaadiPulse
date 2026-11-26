@@ -34,16 +34,16 @@ Apply reviewed migrations in order; no existing production reset is required:
 
 ## Commands and evidence
 
-| Activity | Status | Evidence/scope |
-|---|---|---|
-| Source formatting (`npm run format`) | Executed | Formatting only; does not validate types or behavior |
-| Current TypeScript/lint/unit checks | NOT RUN | Deferred by explicit user instruction |
-| Migrations 002–004 / combined RLS tests | NOT RUN | Deferred; no local Supabase CLI/Docker available initially |
-| Current Expo export/native build | NOT RUN | Deferred; native dependencies changed since baseline |
-| Google/OTP and real multi-account flows | NOT TESTED | Provider/project credentials not configured |
-| Current Android boot/device UI | NOT TESTED | Earlier Stage 1 APK does not represent current source |
-| Notification/share/PDF, accessibility/performance | NOT TESTED | Device/manual validation deferred |
-| External deployment/Play publication | NOT DONE | Operator setup and release validation remain |
+| Activity                                          | Status     | Evidence/scope                                             |
+| ------------------------------------------------- | ---------- | ---------------------------------------------------------- |
+| Source formatting (`npm run format`)              | Executed   | Formatting only; does not validate types or behavior       |
+| Current TypeScript/lint/unit checks               | NOT RUN    | Deferred by explicit user instruction                      |
+| Migrations 002–004 / combined RLS tests           | NOT RUN    | Deferred; no local Supabase CLI/Docker available initially |
+| Current Expo export/native build                  | NOT RUN    | Deferred; native dependencies changed since baseline       |
+| Google/OTP and real multi-account flows           | NOT TESTED | Provider/project credentials not configured                |
+| Current Android boot/device UI                    | NOT TESTED | Earlier Stage 1 APK does not represent current source      |
+| Notification/share/PDF, accessibility/performance | NOT TESTED | Device/manual validation deferred                          |
+| External deployment/Play publication              | NOT DONE   | Operator setup and release validation remain               |
 
 Stage 1's earlier passing checks are documented in [STAGE_1_HANDOFF.md](STAGE_1_HANDOFF.md) and cover only that earlier baseline. Existing tests were preserved; later domain/integration coverage still needs extension when testing resumes. No current security scenario is marked PASS.
 
@@ -74,6 +74,7 @@ Operator next step: rerun `npx supabase db push --dry-run` and `npx supabase db 
 Added `src/components/navigation/PageHeader.tsx`, `src/components/navigation/routes.ts`, `src/features/auth/SignOutButton.tsx`, and `tests/navigation.test.ts`. Updated shared Screen/ConfirmDialog, More/Settings/Profile, vehicle wizard/details, record form/detail/analytics titles, maintenance and meter-history entry labels, and English catalogs. Sign-out is visible at the top of More and remains in Settings; errors offer retry and submission is disabled while running. Header Back honors the stack and existing form removal guards; wizard steps override Back. Direct-link parent fallback and readable domain labels replace reliance on route IDs. Maintenance creation defaults to SERVICE without overriding restored drafts. Two existing typecheck blockers were corrected: native Appearance system override now uses `unspecified`, and the missing permissionDenied translation was added.
 
 Validation:
+
 - PASS `npm run typecheck` (also repeated after final source changes).
 - PASS `npm test`: 6 files, 34 tests, including 5 navigation parent/root cases and the migration compilation regression.
 - PASS targeted ESLint with `--max-warnings=0` for PageHeader/routes, shared UI, SignOutButton/settings, garage form/screens, records screens/copy, reports, navigation tests, root layout and i18n.
@@ -153,6 +154,7 @@ Validation: targeted source formatting and `npm run typecheck` passed. Test suit
 Added `src/features/garage/VehicleChoiceGrid.tsx`; updated `VehicleForm.tsx` and `VehicleSubtypeSelector.tsx`. All six sections have a centered 640dp content limit. Category/subtype cards use measured responsive columns, square contained images and wrapping label space, without stretching the final card across the row. Catalog suggestions are collapsible; timezone and initial readings remain under Additional options. Review title falls back to subtype when optional identity fields are empty. No migrations or persistence changes.
 
 Executed checks for this change:
+
 - `npm run typecheck` — PASS.
 - `npx eslint src/features/garage/VehicleChoiceGrid.tsx src/features/garage/VehicleForm.tsx src/features/garage/VehicleSubtypeSelector.tsx --max-warnings=0` — PASS.
 - `npx prettier --write src/features/garage/VehicleChoiceGrid.tsx src/features/garage/VehicleForm.tsx src/features/garage/VehicleSubtypeSelector.tsx` — PASS.
@@ -207,6 +209,7 @@ Added `src/features/release/scope.ts`, `DeferredFeature.tsx`, and `tests/release
 Bike/car setup uses KM-focused choices. Deferred category selection opens a modal without changing category, and Continue/save guards restored unsupported drafts. Existing unsupported histories remain readable; new record forms are deferred. Electric-only mapping already selected ELECTRIC/KWH; retained that behavior and added Charging tab/Home/form/list labels and explicit kWh/kg/L quantity and rate labels. Conventional and plug-in hybrid choices are preserved separately.
 
 Commands actually executed:
+
 - `npm run typecheck` — PASS on final source.
 - `npx eslint app src/features/release src/features/dashboard/Dashboard.tsx src/features/navigation/MoreMenu.tsx src/features/garage/VehicleForm.tsx src/features/garage/screens.tsx src/features/records/screens.tsx src/features/records/hooks.ts src/features/auth/settings.tsx src/features/reminders/useReminders.ts src/components/navigation/FloatingNavigation.tsx src/lib/i18n.ts tests/releaseScope.test.ts --max-warnings=0` — PASS.
 - Prettier write commands on changed app/source files and the new test — PASS.
@@ -266,6 +269,7 @@ Continue frontend flow work in the clearly labeled ephemeral preview. Follow eve
 Added `src/features/auth/AuthLayout.tsx`. Updated `screens.tsx`, `PasswordScreen.tsx`, `routing.ts`, `settings.tsx`, `SignOutButton.tsx`, `app/_layout.tsx`, `src/lib/i18n.ts`, `tests/auth.test.ts` and `docs/DECISIONS.md`. Signed-out entry/logout now open the redesigned login directly. Welcome is a compatibility redirect, with no onboarding carousel. Signup steps: email → password/confirmation → email verification → profile → Home. Established signed-in accounts skip auth through the existing session guard. Google is offered on login/signup and uses the existing real Supabase OAuth exchange. Optional OTP login, resend cooldown, password reset and retained-input errors remain. First profile setup and session-restoration screens share the new auth shell. Removed development entry buttons from login, welcome, session error and settings. No SQL/migration changes.
 
 Commands executed:
+
 - `npm run typecheck` — PASS following implementation (final startup-shell refinement rechecked).
 - Targeted ESLint on AuthLayout/screens/PasswordScreen/settings/SignOutButton/routing/i18n/root layout/auth test with `--max-warnings=0` — PASS after combining duplicate React imports; initial run failed on two duplicate-import warnings.
 - Targeted Prettier write/check on the same changed files — PASS (final root/i18n changes formatted with Prettier).
@@ -296,6 +300,7 @@ Added `src/features/garage/DeleteVehicle.tsx`, `tests/vehicleDeletion.test.ts` a
 SQL: soft deletion preserves vehicle/ledger/audit rows. Verified active Owner required; exact saved identity compared server-side; row locking and unchanged retry handling; email grants revoked; member/owner access helpers deny deleted vehicles, including normal direct API/RLS access that uses these helpers. No server migration applied remotely and no real vehicle deleted.
 
 Validation:
+
 - Targeted Prettier write — PASS.
 - `npm run typecheck` — PASS.
 - Targeted ESLint on changed garage/i18n files and new deletion test, zero warnings — PASS.
@@ -374,6 +379,7 @@ Final `npm run typecheck`: PASS. Final `npx eslint src/features/records/RecordCa
 Added `src/components/ui/Popup.tsx` and root PopupBackground in `app/_layout.tsx`. Updated shared Sheet in `src/components/ui/index.tsx`, DropdownField, ConfirmationHost, DatePickerField, HeaderVehicleSwitcher, MoreDrawer, RecordSavedDialog, VehicleComingSoon (`features/release/DeferredFeature.tsx`), and English close-popup text. All app-managed Modal usage now goes through Popup. Centered dialogs size to content, scroll long content, provide outside-click dismissal and close icons, and preserve caller actions. No business data or migrations changed. Updated DECISIONS and UI_DESIGN_SYSTEM. Prior worktree edits were preserved.
 
 Validation performed:
+
 - Prettier on changed popup/navigation/root TSX and i18n files: PASS.
 - `npm run typecheck`: PASS after removing the unavailable expo-blur dependency attempt.
 - Targeted `npx eslint app/_layout.tsx src/components/ui/Popup.tsx src/components/ui/ConfirmationHost.tsx src/components/ui/DropdownField.tsx src/components/ui/DatePickerField.tsx src/components/ui/index.tsx src/components/navigation/HeaderVehicleSwitcher.tsx src/components/navigation/MoreDrawer.tsx src/features/records/RecordSavedDialog.tsx src/features/release/DeferredFeature.tsx src/lib/i18n.ts --max-warnings=0`: PASS after moving an existing type export below imports (initial lint FAIL: import/first warnings).
@@ -408,6 +414,7 @@ This follow-up is **incomplete; not ready for Play submission**. Added `docs/PRI
 The deletion workflow requires a reviewed implementation for personal data, vehicle records and shared data; Google requires account and associated data deletion with disclosed legitimate retention exceptions. The existing worker masks/bans an Auth user and leaves records, and it must not be advertised as completed deletion. Decide shared-record handling and the policy for user-created personal records, then implement and test the complete workflow, including external requests, identity verification, failure recovery, providers/backups and retention. Confirm the working support contact, legal operator name, hosting URL, provider details and retention before publishing the policy or completing Play declarations. The in-app legal content remains pre-release.
 
 Validation performed:
+
 - `npm run typecheck`: PASS before and after the UI change (latest combined check recorded separately below).
 - Targeted Prettier and ESLint on changed auth/error files: PASS.
 - `npm test`: FAIL (55 passed; migration syntax failure and two 5-second timeouts). `npm test -- --maxWorkers=1`: FAIL (57 passed, one migration compilation failure).
@@ -418,6 +425,7 @@ Validation performed:
 - Supabase local full-stack migrations/RLS: BLOCKED (Docker unavailable), and live Auth/RLS/deletion were not tested. Deno is unavailable for execution of the Edge Function. No Play Console actions or signed production build were performed.
 
 Additional follow-up: `npx supabase migration list --linked` PASS (read-only); linked project shows 001–004 applied and 005–009 pending. No linked project migration or data was changed. An in-memory-only PGlite experiment adding parentheses around the CASE expression in 005 compiled all nine migrations; this is diagnostic, not an applied correction or hosted/RLS test. `npm run lint`, `npm run format:check` and `npm run typecheck` subsequently PASS. The user supplied Mahendra Singh, `mahendrapuniya92@gmail.com` and the website, and chose to keep shared vehicle records while removing the departing identity. Added `docs/ACCOUNT_DELETION_PAGE_DRAFT.md`, populated contact details in the policy draft, and added a deletion support email action in-app. HTTP HEAD to the supplied website returned 200, but publishing access was not established and no policy/deletion page was published. Changes after the full checks received targeted checks (recorded below).
+
 - After adding the contact action and updating privacy copy, `npx prettier --check src/lib/i18n.ts src/features/auth/SecurityScreen.tsx src/features/records/copy.ts`, targeted ESLint on those files and `npm run typecheck`: PASS. `git diff --check`: PASS.
 - `cd android && ./gradlew assembleDebug`: CANCELLED during native compilation after the offline failure; then `cd android && ./gradlew :app:assembleDebug -PreactNativeArchitectures=arm64-v8a`: PASS. This is a debug native build for one ABI, not a signed release or device test.
 
@@ -652,6 +660,7 @@ Validation: `npm run typecheck`, targeted ESLint and Prettier, `npm test -- --ma
 Applied the supplied logo variants through `src/lib/assets.ts`, the app header, auth, onboarding and About. `scripts/build-brand-assets.mjs` generates the launcher, adaptive foreground, favicon and notification icon referenced by `app.config.ts`; `--android` also refreshes the ignored local Android resource tree and notification icon metadata. Added `src/components/ui/PageSkeleton.tsx` and integrated pending states into Garage, Home, dashboard and records screens. Errors and retry actions remain available, including Pilot activity errors. See `docs/plan/BRAND_AND_LOADING.md` and `docs/ASSET_MANIFEST.md`. No database change was made.
 
 Validation: `npm run typecheck`, `npm run lint`, targeted Prettier, `npm test -- --maxWorkers=1` (90 tests), `npx expo config --type public`, `npx expo export --platform android --output-dir /tmp/gaadipulse-brand-export`, and `cd android && ./gradlew :app:assembleDebug -PreactNativeArchitectures=arm64-v8a --offline` PASS. An initial test run timed out in a PGlite test while concurrent build checks were running; the full rerun passed. Expo export and native build preceded a final accessibility-label adjustment to the Home header. The debug APK was built but not installed or tested on a physical device. The browser session encountered a profile loading/network error, so authenticated main-screen visuals, vehicle switching, reduced motion and TalkBack were not verified. Rebuild and install the app to see updated native launcher and splash assets; the ignored Android tree must be regenerated or refreshed separately on other machines. No hosted database/RLS test was run for this presentation change.
+
 ## Password minimum — 2026-11-06
 
 Changed the new-password validation, displayed guidance, local Supabase Auth configuration and password boundary tests from 12 to 5 characters. Existing shorter passwords remain accepted by the login client. `npm run typecheck` and `npx vitest run tests/passwordAuth.test.ts --maxWorkers=1` PASS (7 tests). Hosted Auth configuration and an actual five-character signup/reset have not been changed or verified. The hosted service may enforce its own minimum; no hosted configuration was pushed. No migration or user data changed.
@@ -661,3 +670,15 @@ Changed the new-password validation, displayed guidance, local Supabase Auth con
 Added `app/auth/_layout.tsx` and moved the shared hero into the persistent navigator shell in `src/features/auth/PremiumAuth.tsx`; `AuthLayout.tsx` now uses the same form presentation for recovery, verification, session restoration and profile errors. Added `app/+not-found.tsx` and English copy, corrected the verification error dismissal label and deep-link return to login, and cleared the OAuth callback error when retrying. Legal and callback retain their existing separate screens. No schema, provider settings or data were changed.
 
 Validation: `npm run typecheck`, `npm run lint`, `npm test -- --maxWorkers=1` (90 tests), `npx expo config --type public`, targeted Prettier and `git diff --check` PASS. `npx expo export --platform android --output-dir /tmp/gaadipulse-auth-shell` PASS; export and full suite preceded the final small verification/callback error handling changes, which received subsequent targeted lint and typecheck. Browser and physical Android visuals, keyboard, large text, navigation transitions and live auth/error flows were not tested. Android export is a JavaScript bundle, not a native build; SQL/RLS and native builds were not run for this UI change. This is not a comprehensive audit of every application screen.
+
+## Fixed vehicle currency in records and complete vehicle subtype list — 2026-11-26
+
+Updated `src/features/records/screens.tsx` to remove the editable currency picker from Add Fuel and Add Expense. New records default to the selected vehicle's saved currency, and the form synchronizes its currency field to that vehicle; existing records preserve their saved currency when edited. Updated `src/features/garage/VehicleSubtypeSelector.tsx` to show every subtype in the selected category without an extra "See all" action; search and category filtering remain. Removed two unused imports from `src/features/garage/VehicleForm.tsx` so the repository-wide lint passes. No migration or data change was needed.
+
+Validation: targeted Prettier, `npm run typecheck`, `npm run lint`, and `git diff --check` PASS. No UI/device interaction or test suite was run. The full subtype catalog is available in source; newly distinct subtypes still require explicit catalog entries and generated/bundled artwork when their silhouettes need to differ.
+
+## Fuel/expense save investigation — 2026-11-26
+
+Inspected the Add Fuel/Add Expense submit path in `src/features/records/screens.tsx`. The save awaited global TanStack Query invalidation/refetch for every query before navigating away, despite the record already being committed. Changed this to invalidate/refetch active record queries for the saved user's selected vehicle in the background, allowing the success path to navigate immediately; retained the success toast and existing save error handling. Also fixed vehicle-switch/reset state to store the items field as its expected JSON string and reset monetary fields/currency for the newly selected vehicle. No backend or user data was changed.
+
+Validation: `npm run typecheck`, `npm run lint`, `git diff --check`, and `cd android && ./gradlew :app:assembleDebug -PreactNativeArchitectures=arm64-v8a --offline` PASS. The connected emulator's preinstalled release app is version code 31; the new debug APK is version code 1, so Android refused its installation as a downgrade. No account/vehicle was used to submit a test record, and no fatal crash log for the user's reproduction was available. Thus this change removes a likely post-save hang but does not establish the exact cause of the reported app closure; obtain logs from a reproduction on an installable matching build to distinguish native crash, process termination, and normal navigation.

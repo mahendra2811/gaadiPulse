@@ -60,7 +60,7 @@ export function Garage() {
     },
   ];
   return (
-    <Screen title={t("garage")} loading={query.isPending} compact>
+    <Screen title={t("garage")} loading={query.isPending} compact banner="garage">
       <AppText muted>{t("uiGarageHint")}</AppText>
       <AppButton label={t("add")} onPress={() => router.push("/garage/add")} />
       <SearchField value={search} onChange={setSearch} />

@@ -12,6 +12,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     adaptiveIcon: { foregroundImage: './assets/brand/generated/adaptive-foreground.png', backgroundColor: '#122C2A' },
     permissions: ['POST_NOTIFICATIONS'],
   },
-  plugins: ['expo-router', 'expo-localization'],
+  plugins: ['expo-router', 'expo-image', 'expo-localization'],
   extra: { appName: 'GaadiPulse', eas: { projectId: process.env.EAS_PROJECT_ID } },
 });

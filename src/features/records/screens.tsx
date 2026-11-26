@@ -350,7 +350,7 @@ export function RecordsList({
       loading={
         active.isPending || (!!v && (permissions.isPending || query.isPending))
       }
-      // banner={kind === "progress" ? kind : undefined}
+      banner={kind === "fuel" ? "fuel" : "expenses"}
     >
       <VehicleHeader vehicleId={v?.id} allowSwitch={!contextVehicle} />
       {active.error && (

@@ -7,7 +7,7 @@ const config: ExpoConfig = {
     eas: { projectId: "ce82f4c1-96f7-4b68-9a4a-7334b3370332" },
   },
   scheme: "gaadipulse",
-  version: "1.0.6",
+  version: "1.0.7",
   orientation: "portrait",
   userInterfaceStyle: "automatic",
   icon: "./assets/brand/generated/app-icon.png",
@@ -32,6 +32,7 @@ const config: ExpoConfig = {
   plugins: [
     "./plugins/withOptionalAndroidFeatures",
     "expo-router",
+    "expo-image",
     "expo-font",
     "expo-sharing",
     "@react-native-community/datetimepicker",

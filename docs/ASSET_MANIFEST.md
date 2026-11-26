@@ -5,7 +5,7 @@
 - `assets/vehicle-subtypes/` — 43 subtype PNGs, their static Metro registry, and the catalog consumed by the garage selector.
 - `assets/media/all_vehicle.png` and `assets/images/auth/gaadipulse-auth-hero.png` — onboarding and sign-in artwork.
 - `assets/media/logo/new/` — logo source images used in the app and by the brand asset generator.
-- `assets/media/banner-reports.webp` — reports screen banner.
+- `assets/media/banner-{garage,fuel,expenses,progress,reports}.webp` — feature banners, displayed at their 3:1 source ratio with contain scaling.
 - `assets/brand/generated/` — Expo launcher icon, adaptive foreground, favicon and notification icon.
 
 `node scripts/build-brand-assets.mjs` regenerates the derived brand assets. Run it with `--android` to refresh generated resources in an existing local Android project. The app configuration references these generated files and the current logo source for its splash screen.

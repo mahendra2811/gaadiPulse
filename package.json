@@ -67,8 +67,7 @@
     "lint": "eslint app src tests scripts --max-warnings=0",
     "format": "prettier --write app src tests scripts *.json *.ts",
     "format:check": "prettier --check app src tests scripts *.json *.ts",
-    "test": "vitest run",
-    "assets": "node scripts/generate-assets.mjs"
+    "test": "vitest run"
   },
   "private": true
 }

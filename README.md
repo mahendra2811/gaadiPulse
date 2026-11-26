@@ -65,7 +65,6 @@ npm run typecheck
 npm run lint
 npm test
 npx expo-doctor
-npm run assets
 npx expo export --platform android
 npx expo run:android
 ```

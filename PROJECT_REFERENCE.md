@@ -128,7 +128,7 @@ Use assets only when generated/available; no false inference of specific vehicle
 - `docs/ARCHITECTURE.md`, `docs/SCREEN_MAP.md`, `docs/UI_DESIGN_SYSTEM.md`, `docs/FORM_BUILDER_SPEC.md`, `docs/API_CONTRACTS.md` for implementation maps.
 - `docs/SECURITY_AND_RLS.md`, `docs/SYNC_PROTOCOL.md`, `docs/FEATURE_ACCEPTANCE_MATRIX.md` for security and QA.
 - `docs/EXTERNAL_SETUP_AND_RELEASE.md`, `docs/MANUAL_ACTIONS_AFTER_3_PROMPTS.md`, `docs/COMMANDS_AND_TROUBLESHOOTING.md` for user-owned setup and launch.
-- `docs/ASSET_MANIFEST.md`, `docs/IMAGE_GENERATION_PROMPTS.md`, `assets/vehicle-subtypes/`, `assets/empty-*.png`, `assets/splash-screen.png`, `assets/auth-hero.png`, `scripts/generate_assets.py` for visuals.
+- `docs/ASSET_MANIFEST.md`, `docs/ASSETS.md`, `assets/vehicle-subtypes/`, and the current imported artwork under `assets/` for visuals.
 - `config/` contains publishable-only environment example, vehicle model seed, progress form presets, English strings, tokens and release config examples; no secrets.
 - `supabase/reference/001_core_schema.sql` is initial RLS-aware design reference. Codex must reconcile and validate full migrations; this reference is not automatically run.
 - The generated source kit is not itself a completed Android application; Stage 1/2/3 are required to implement and test production code.

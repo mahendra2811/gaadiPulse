@@ -75,19 +75,19 @@ export function Settings() {
       <Card style={{ padding: 16 }}>
         <SectionHeading title={t("uiPreferences")} />
         <AppText>{t("appearance")}</AppText>
-        <AppText muted>
-          Choose one appearance. System default follows your device.
-        </AppText>
         {profile.error ? (
           <ErrorState
             message={profile.error.message}
             retry={() => void profile.refetch()}
           />
         ) : (
-          <View accessibilityRole="radiogroup" style={{ gap: 6 }}>
+          <View
+            accessibilityRole="radiogroup"
+            style={{ flexDirection: "row", gap: 8 }}
+          >
             {(
               [
-                ["system", "System default", "phone-portrait-outline"],
+                ["system", "System", "phone-portrait-outline"],
                 ["light", "Light", "sunny-outline"],
                 ["dark", "Dark", "moon-outline"],
               ] as const
@@ -103,35 +103,51 @@ export function Settings() {
                 disabled={themeBusy || !profile.data}
                 onPress={() => void changeTheme(mode)}
                 style={{
-                  minHeight: 48,
-                  flexDirection: "row",
+                  minHeight: 64,
+                  flex: 1,
+                  flexDirection: "column",
                   alignItems: "center",
-                  gap: 12,
-                  paddingHorizontal: 12,
-                  borderWidth: 1,
+                  justifyContent: "center",
+                  gap: 4,
+                  paddingHorizontal: 6,
+                  paddingVertical: 8,
+                  borderWidth: profile.data?.theme === mode ? 2 : 1,
                   borderColor:
                     profile.data?.theme === mode ? colors.primary : colors.line,
                   borderRadius: 12,
-                  backgroundColor: colors.surface,
+                  backgroundColor:
+                    profile.data?.theme === mode
+                      ? colors.background
+                      : colors.surface,
                 }}
               >
-                <Ionicons name={icon} size={20} color={colors.ink} />
-                <Text style={{ color: colors.ink, flex: 1 }}>{label}</Text>
                 <Ionicons
-                  name={
-                    profile.data?.theme === mode
-                      ? "radio-button-on"
-                      : "radio-button-off"
-                  }
-                  size={22}
+                  name={icon}
+                  size={20}
                   color={
                     profile.data?.theme === mode ? colors.primary : colors.muted
                   }
                 />
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    color:
+                      profile.data?.theme === mode
+                        ? colors.primary
+                        : colors.ink,
+                    fontSize: 13,
+                    fontWeight: profile.data?.theme === mode ? "700" : "500",
+                  }}
+                >
+                  {label}
+                </Text>
               </Pressable>
             ))}
           </View>
         )}
+        <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 17 }}>
+          System follows your device appearance.
+        </Text>
         <InfoRows items={[{ label: t("language"), value: t("english") }]} />
         <AppText muted>{t("hindi")}</AppText>
         {releaseFeatures.advancedTools && (

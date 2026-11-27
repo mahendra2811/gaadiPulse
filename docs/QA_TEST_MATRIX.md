@@ -1,33 +1,21 @@
-# QA and verification status
+# QA and release verification
 
-> Current override (3 November 2026): latest user instruction makes the app online-only. Offline draft/cache/outbox descriptions below are historical and superseded by [ONLINE_ONLY_PLAN.md](ONLINE_ONLY_PLAN.md). The former Sync status route now displays Connection; live-backend acceptance TODOs remain open.
+This page is the forward-looking verification checklist. The [latest Stage 3 handoff](STAGE_3_HANDOFF.md) is the historical evidence log; use its newest dated entry for commands actually run. A source feature or bundle export is not proof of hosted or device behavior.
 
-The user explicitly instructed: **do not do testing now; continue implementation**. No Stage 2/3 test, typecheck, lint, SQL migration run, Expo export or native build is claimed. Source-formatting and reading code are implementation activities, not runtime verification.
+## Current verification boundary
 
-| Area | Implementation | Verification status |
-|---|---|---|
-| Stage 1 foundation baseline | Source and first Android APK implemented | Earlier 28 automated checks passed and native compilation/install succeeded before later changes; see STAGE_1_HANDOFF.md. Results do not cover current complete source. |
-| Debug sign-in bypass | Local-only development identity and persistence; __DEV__ gate | NOT TESTED after addition |
-| Auth providers | Supabase PKCE Google, email OTP, verified grants | Live provider credentials/configuration BLOCKED; NOT TESTED |
-| Fuel two-of-three, paise, full/partial intervals | Domain services and entry/history/analysis | NOT TESTED, deferred |
-| Expenses/EMI/line items/maintenance | Domain services, SQL validation and screens | NOT TESTED, deferred |
-| Meter observations/reset/correction | History, provenance, replacement/retraction | NOT TESTED, deferred |
-| Membership and permissions | Grant/revoke/defaults/overrides, SQL scopes | Stage 1 subset tested earlier; new hardening NOT TESTED |
-| Progress builder/versioning/review | Immutable forms, typed fields, server validation, sanitized reads | NOT TESTED, deferred |
-| Documents | Metadata CRUD, no-file notice and official link | NOT TESTED, deferred |
-| Reminders | CRUD, recurrence, threshold/date scheduling and permission UX | NOT TESTED on Android; OS-delivery not guaranteed |
-| Reports | Permission-scoped CSV/JSON/PDF export and measured intervals | NOT TESTED; PDF rendering and native sharing require new native build |
-| Offline | SQLite/browser drafts, cache expiry, serialized outbox, conflicts/rejections | NOT TESTED, deferred |
-| Account deletion | Recorded request, dependency checks, operator anonymization job | NOT TESTED; Edge Function deployment/scheduling required |
-| Accessibility and visual layout | Safe areas, scalable text, local art, labels and reduced motion | Full 320dp/large type/TalkBack/manual flow NOT TESTED |
-| Release | Expo/EAS config and external steps | New Android build, signed release, Play review NOT TESTED |
+- Source-level checks have passed for specific changes, including TypeScript, lint, tests, Expo export and a debug Android build; check the handoff entry for exact commands and scope.
+- Hosted Supabase authorization, current migration deployment, live identity providers, and full real-account workflows still require explicit evidence from the target environment.
+- Physical-device accessibility/layout checks and signed release validation must be recorded when performed.
+- Authenticated data is online-only. There are no supported offline record drafts, local ledger cache, or automatic reconnect uploads.
 
-## Required next verification sequence (when testing is authorized)
+## Before release
 
-1. `npm ci`, `npm run format:check`, `npm run typecheck`, `npm run lint`.
-2. Extend/run domain and PostgreSQL tests against **all four** migrations. Existing security test fixture currently exercises Stage 1 only. Add service_role to fixtures for operator workflows as needed.
-3. Run local Supabase/PostgREST/JWT adversarial tests with two Owners, two Pilots, outsider, unverified address, revoked membership, hidden financial access, hidden Owner-only custom answers, duplicate operations, invalid data and concurrent stale edits.
-4. Configure providers and run first sign-in → two vehicles → full/partial fuel → service → meter correction → form publish → Pilot assignment/submission → review → reports → offline/reconnect/conflict.
-5. `npx expo-doctor`, Android export, rebuild development client for newly added Print/Sharing modules, actual emulator/device flow, release build/signing, legal and Play policy review.
+1. Run formatting, strict TypeScript, lint, and the complete unit/migration test suite. Record failures without treating unrelated checks as passed.
+2. Apply pending migrations to a disposable local Supabase instance in order. Verify the full migration chain, then review target migration history before any hosted application. Never reset a real database.
+3. Exercise authenticated Supabase flows with two Owners, multiple Pilots, and an outsider. Check direct API/RLS access, verified email grants, revocation, financial-field visibility, owner-only answers, archived/deleted vehicles, duplicate operations and revision conflicts.
+4. With real development accounts, exercise garage, fuel/charging, expenses, meter observations, collaboration, progress, documents, reminders and reports that are enabled in the target build. Confirm failures have retry/recovery and no unintended write occurs.
+5. On Android, test 320dp/360dp layouts, large text, keyboard and safe areas, Back/discard, loading/errors, accessibility labels and reduced motion. Verify notifications and export behavior on-device where applicable.
+6. Build and install the intended signed release candidate. Verify package/signing/provider configuration, privacy declarations, deletion/retention operation and Play Console details before publication.
 
-Until these gates pass, this is an unverified implementation and must not be described as production-ready.
+Use [feature acceptance scenarios](FEATURE_ACCEPTANCE_MATRIX.md) for detailed expected outcomes and [external setup](EXTERNAL_SETUP_AND_RELEASE.md) for operator-owned requirements.

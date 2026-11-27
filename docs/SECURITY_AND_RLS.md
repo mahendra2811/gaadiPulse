@@ -1,6 +1,6 @@
 # Security architecture and current verification boundary
 
-> Current override (3 November 2026): latest user instruction makes the app online-only. Offline draft/cache/outbox descriptions below are historical and superseded by [ONLINE_ONLY_PLAN.md](ONLINE_ONLY_PLAN.md). The former Sync status route now displays Connection; live-backend acceptance TODOs remain open.
+> Current override: authenticated account data is online-only. Offline cache/outbox descriptions below are historical and superseded by [ONLINE_ONLY_PLAN.md](ONLINE_ONLY_PLAN.md). A standalone Sync/Connection destination was removed. Treat database policy and client security as unverified until the current migrations and direct API/RLS scenarios pass against the target Supabase environment.
 
 ## Backend authority
 

@@ -1,14 +1,10 @@
 # GaadiPulse
 
-Current rollout: **bikes and cars first**. See [Focused release plan](docs/FOCUSED_RELEASE_PLAN.md) for available features, the complete paused-feature register, electric charging behavior and restoration steps. Advanced modules are preserved behind `src/features/release/scope.ts`; no database reset or data deletion is required.
+**Every Vehicle. Every Detail.** Android-first vehicle logbook built with Expo Router, TypeScript and Supabase.
 
-**Every Vehicle. Every Detail.** Android-first private and shared vehicle management built with Expo Router, TypeScript, Supabase with online-only account data. The original supplied kit remains untouched in `my docs/`.
+Read the [comprehensive product brief](docs/GAADIPULSE_COMPREHENSIVE_PRODUCT_BRIEF.md) for the current product description and safe feature claims. The [Stage 3 handoff](docs/STAGE_3_HANDOFF.md) is the implementation and validation record; hosted backend, device and release gaps are listed there and in [online-only verification](docs/ONLINE_ONLY_PLAN.md). Source presence or a successful JS export does not prove production availability.
 
-The requested implementation source now covers the three prompts. **Stage 2/3 testing and builds were explicitly deferred by the user; this is not a verified production release.** See [the final handoff](docs/STAGE_3_HANDOFF.md) and [QA status](docs/QA_TEST_MATRIX.md).
-
-Current validation: TypeScript, targeted lint, nine online-only tests, Android export and native debug compilation pass. Full-suite SQL migration compilation and existing global lint/format issues remain blockers; see [latest handoff](docs/STAGE_3_HANDOFF.md).
-
-Current data policy: **online-only**. See [implementation plan and backend TODOs](docs/ONLINE_ONLY_PLAN.md). No persistent offline drafts, ledger caches or queued uploads. Frontend preview does not verify Supabase integration.
+Current data policy: **online-only**. Authenticated records require connectivity; failed saves are not queued for automatic upload. The original prompt kit remains preserved in `my docs/`.
 
 ## Run in development
 
@@ -38,7 +34,7 @@ supabase db reset       # disposable local development only
 supabase db push
 ```
 
-Apply all chronological migrations (001–005), configure verified email OTP/Google and allow `gaadipulse://auth/callback`. The Auth implementation uses browser OAuth with PKCE; verified-email vehicle grants require no acceptance flow.
+Review migration history before applying pending files in chronological order. Never reset a real database. Configure supported authentication providers and the `gaadipulse://auth/callback` redirect. The Auth implementation uses browser OAuth with PKCE; verified-email vehicle grants require no acceptance flow.
 
 ## Implemented modules
 
@@ -55,7 +51,7 @@ Apply all chronological migrations (001–005), configure verified email OTP/Goo
 
 ## Architecture
 
-`app/` contains route entrypoints/layouts. `src/features/` owns feature services/screens; the shared `records` feature consolidates common ledger, metadata and progress entry flows. Domain mathematics live under `src/utils/`; security lives in ordered SQL/RPC migrations. Supabase remains the only production backend. Zustand is UI-only; TanStack Query keys include account/vehicle/domain, and React Hook Form/Zod validate inputs. See [architecture](docs/ARCHITECTURE.md), [screen map](docs/SCREEN_MAP.md), [security](docs/SECURITY_AND_RLS.md) and [online request protocol](docs/SYNC_PROTOCOL.md).
+`app/` contains route entrypoints/layouts. `src/features/` owns feature services/screens; the shared `records` feature consolidates common ledger, metadata and progress entry flows. Domain mathematics live under `src/utils/`; security lives in ordered SQL/RPC migrations. Supabase remains the only production backend. Zustand is UI-only; TanStack Query keys include account/vehicle/domain, and React Hook Form/Zod validate inputs. See the [documentation index](docs/README.md), [architecture](docs/ARCHITECTURE.md), [screen map](docs/SCREEN_MAP.md), [security](docs/SECURITY_AND_RLS.md) and [online request protocol](docs/SYNC_PROTOCOL.md).
 
 ## Verification commands
 
@@ -69,6 +65,6 @@ npx expo export --platform android
 npx expo run:android
 ```
 
-Existing tests cover the earlier Stage 1 baseline. Extend domain, database and device tests to cover all later migrations/modules before release. The earlier APK build does not validate the current complete source. Do not use destructive DB resets on real data.
+Use the latest [stage handoff](docs/STAGE_3_HANDOFF.md) and [QA matrix](docs/QA_TEST_MATRIX.md) for exact evidence and remaining checks. Do not use destructive DB resets on real data.
 
 Release signing, live providers, operator retention/legal contact, deletion-job deployment/scheduling, real devices and Play review remain external setup steps. No Play publication or live-provider success is claimed.

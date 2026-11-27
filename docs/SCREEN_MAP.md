@@ -1,6 +1,6 @@
 # Implemented route and permission map
 
-> Current override (3 November 2026): latest user instruction makes the app online-only. Offline draft/cache/outbox descriptions below are historical and superseded by [ONLINE_ONLY_PLAN.md](ONLINE_ONLY_PLAN.md). The former Sync status route now displays Connection; live-backend acceptance TODOs remain open.
+> Current override: authenticated account data is online-only. Offline draft/cache/outbox descriptions below are historical and superseded by [ONLINE_ONLY_PLAN.md](ONLINE_ONLY_PLAN.md). The standalone Sync/Connection destination was removed; per-screen network errors still provide recovery. Confirm current feature visibility against the [product brief](GAADIPULSE_COMPREHENSIVE_PRODUCT_BRIEF.md); live-backend acceptance remains open.
 
 Composed screens are reused for related modules; no empty files are counted as destinations. Four primary tabs persist. Other forms/details open outside the tabs.
 

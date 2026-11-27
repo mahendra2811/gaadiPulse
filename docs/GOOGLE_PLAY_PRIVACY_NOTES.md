@@ -4,9 +4,9 @@ Internal working notes, not a public privacy policy or completed Data safety dec
 
 ## What the repository currently indicates
 
-- The focused release is online-only. Vehicles, fuel, expenses and meter records are in scope; advanced tools including vehicle member management, progress forms, documents, reminders, reports and exports are disabled by the current release flag. Existing backend capabilities are not proof that the release UI exposes them.
+- The current data policy is online-only. Do not infer which features are exposed in the current release from this older policy note; check the product brief and the exact release build. Existing backend capabilities are not proof that the release UI exposes them.
 - Email/password, email code and Google authentication are implemented in source; provider configuration and real-device verification remain open. Supabase is used for authentication and backend data. The actual email provider, hosting region, logs, backups and any additional SDK/service processing require operator verification.
-- The Android configuration blocks location, camera, microphone and broad external storage permissions. The merged release manifest and any SDK behavior still need checking. GPS and file/photo uploads are outside the current scope. Notifications code exists, while reminders are paused in the focused release.
+- The Android configuration blocks location, camera, microphone and broad external storage permissions. The merged release manifest and any SDK behavior still need checking. GPS and file/photo uploads are outside the documented scope. Review notification and reminder behavior in the exact release build.
 - Session information and selected-vehicle preference may be stored on device; old offline files may remain from earlier versions and are not automatically uploaded. Confirm all release behavior on an upgraded device.
 - The repository describes an in-app deletion request and a separate operator anonymization job, but the job has not been deployed or scheduled. Shared ledgers/attribution may remain, and the retention policy has not been approved. Verify that the in-app request is reachable in the released build, and assess the actual outcome against Play's account deletion policy. An anonymization job or disabled account alone does not establish compliance.
 

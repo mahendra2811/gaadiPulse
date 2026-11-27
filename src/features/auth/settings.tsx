@@ -26,8 +26,8 @@ import {
   useToast,
 } from "@/src/components/ui";
 import { t } from "@/src/lib/i18n";
-import type { ThemeMode } from "@/src/lib/theme";
-import { Image, Pressable, View, Text } from "react-native";
+import { resolveTheme, useThemeMode, type ThemeMode } from "@/src/lib/theme";
+import { Image, Pressable, View, Text, useColorScheme } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useTheme } from "@/src/lib/theme";
 import { artwork } from "@/src/lib/assets";
@@ -371,12 +371,13 @@ export function Profile() {
   );
 }
 export function About() {
+  const dark = resolveTheme(useThemeMode(), useColorScheme()) === "dark";
   return (
     <Screen title={t("about")} compact>
       <Card style={{ padding: 18 }}>
         <Image
           accessibilityLabel={t("app")}
-          source={artwork.logoCircle}
+          source={dark ? artwork.logoCircle : artwork.logoWhiteBackground}
           resizeMode="contain"
           style={{ width: 54, height: 54 }}
         />

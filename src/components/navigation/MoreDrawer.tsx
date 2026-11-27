@@ -9,11 +9,13 @@ import { router } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import {
   Animated,
+  Image,
   Modal,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  useColorScheme,
   View,
   useWindowDimensions,
 } from "react-native";
@@ -22,7 +24,8 @@ import { SignOutButton } from "@/src/features/auth/SignOutButton";
 import { MoreMenu } from "@/src/features/navigation/MoreMenu";
 import { useReducedMotion } from "@/src/hooks/useReducedMotion";
 import { t } from "@/src/lib/i18n";
-import { useTheme } from "@/src/lib/theme";
+import { resolveTheme, useTheme, useThemeMode } from "@/src/lib/theme";
+import { artwork } from "@/src/lib/assets";
 import { DrawerContext, useMoreDrawer } from "./DrawerContext";
 
 export { useMoreDrawer } from "./DrawerContext";
@@ -36,6 +39,7 @@ export function MoreDrawerProvider({ children }: { children: ReactNode }) {
   const inset = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const c = useTheme();
+  const dark = resolveTheme(useThemeMode(), useColorScheme()) === "dark";
   const drawerWidth = width * 0.75;
   const open = useCallback(() => {
     setMounted(true);
@@ -131,6 +135,17 @@ export function MoreDrawerProvider({ children }: { children: ReactNode }) {
                 borderBottomColor: c.line,
               }}
             >
+              <Image
+                accessible={false}
+                source={dark ? artwork.logoCircle : artwork.logoWhiteBackground}
+                resizeMode="contain"
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 8,
+                  marginRight: 10,
+                }}
+              />
               <Text
                 accessibilityRole="header"
                 style={{

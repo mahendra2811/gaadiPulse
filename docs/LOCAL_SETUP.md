@@ -1,32 +1,24 @@
 # Local setup
 
-Implementation uses the Expo SDK 58 blank TypeScript template's matched React 19.3 / React Native 0.88 versions. Node 24.22.0 and npm 11.19.1 were present during implementation. Use `npm ci` with the committed lockfile, and Expo install for native dependencies. Do not independently upgrade React Native.
+## Requirements
 
-1. Install dependencies with `npm ci`.
-2. Copy `.env.example` to `.env`; configure `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. These are the only backend keys allowed in the app. The optional redirect is `gaadipulse://auth/callback`.
-3. Create a Supabase project or install Supabase CLI and Docker for local development. Neither CLI nor Docker was installed during initial implementation. Do not treat `supabase/reference` in the supplied kit as an executable migration.
-4. Apply all five files in `supabase/migrations/` in filename order (`001_foundation` through `005_vehicle_fuel_profiles`) to a fresh development project using Supabase migrations or its SQL editor. Back up existing projects and review migrations first. Never reset production. The migration creates profiles for pre-existing Auth users as well as installing an Auth trigger.
-5. Enable email OTP in Supabase Auth. Set the email template to include the numeric token (`{{ .Token }}`), configure SMTP, and verify delivery/rate limits. Email confirmation must remain enabled.
-6. Enable Google in Supabase Auth using provider credentials stored in Supabase, never in the app. Add the Supabase callback to Google configuration and `gaadipulse://auth/callback` to the Supabase redirect allowlist. Verify Android package and signing SHA configuration for the intended provider/release. This implementation uses Supabase browser OAuth with PKCE.
-7. Run `npm start`, then `npm run android` for a native development build with the emulator/device available. `npx expo export --platform android` validates the JS/Hermes bundle; it does not produce a signed store binary.
-8. Test account creation, verified email, profile, first/second vehicle, selection, archive/recover, logout and re-login. Grant a second verified email using the backend RPC and verify per-vehicle access and revocation.
+Use the versions pinned by the lockfile and Expo SDK. Install Node/npm, Java, Android Studio/SDK for native Android work, and Docker plus Supabase CLI for local backend testing. Run `npm ci` from the repository root.
 
-## Database tests
+## App configuration
 
-When testing is resumed, `npm test` runs the Stage 1 authoritative migration in PGlite (embedded PostgreSQL), with a minimal `auth.users`, `auth.uid()` and authenticated/anon role fixture. It verifies PostgreSQL RLS and RPC logic. It does not verify Supabase REST, actual JWT verification, GoTrue, SMTP, OAuth, concurrency across real connections, or hosted configuration. Repeat the security matrix against local/hosted Supabase before release.
+1. Copy `.env.example` to `.env`.
+2. Set `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` for a development project. These values are bundled into the app; never put service-role, provider, signing, or job secrets in public variables.
+3. Configure the Supabase Auth redirect `gaadipulse://auth/callback` and the providers you intend to exercise. See [external setup and release](EXTERNAL_SETUP_AND_RELEASE.md).
+4. Run `npm start`; use `npx expo run:android` for a native development client. `npx expo export --platform android` checks the JS bundle but does not create a signed release build.
 
-## Native build
+## Database setup
 
-Android package defaults to `com.pooniya.gaadipulse`; configure `ANDROID_PACKAGE` before first release if needed. Generated `android/` is ignored and reproducible through Expo prebuild. Java 21 and Android SDK were detected. EAS signing, project ID, release credentials and Play review remain operator-owned.
+The authoritative schema is the chronological set of SQL files in `supabase/migrations/`. Review the target project's migration history and apply only missing migrations in order. Do not assume an old migration count and never reset a hosted or real-data project. `supabase/reference/` is design material, not an automatically applied migration.
 
-## Offline and recovery
+Use `supabase start` and a disposable local database for destructive migration experiments. Local PGlite tests do not replace Supabase Auth, PostgREST/JWT, hosted RLS, concurrency, or provider checks. Follow [online-only verification](ONLINE_ONLY_PLAN.md) and [the QA matrix](QA_TEST_MATRIX.md).
 
-Stage 1 saves vehicle wizard drafts to user-scoped SQLite and the active selection to secure storage. Reopen Add/Edit to resume the draft. Vehicle saves require a live verified session and server authorization; an operation UUID makes retries idempotent. Edit uses the last server `updated_at` for conflict detection. A stale edit returns CONFLICT and must be reviewed against the current vehicle. The collaborative outbox and conflict UI are implemented under Settings → Sync; server acceptance requires the current migrations and a verified session. Explicit sign-out clears scoped drafts, outbox and in-memory queries. Automatic session expiration preserves personal drafts/outbox for recovery by the same account. Do not promise offline server-confirmed creation.
+## Current behavior
 
-## Secrets and legal
+Authenticated records and permissions are online-only. Forms are held in memory; a failed or uncertain save is not automatically replayed after reconnect. Use the form's explicit retry/recovery path and follow the server revision/operation guidance. Development preview data is temporary and separate from real accounts.
 
-`.env` is ignored. Never bundle service_role, provider secrets, JWT signing secrets or signing credentials. Local pre-release Terms/Privacy content is in the English catalog and reachable from welcome/settings; operator review, deletion contacts and public policies must be supplied before release.
-
-## Current implementation status
-
-Testing is currently deferred by the user. The earlier baseline checks cover Stage 1 only. Read STAGE_3_HANDOFF.md before using later source. For UI development without provider credentials, open the login screen in a debug build and choose Continue in development mode. Create local vehicles and records there; this mode has no Supabase identity and never uploads its data. Release builds exclude that entry point. Rebuild the development client after native dependency changes.
+See [the latest stage handoff](STAGE_3_HANDOFF.md) for verified commands, migrations, known blockers, and external steps. Never describe local preview or a bundle export as proof of live-backend integration.

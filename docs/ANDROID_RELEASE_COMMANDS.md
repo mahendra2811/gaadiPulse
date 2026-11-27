@@ -6,7 +6,7 @@ Use this guide whenever you prepare a new Android release. Run the commands from
 cd '/Users/pooniya0092/Documents/p_project/a_App/9. GaadiPulse'
 ```
 
-This document prepares a build and explains submission; it does not claim that a build has been tested or published. See [external setup and release](EXTERNAL_SETUP_AND_RELEASE.md), [QA test matrix](QA_TEST_MATRIX.md), and [focused release plan](FOCUSED_RELEASE_PLAN.md) for the remaining launch requirements.
+This document prepares a build and explains submission; it does not claim that a build has been tested or published. See [external setup and release](EXTERNAL_SETUP_AND_RELEASE.md), [QA test matrix](QA_TEST_MATRIX.md), the [current product brief](GAADIPULSE_COMPREHENSIVE_PRODUCT_BRIEF.md), and [latest handoff](STAGE_3_HANDOFF.md) for launch scope and remaining gates.
 
 ## 1. Update the source and version
 

@@ -1,33 +1,21 @@
-# GaadiPulse — what you personally do after Codex finishes Prompts 1, 2 and 3
+# Operator-owned release checklist
 
-## After Prompt 1
-- [ ] Create Supabase development project; set `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` locally using the root `.env.example`.
-- [ ] Apply reviewed SQL migrations in development and confirm tables/RLS exist.
-- [ ] Configure email OTP, Google OAuth identity provider and Android signing fingerprint(s). Test Google and email OTP on a real development build, not only Expo Go.
-- [ ] Verify English screens, app icon, launch splash, onboarding images, category artwork, footer navigation and vehicle selection.
-- [ ] Verify Owner can add/edit bike, car, truck, tractor and machine; confirm KM/HOURS/BOTH adapt correctly.
-- [ ] Read `docs/STAGE_1_HANDOFF.md`; review its baseline evidence separately from later untested code.
+Use this checklist with the [QA matrix](QA_TEST_MATRIX.md), [external setup guide](EXTERNAL_SETUP_AND_RELEASE.md), and the latest [stage handoff](STAGE_3_HANDOFF.md). It lists actions requiring the operator's own provider, database, device, or Play Console access.
 
-## After Prompt 2
-- [ ] Enter test fuel sequence: first full at 1000 km; 3 L partial at 1100 km; 7 L full at 1200 km. Mileage must be 20 km/L.
-- [ ] Check fuel save without odometer, then separately record the accurate observation date and value.
-- [ ] Test a HOURS-only excavator and BOTH-mode tipper, with optional readings.
-- [ ] Add ₹2,500 service, EMI split principal/interest, repair, toll; verify reports have correct classifications.
-- [ ] Force airplane mode and inspect actual handling. Foreground outbox sync is implemented; validate persistence, rejection and conflict behavior.
-- [ ] Read `docs/STAGE_2_HANDOFF.md`; review it alongside the final Stage 3 handoff.
+## Backend and identity
 
-## After Prompt 3
-- [ ] Create five actual test identities: Owners A/B, Pilots C/D, outsider E (never share OTPs).
-- [ ] Owner A assigns Pilot C by email; C logs in with verified email; vehicle appears automatically, no acceptance step.
-- [ ] Confirm C has only configured permissions. Test denied REST and export access, not UI alone.
-- [ ] Add a customized Tipper Progress template (Trips, From, To, Material); publish and submit as Pilot; approve as Owner.
-- [ ] Change the form; confirm old submissions show the correct old schema version.
-- [ ] Test offline draft → reconnect → one server record, then revoked access while offline → rejected sync with explanation.
-- [ ] Verify document **metadata** only; user file upload remains deferred. Check renewal notifications and measured vs estimated stats.
-- [ ] Provide actual privacy policy and support URL/email. Review Play policies/data safety based on shipped SDKs, and complete EAS build/signing/closed test.
-- [ ] Check `docs/STAGE_3_HANDOFF.md` and `docs/FEATURE_ACCEPTANCE_MATRIX.md` for every unresolved **NOT TESTED**, **FAIL**, **BLOCKED** item. Do not publish while critical issues remain.
+- [ ] Configure a development Supabase project, public app URL/key, Auth providers, email delivery and deep-link redirects.
+- [ ] Review the project's migration history; apply only reviewed pending migrations in order. Verify against disposable local Supabase before changing a real project.
+- [ ] Test verified sign-in, session recovery, account switching and per-vehicle Owner/Pilot access using multiple test accounts.
+- [ ] Check RLS through direct API requests, including denied reads/writes, financial visibility, revocation, archived vehicles and concurrent edits.
+- [ ] Verify online-only behavior: failed reads are not shown as successful empty data, failed/uncertain writes have truthful recovery, and reconnect never silently submits a record.
 
-## External services and secrets
-All OAuth/Supabase configuration must live in your own provider dashboards and `.env` / server-side secret storage. Codex cannot provision or verify these without your actual authenticated environment and authorization. Do not paste private secrets into public GitHub issues or prompts.
+## Android and release
 
-Implementation has continued through all three prompts. These checklists are future operator/QA actions; the user explicitly deferred current testing. Configure the retention policy and server-only deletion job using EXTERNAL_SETUP_AND_RELEASE.md before enabling account anonymization.
+- [ ] Exercise enabled app flows on Android at narrow widths and with larger text, keyboard, Back, accessibility services and reduced motion.
+- [ ] Verify local reminder delivery and export/share behavior on the target Android version where those features are enabled.
+- [ ] Build and install the intended signed release candidate; verify package name, signing certificate, OAuth configuration and Play Console setup.
+- [ ] Review privacy/terms, support contact, retention/deletion operation and Play Data Safety declarations against the actual build and deployed services.
+- [ ] Publish only after the release gates and open blockers in the latest handoff are resolved.
+
+Never share OTPs or private signing/provider secrets in source control or public prompts. Keep production credentials in their intended provider or secret-management surfaces.

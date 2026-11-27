@@ -26,7 +26,7 @@ const config: ExpoConfig = {
     package: process.env.ANDROID_PACKAGE ?? "com.pooniya.gaadipulse",
     adaptiveIcon: {
       foregroundImage: "./assets/brand/generated/adaptive-foreground.png",
-      backgroundColor: "#122C2A",
+      backgroundColor: "#FFFFFF",
     },
   },
   plugins: [
@@ -56,9 +56,9 @@ const config: ExpoConfig = {
     [
       "expo-splash-screen",
       {
-        image: "./assets/media/logo/new/02-square-dark.png",
+        image: "./assets/brand/generated/logo_white_background.png",
         imageWidth: 180,
-        backgroundColor: "#122C2A",
+        backgroundColor: "#FFFFFF",
       },
     ],
     [

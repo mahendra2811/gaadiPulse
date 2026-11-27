@@ -87,7 +87,7 @@ export function Popup({
         <View
           style={{
             flex: 1,
-            justifyContent: "center",
+            justifyContent: Platform.OS === "web" ? "center" : "flex-end",
             alignItems: "center",
             paddingHorizontal: 16,
             paddingTop: Math.max(16, inset.top),
@@ -106,7 +106,13 @@ export function Popup({
             style={{
               width: "100%",
               maxWidth,
-              maxHeight: Math.max(120, height - inset.top - inset.bottom - 32),
+              maxHeight: Math.max(
+                120,
+                height -
+                  inset.top -
+                  inset.bottom -
+                  (Platform.OS === "web" ? 32 : 48),
+              ),
               flexShrink: 1,
               borderRadius: 22,
               borderWidth: 1,

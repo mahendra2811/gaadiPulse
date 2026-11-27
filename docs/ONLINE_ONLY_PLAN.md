@@ -1,6 +1,6 @@
 # Online-only implementation plan and backend verification TODOs
 
-Updated 3 November 2026. The latest user instruction replaces the earlier offline-first requirement. This applies to the focused bike/car release and retained advanced modules. Frontend work can continue; live backend correctness is not yet accepted.
+Updated 27 November 2026. The online-only requirement replaces the earlier offline-first design across the app, including restored advanced modules. Source implementation and feature availability are separate; live backend correctness is not accepted until the checks below pass.
 
 ## Required behavior
 
@@ -9,7 +9,7 @@ Updated 3 November 2026. The latest user instruction replaces the earlier offlin
 - Saves await the SQL/RPC response. Only a confirmed response permits success feedback, list invalidation, clearing a form or navigation. A connection failure can leave the server outcome unknown; never categorically claim the record was not uploaded.
 - Retain stable operation UUIDs for explicit form-save retries, server operation receipts and revision checks. These prevent duplicate writes and stale edits; they are not an offline queue. An altered request with an already-committed UUID is rejected, requiring review of the latest server record.
 - Query responses live in memory only, keyed by account/vehicle. Disable automatic write retries, fail requests promptly when offline and bound network requests to 20 seconds. Withhold cached query data on known disconnection or read error. Reconnection may refetch reads, but never submits a form.
-- Keep secure session/PKCE storage and selected vehicle preference. Device notification identifiers remain small secure metadata for the retained reminder module; they do not store ledger data. Reminders remain paused in the focused release.
+- Keep secure session/PKCE storage and selected vehicle preference. Device notification identifiers remain small secure metadata for the reminder module; they do not store ledger data.
 - Debug frontend preview remains explicitly labeled, development-build-only and isolated from authenticated data. Its records live in memory and clear on reload/exit. Preview success does not prove database integration.
 
 ## Implementation register

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Pressable, Switch, Text, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { AppText } from "@/src/components/ui";
@@ -7,7 +8,7 @@ import {
   pilotPermissionGroups,
   resetPilotOverrides,
 } from "./permissions";
-export function RolePicker({
+export const RolePicker = memo(function RolePicker({
   value,
   onChange,
   disabled = false,
@@ -61,8 +62,8 @@ export function RolePicker({
       ))}
     </View>
   );
-}
-export function PermissionEditor({
+});
+export const PermissionEditor = memo(function PermissionEditor({
   value,
   defaults = {},
   onChange,
@@ -148,4 +149,4 @@ export function PermissionEditor({
       )}
     </View>
   );
-}
+});

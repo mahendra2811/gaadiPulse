@@ -4,14 +4,13 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 const source = "assets/media/logo/new/";
 const output = "assets/brand/generated/";
 await mkdir(output, { recursive: true });
-const dark = `${source}02-square-dark.png`;
+const logoWhite = `${output}logo_white_background.png`;
 const symbol = `${source}01-symbol-transparent.png`;
-await sharp(dark)
+await sharp(logoWhite)
   .resize(1024, 1024)
-  .flatten({ background: "#003d32" })
   .png()
   .toFile(`${output}app-icon.png`);
-await sharp(dark).resize(96, 96).png().toFile(`${output}favicon.png`);
+await sharp(logoWhite).resize(96, 96).png().toFile(`${output}favicon.png`);
 const foreground = await sharp(symbol)
   .resize(280, 280, { fit: "contain" })
   .png()
@@ -61,7 +60,7 @@ if (process.argv.includes("--android")) {
       .resize(adaptive, adaptive)
       .webp({ lossless: true })
       .toFile(`${mipmap}/ic_launcher_foreground.webp`);
-    await sharp(dark)
+    await sharp(logoWhite)
       .resize(splash, splash)
       .png()
       .toFile(`${drawable}/splashscreen_logo.png`);

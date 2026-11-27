@@ -78,17 +78,40 @@ export function PageHeader({
           accessibilityRole="header"
           accessibilityLabel={t("app")}
         >
-          <Image
-            accessible={false}
-            source={dark ? artwork.wordmarkDark : artwork.wordmarkLight}
-            resizeMode="contain"
-            style={{ width: 158, height: 44 }}
-          />
+          {dark ? (
+            <Image
+              accessible={false}
+              source={artwork.wordmarkDark}
+              resizeMode="contain"
+              style={{ width: 158, height: 44 }}
+            />
+          ) : (
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+            >
+              <Image
+                accessible={false}
+                source={artwork.logoWhiteBackground}
+                resizeMode="contain"
+                style={{ width: 42, height: 42, borderRadius: 8 }}
+              />
+              <Text
+                style={{
+                  color: c.ink,
+                  fontSize: 20,
+                  lineHeight: 27,
+                  fontWeight: "800",
+                }}
+              >
+                {t("app")}
+              </Text>
+            </View>
+          )}
         </View>
       ) : (
         <Image
           accessibilityLabel={t("app")}
-          source={artwork.logoCircle}
+          source={dark ? artwork.logoCircle : artwork.logoWhiteBackground}
           resizeMode="contain"
           style={{ width: 42, height: 42 }}
         />

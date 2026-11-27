@@ -1,6 +1,6 @@
 # GaadiPulse — PROJECT_REFERENCE.md
 
-> Current override (3 November 2026): latest user instruction makes the app online-only. Offline draft/cache/outbox descriptions below are historical and superseded by [ONLINE_ONLY_PLAN.md](docs/ONLINE_ONLY_PLAN.md). The former Sync status route now displays Connection; live-backend acceptance TODOs remain open.
+> Current override (27 November 2026): authenticated account data is online-only; offline draft/cache/outbox descriptions below are historical and superseded by [ONLINE_ONLY_PLAN.md](docs/ONLINE_ONLY_PLAN.md). The temporary focused bike/car rollout was later reversed; use [the current product brief](docs/GAADIPULSE_COMPREHENSIVE_PRODUCT_BRIEF.md) for scope and [the latest handoff](docs/STAGE_3_HANDOFF.md) for evidence. A standalone Sync/Connection destination was removed; live-backend and release acceptance remain open.
 
 > Read this entire file before every implementation stage. This is the product contract for Codex. Three stage prompts follow in order. Android-first, English UI initially; Hindi translations later. Product is free.
 

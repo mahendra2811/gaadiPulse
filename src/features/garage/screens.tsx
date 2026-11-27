@@ -33,6 +33,7 @@ import { subtypeLabel } from "./subtypes";
 import { vehicleArt } from "@/src/lib/assets";
 import { t } from "@/src/lib/i18n";
 import { useSession, useAccountId } from "@/src/features/auth/session";
+import { useProfile } from "@/src/features/auth/profile";
 export function Garage() {
   const query = useVehicles();
   const active = useActiveVehicle();
@@ -99,148 +100,162 @@ export function Garage() {
                     gap: 10,
                   }}
                 >
-                  {group.items.map((v) => (
-                    <View key={v.id} style={{ width: cardWidth, minWidth: 0, gap: 6 }}>
-                      <MotionPress
-                        label={`${t("details")}: ${v.nickname || v.registration_number || v.model || subtypeLabel(v.subtype)}${v.nickname && v.registration_number && v.registration_number !== v.nickname ? `, ${v.registration_number}` : ""}, ${t(v.role === "OWNER" ? "owner" : "pilot")}${v.archived_at ? `, ${t("archived")}` : active.vehicle?.id === v.id ? `, ${t("uiActiveVehicle")}` : ""}`}
-                        onPress={() =>
-                          router.push({
-                            pathname: "/garage/[id]",
-                            params: { id: v.id },
-                          })
-                        }
-                      >
-                        <View
-                          style={{
-                            overflow: "hidden",
-                            borderRadius: 20,
-                            backgroundColor: colors.surface,
-                            gap: 8,
-                            borderWidth: 1,
-                            borderColor: colors.line,
-                            shadowColor: "#163B46",
-                            shadowOpacity: 0.05,
-                            shadowOffset: { width: 0, height: 3 },
-                            shadowRadius: 8,
-                            elevation: 1,
-                          }}
+                  {group.items.map((v) => {
+                    const isActive = !v.archived_at && active.vehicle?.id === v.id;
+                    return (
+                      <View key={v.id} style={{ width: cardWidth, minWidth: 0, gap: 6 }}>
+                        <MotionPress
+                          label={`${t("details")}: ${v.nickname || v.registration_number || v.model || subtypeLabel(v.subtype)}${v.nickname && v.registration_number && v.registration_number !== v.nickname ? `, ${v.registration_number}` : ""}, ${t(v.role === "OWNER" ? "owner" : "pilot")}${v.archived_at ? `, ${t("archived")}` : active.vehicle?.id === v.id ? `, ${t("uiActiveVehicle")}` : ""}`}
+                          onPress={() =>
+                            router.push({
+                              pathname: "/garage/[id]",
+                              params: { id: v.id },
+                            })
+                          }
                         >
-                          <SquareArtwork source={vehicleArt(v.category, v.subtype)} radius={0} />
                           <View
                             style={{
-                              paddingLeft: 10,
-                              paddingRight: v.role === "OWNER" && !v.archived_at ? 58 : 10,
-                              paddingBottom: 10,
-                              minHeight: 80,
-                              gap: 5,
+                              overflow: "hidden",
+                              borderRadius: 20,
+                              backgroundColor: colors.surface,
+                              gap: 8,
+                              borderWidth: isActive ? 2 : 1,
+                              borderColor: isActive ? colors.primary : colors.line,
+                              shadowColor: "#163B46",
+                              shadowOpacity: 0.05,
+                              shadowOffset: { width: 0, height: 3 },
+                              shadowRadius: 8,
+                              elevation: 1,
                             }}
                           >
-                            <Text
-                              style={{
-                                fontSize: 15,
-                                fontWeight: "700",
-                                color: colors.ink,
-                              }}
-                            >
-                              {v.nickname ||
-                                v.registration_number ||
-                                v.model ||
-                                subtypeLabel(v.subtype)}
-                            </Text>
-                            {!!v.registration_number &&
-                              v.registration_number !==
-                                (v.nickname ||
-                                  v.registration_number ||
-                                  v.model ||
-                                  subtypeLabel(v.subtype)) && (
-                                <Text style={{ fontSize: 12, color: colors.muted }}>
-                                  {v.registration_number}
-                                </Text>
-                              )}
-                            <Text style={{ fontSize: 12, color: colors.muted }}>
-                              {subtypeLabel(v.subtype)}
-                            </Text>
+                            <SquareArtwork source={vehicleArt(v.category, v.subtype)} radius={0} />
                             <View
                               style={{
-                                flexDirection: "row",
-                                flexWrap: "wrap",
-                                gap: 4,
+                                paddingLeft: 10,
+                                paddingRight: v.role === "OWNER" && !v.archived_at ? 58 : 10,
+                                paddingBottom: 10,
+                                minHeight: 80,
+                                gap: 5,
                               }}
                             >
-                              <Text
+                              <View
                                 style={{
-                                  fontSize: 11,
-                                  fontWeight: "600",
-                                  color: colors.primary,
-                                  backgroundColor: colors.background,
-                                  paddingHorizontal: 7,
-                                  paddingVertical: 4,
-                                  borderRadius: 8,
+                                  flexDirection: "row",
+                                  alignItems: "center",
+                                  gap: 5,
                                 }}
                               >
-                                {t(v.role === "OWNER" ? "owner" : "pilot")} ·{" "}
-                                {t(
-                                  v.meter_mode === "KM"
-                                    ? "meterModeShortKm"
-                                    : v.meter_mode === "HOURS"
-                                      ? "meterModeShortHours"
-                                      : "meterModeShortBoth"
+                                {isActive && (
+                                  <Ionicons
+                                    name="checkmark-circle"
+                                    size={16}
+                                    color={colors.primary}
+                                    accessibilityLabel={t("uiActiveVehicle")}
+                                  />
                                 )}
+                                <Text
+                                  numberOfLines={1}
+                                  style={{
+                                    flex: 1,
+                                    fontSize: 15,
+                                    fontWeight: "700",
+                                    color: colors.ink,
+                                  }}
+                                >
+                                  {v.nickname ||
+                                    v.registration_number ||
+                                    v.model ||
+                                    subtypeLabel(v.subtype)}
+                                </Text>
+                              </View>
+                              {!!v.registration_number &&
+                                v.registration_number !==
+                                  (v.nickname ||
+                                    v.registration_number ||
+                                    v.model ||
+                                    subtypeLabel(v.subtype)) && (
+                                  <Text
+                                    style={{
+                                      fontSize: 12,
+                                      color: colors.muted,
+                                    }}
+                                  >
+                                    {v.registration_number}
+                                  </Text>
+                                )}
+                              <Text style={{ fontSize: 12, color: colors.muted }}>
+                                {subtypeLabel(v.subtype)}
                               </Text>
-                              {!v.archived_at && active.vehicle?.id === v.id && (
+                              <View
+                                style={{
+                                  flexDirection: "row",
+                                  flexWrap: "wrap",
+                                  gap: 4,
+                                }}
+                              >
                                 <Text
                                   style={{
                                     fontSize: 11,
                                     fontWeight: "600",
                                     color: colors.primary,
+                                    backgroundColor: colors.background,
+                                    paddingHorizontal: 7,
                                     paddingVertical: 4,
+                                    borderRadius: 8,
                                   }}
                                 >
-                                  {t("uiActiveVehicle")}
+                                  {t(v.role === "OWNER" ? "owner" : "pilot")} ·{" "}
+                                  {t(
+                                    v.meter_mode === "KM"
+                                      ? "meterModeShortKm"
+                                      : v.meter_mode === "HOURS"
+                                        ? "meterModeShortHours"
+                                        : "meterModeShortBoth"
+                                  )}
                                 </Text>
-                              )}
-                              {v.archived_at && (
-                                <Text
-                                  style={{
-                                    fontSize: 11,
-                                    color: colors.muted,
-                                    paddingVertical: 4,
-                                  }}
-                                >
-                                  {t("archived")}
-                                </Text>
-                              )}
+                                {v.archived_at && (
+                                  <Text
+                                    style={{
+                                      fontSize: 11,
+                                      color: colors.muted,
+                                      paddingVertical: 4,
+                                    }}
+                                  >
+                                    {t("archived")}
+                                  </Text>
+                                )}
+                              </View>
                             </View>
                           </View>
-                        </View>
-                      </MotionPress>
-                      {v.role === "OWNER" && !v.archived_at && (
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel={`${t("edit")}: ${v.nickname || v.registration_number || v.model || subtypeLabel(v.subtype)}`}
-                          onPress={() =>
-                            router.push({
-                              pathname: "/garage/edit",
-                              params: { id: v.id },
-                            })
-                          }
-                          style={{
-                            position: "absolute",
-                            right: 8,
-                            bottom: 6,
-                            width: 44,
-                            height: 44,
-                            alignItems: "center",
-                            justifyContent: "center",
-                            borderRadius: 14,
-                            backgroundColor: colors.background,
-                          }}
-                        >
-                          <Ionicons name="create-outline" size={22} color={colors.primary} />
-                        </Pressable>
-                      )}
-                    </View>
-                  ))}
+                        </MotionPress>
+                        {v.role === "OWNER" && !v.archived_at && (
+                          <Pressable
+                            accessibilityRole="button"
+                            accessibilityLabel={`${t("edit")}: ${v.nickname || v.registration_number || v.model || subtypeLabel(v.subtype)}`}
+                            onPress={() =>
+                              router.push({
+                                pathname: "/garage/edit",
+                                params: { id: v.id },
+                              })
+                            }
+                            style={{
+                              position: "absolute",
+                              right: 8,
+                              bottom: 6,
+                              width: 44,
+                              height: 44,
+                              alignItems: "center",
+                              justifyContent: "center",
+                              borderRadius: 14,
+                              backgroundColor: colors.background,
+                            }}
+                          >
+                            <Ionicons name="create-outline" size={22} color={colors.primary} />
+                          </Pressable>
+                        )}
+                      </View>
+                    );
+                  })}
                 </View>
               </View>
             ))}
@@ -367,6 +382,7 @@ export function VehicleDetails() {
 }
 export function Home() {
   const query = useActiveVehicle();
+  const profile = useProfile();
   const user = useAccountId();
   const v = query.vehicle;
   const vehicleId = v?.id;
@@ -399,7 +415,49 @@ export function Home() {
         (!!v && (access.isPending || (access.data?.metersRead === true && readings.isPending)))
       }
     >
-      <AppText muted>{t("uiOverview")}</AppText>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          gap: 12,
+          paddingVertical: 6,
+        }}
+      >
+        <View style={{ flex: 1 }}>
+          <Text
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.85}
+            style={{
+              color: colors.ink,
+              fontSize: 18,
+              lineHeight: 26,
+              fontWeight: "600",
+            }}
+          >
+            {(() => {
+              const hour = new Date(now).getHours();
+              const greeting =
+                hour < 12
+                  ? t("uiGoodMorning")
+                  : hour < 17
+                    ? t("uiGoodAfternoon")
+                    : t("uiGoodEvening");
+              const name = profile.data?.display_name.trim();
+              return name ? `${greeting}, ${name}` : greeting;
+            })()}
+          </Text>
+        </View>
+        <View
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={{
+            padding: 5,
+          }}
+        >
+          <Ionicons name="sunny" size={30} color="#F4A62A" />
+        </View>
+      </View>
       {query.error ? (
         <ErrorState message={query.error.message} retry={() => void query.refetch()} />
       ) : query.isPending ? (

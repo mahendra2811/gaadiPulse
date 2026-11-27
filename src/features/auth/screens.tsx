@@ -17,6 +17,7 @@ import { AuthLayout } from "./AuthLayout";
 import { FormError } from "@/src/components/ui/FormError";
 
 import { sendOtp, verifyOtp } from "./api";
+import { useSession } from "./session";
 export function Welcome() {
   return <Redirect href="/auth/login" />;
 }
@@ -95,6 +96,11 @@ export function Verify() {
   );
 }
 export function Legal() {
+  const auth = useSession();
+  const goBack = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace(auth.session ? "/settings/security" : "/auth/login");
+  };
   return (
     <Screen title={t("legal")} compact>
       <AppText muted>
@@ -123,11 +129,11 @@ export function Legal() {
           delete server records or exported files.
         </AppText>
         <AppText>
-          To request account deletion, open Settings → Request account deletion,
-          or contact mahendrapuniya92@gmail.com. Requests revoke vehicle access
-          and require operator review. Retention and completion depend on the
-          operator’s process; do not assume that submission immediately deletes
-          records.
+          To request account deletion, open Settings → Security → Request
+          account deletion, or contact mahendrapuniya92@gmail.com. Requests
+          revoke vehicle access and require operator review. Retention and
+          completion depend on the operator’s process; do not assume that
+          submission immediately deletes records.
         </AppText>
       </Card>
       <Card>
@@ -150,11 +156,7 @@ export function Legal() {
           retention and support arrangements before public distribution.
         </AppText>
       </Card>
-      <AppButton
-        secondary
-        label={t("back")}
-        onPress={() => router.replace("/auth/login")}
-      />
+      <AppButton secondary label={t("back")} onPress={goBack} />
     </Screen>
   );
 }

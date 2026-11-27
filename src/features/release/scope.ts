@@ -3,7 +3,7 @@ export const releaseFeatures: Record<"advancedTools", boolean> = {
   advancedTools: true,
 };
 export function supportsVehicle(category: string) {
-  const basic = ["two_wheeler", "four_wheeler"];
+  const basic = ["two_wheeler", "three_wheeler", "four_wheeler"];
   const advanced = ["commercial", "agricultural", "heavy_machinery"];
   return (
     basic.includes(category) ||

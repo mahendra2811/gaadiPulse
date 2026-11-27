@@ -58,6 +58,7 @@ export function saveDevelopmentVehicle(
       subtype: value.subtype,
       brand: value.brand,
       model: value.model,
+      model_year: value.model_year ? Number(value.model_year) : null,
       energy_type: value.energy_type,
       meter_mode: value.meter_mode,
       timezone: value.timezone,

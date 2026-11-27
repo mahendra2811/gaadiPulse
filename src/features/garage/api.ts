@@ -30,8 +30,12 @@ export async function saveVehicle(
   if (development)
     return saveDevelopmentVehicle(input, operation, id, expected);
   const value = vehicleSchema.parse(input);
+  const persistedValue = {
+    ...value,
+    model_year: value.model_year ? Number(value.model_year) : null,
+  };
   const { data, error } = await client().rpc("save_vehicle_v2", {
-    p_data: value,
+    p_data: persistedValue,
     p_operation: operation,
     p_id: id ?? null,
     p_expected: expected ?? null,

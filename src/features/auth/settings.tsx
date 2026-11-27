@@ -1,7 +1,6 @@
 import { AuthLayout } from "./AuthLayout";
 import { ProfileIconPicker } from "./ProfileIconPicker";
 import { CountryField } from "./CountryField";
-import { LocaleField } from "./LocaleField";
 import { defaultProfileIcon, type ProfileIcon } from "./avatars";
 import { releaseFeatures } from "@/src/features/release/scope";
 import { TimezoneField } from "@/src/features/garage/TimezoneField";
@@ -31,7 +30,6 @@ import { Image, Pressable, View, Text, useColorScheme } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useTheme } from "@/src/lib/theme";
 import { artwork } from "@/src/lib/assets";
-import { setLocale, type SupportedLocale } from "@/src/lib/i18n";
 export { MoreDrawerRoute as More } from "@/src/components/navigation/MoreDrawer";
 export function Settings() {
   const toast = useToast();
@@ -72,12 +70,6 @@ export function Settings() {
           icon="shield-checkmark"
           tone="mint"
           onPress={() => router.push("/settings/security")}
-        />
-        <MenuRow
-          label={r("requestDeletion")}
-          icon="trash"
-          tone="coral"
-          onPress={() => router.push("/settings/deletion")}
         />
       </Card>
       <Card style={{ padding: 16 }}>
@@ -162,22 +154,10 @@ export function Settings() {
       </Card>
       <Card style={{ padding: 16 }}>
         <MenuRow
-          label={t("legal")}
-          icon="document-text"
-          tone="amber"
-          onPress={() => router.push("/auth/legal")}
-        />
-        <MenuRow
           label={r("help")}
           icon="help-buoy"
           tone="amber"
           onPress={() => router.push("/settings/help")}
-        />
-        <MenuRow
-          label={t("about")}
-          icon="information-circle"
-          tone="blue"
-          onPress={() => router.push("/settings/about")}
         />
       </Card>
       <SignOutButton />
@@ -193,7 +173,6 @@ export function Profile() {
   const toast = useToast();
   const [name, setName] = useState("");
   const [country, setCountry] = useState<string | null>(null);
-  const [locale, setProfileLocale] = useState<SupportedLocale>("en-IN");
   const [avatar, setAvatar] = useState<ProfileIcon>(defaultProfileIcon);
   const hydrated = useRef(false);
   const [timezone, setTimezone] = useState("Asia/Kolkata");
@@ -213,7 +192,6 @@ export function Profile() {
             : ""),
       );
       setCountry(query.data.country_code);
-      setProfileLocale(query.data.locale);
       setAvatar(query.data.avatar_icon);
       setTimezone(query.data.timezone);
       setInitialized(true);
@@ -226,12 +204,7 @@ export function Profile() {
       avatar !== query.data.avatar_icon ||
       name !== query.data.display_name ||
       timezone !== query.data.timezone);
-  const preferencesDirty =
-    initialized &&
-    !!query.data &&
-    (locale !== query.data.locale ||
-      false);
-  const isDirty = dirty || preferencesDirty;
+  const isDirty = dirty;
   const disablePrevention = usePreventRemove(
     isDirty && !leaving,
     ({ repeat }) =>
@@ -275,11 +248,9 @@ export function Profile() {
             : {}),
           theme: current.theme,
           timezone,
-          locale,
         },
         auth.development,
       );
-      setLocale(locale);
       await qc.invalidateQueries({
         queryKey: [user, "profile"],
       });
@@ -334,11 +305,6 @@ export function Profile() {
         onChange={setTimezone}
         disabled={busy || !initialized}
         account
-      />
-      <LocaleField
-        value={locale}
-        onChange={setProfileLocale}
-        disabled={busy || !initialized}
       />
       {query.error && (
         <ErrorState

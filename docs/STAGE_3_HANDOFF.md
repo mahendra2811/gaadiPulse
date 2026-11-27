@@ -682,3 +682,42 @@ Validation: targeted Prettier, `npm run typecheck`, `npm run lint`, and `git dif
 Inspected the Add Fuel/Add Expense submit path in `src/features/records/screens.tsx`. The save awaited global TanStack Query invalidation/refetch for every query before navigating away, despite the record already being committed. Changed this to invalidate/refetch active record queries for the saved user's selected vehicle in the background, allowing the success path to navigate immediately; retained the success toast and existing save error handling. Also fixed vehicle-switch/reset state to store the items field as its expected JSON string and reset monetary fields/currency for the newly selected vehicle. No backend or user data was changed.
 
 Validation: `npm run typecheck`, `npm run lint`, `git diff --check`, and `cd android && ./gradlew :app:assembleDebug -PreactNativeArchitectures=arm64-v8a --offline` PASS. The connected emulator's preinstalled release app is version code 31; the new debug APK is version code 1, so Android refused its installation as a downgrade. No account/vehicle was used to submit a test record, and no fatal crash log for the user's reproduction was available. Thus this change removes a likely post-save hang but does not establish the exact cause of the reported app closure; obtain logs from a reproduction on an installable matching build to distinguish native crash, process termination, and normal navigation.
+
+## Profile language selector removal — 2026-11-28
+
+Removed the language selector from the profile setup/edit screen at `/settings/profile`. Profile saves now leave the already stored locale unchanged, and changing other profile fields no longer marks a locale preference as dirty. Language selection during onboarding and locale support remain unchanged. No migration or user data change was made. Existing unrelated edits in `src/features/auth/settings.tsx` were preserved.
+
+Validation: `npm run typecheck`, `npx prettier --check src/features/auth/settings.tsx`, and `git diff --check` PASS. No UI/device interaction or test suite was run.
+
+## Home greeting — 2026-11-28
+
+Kept the “Your garage, at a glance” overview line and added a greeting beneath it that changes by local device time (morning before 12:00, afternoon before 17:00, evening afterward). It includes the profile display name when available and omits the name while profile data is unavailable. Added English catalog keys. No data or migration changes.
+
+Validation: `npm run typecheck`, Prettier check on `src/features/garage/screens.tsx` and `src/lib/i18n.ts`, and `git diff --check` PASS. No UI/device interaction or test suite was run.
+
+## Home greeting visual update — 2026-11-28
+
+Removed the “Your garage, at a glance” line from the home screen. Restyled the time-based greeting as a prominent rounded primary-color banner with the time greeting, profile name, and accent icon. No data or migration changes.
+
+Validation: `npm run typecheck`, Prettier checks on touched source, and `git diff --check` PASS. No UI/device interaction or test suite was run.
+
+## Home greeting refinement — 2026-11-28
+
+Removed the filled background and icon tile from the greeting. The greeting now uses a transparent layout, softer theme-aware text, and a standalone warm-colored sun icon. Validation: `npm run typecheck`, Prettier check on the changed screen, and `git diff --check` PASS. No device visual check was run.
+
+## Single-line home greeting — 2026-11-28
+
+Combined the time-based greeting and profile name into one line beside the sun icon, with single-line truncation and font fitting for narrow screens. Validation: `npm run typecheck`, Prettier check on the changed screen, and `git diff --check` PASS. No device visual check was run.
+## Garage add form update — 2026-11-28
+
+Added three-wheeler support end to end with bundled temporary auto-rickshaw artwork and an additive category constraint migration. Simplified vehicle setup to category → combined identity/details → meter setup → review; subtype is optional under Additional options. Fuel choices are streamlined, with advanced choices revealed through Other. Initial meter readings are directly visible and optional.
+
+Validation executed: `npm run typecheck` PASS; Prettier on changed TypeScript files PASS; `git diff --check` PASS. No app/device interaction, SQL migration run, test suite, lint or native build was run. Apply migration `202611280001_three_wheeler_category.sql` before using the new category against a remote database.
+
+Step 2 copy now distinguishes vehicle nickname, full vehicle name, model year and registration number without spaces. Registration input removes spaces as entered. Make, subtype, time zone and currency are grouped into one Additional options panel. Model year is validated and round-tripped through the existing column using additive migration `202611280002_vehicle_model_year.sql`.
+
+## Picker dismissal and year selection refinement — 2026-11-28
+
+The model-year chooser is a compact scrollable grid from the current year through 1950, with a high-contrast selected state and clear action. Country, currency and time-zone searchable selectors now use the shared popup backdrop, so outside taps close them.
+
+Validation: `npm run typecheck`, ESLint on changed picker files, Prettier on changed files, and `git diff --check` PASS. No browser/device visual check or test suite was run.

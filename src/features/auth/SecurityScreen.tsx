@@ -1,7 +1,13 @@
-import { Linking } from "react-native";
+import { Linking, Platform } from "react-native";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Screen, AppText, Card, ErrorState } from "@/src/components/ui";
+import {
+  Screen,
+  AppText,
+  Card,
+  ErrorState,
+  useToast,
+} from "@/src/components/ui";
 import { MenuRow, SectionHeading } from "@/src/components/ui/premium";
 import { useSession } from "./session";
 import { r } from "@/src/features/records/copy";
@@ -9,6 +15,29 @@ import { t } from "@/src/lib/i18n";
 export default function SecurityScreen() {
   const auth = useSession();
   const [error, setError] = useState("");
+  const toast = useToast();
+  const openNotificationSettings = async () => {
+    setError("");
+    if (Platform.OS === "web") {
+      if (typeof Notification === "undefined") {
+        setError("This browser does not support notifications.");
+        return;
+      }
+      const permission = await Notification.requestPermission();
+      if (permission === "granted")
+        toast("Browser notifications are enabled.", "success");
+      else if (permission === "denied")
+        setError(
+          "Notifications are blocked for this site. Allow them in your browser’s site settings.",
+        );
+      return;
+    }
+    if (typeof Linking.openSettings !== "function") {
+      setError("Notification settings are unavailable on this device.");
+      return;
+    }
+    await Linking.openSettings();
+  };
   return (
     <Screen title={r("security")} compact>
       <AppText muted>
@@ -20,12 +49,12 @@ export default function SecurityScreen() {
           Keep your password and verification codes private. Access to each
           vehicle is controlled by its Owner and your verified account.
         </AppText>
-        {!auth.development && (
+        {!auth.development && !!auth.session?.user.email && (
           <MenuRow
-            label={t("resetPassword")}
+            label={t("changePassword")}
             icon="key"
             tone="blue"
-            onPress={() => router.push("/auth/reset-password")}
+            onPress={() => router.push("/settings/password")}
           />
         )}
         <MenuRow
@@ -33,8 +62,7 @@ export default function SecurityScreen() {
           icon="notifications"
           tone="amber"
           onPress={() => {
-            setError("");
-            void Linking.openSettings().catch((e) => setError(String(e)));
+            void openNotificationSettings().catch((e) => setError(String(e)));
           }}
         />
       </Card>
@@ -62,8 +90,7 @@ export default function SecurityScreen() {
         <ErrorState
           message={error}
           retry={() => {
-            setError("");
-            void Linking.openSettings().catch((e) => setError(String(e)));
+            void openNotificationSettings().catch((e) => setError(String(e)));
           }}
         />
       )}

@@ -9,9 +9,27 @@ export type VehicleSubtypeOption = {
 };
 const agriculturalIds = new Set(["tractor", "harvester"]);
 export function subtypeOptions(category: string): VehicleSubtypeOption[] {
+  if (category === "three_wheeler")
+    return [
+      {
+        id: "auto",
+        label: "Auto rickshaw",
+        recommended: true,
+        defaultMeterMode: "KM",
+      },
+      {
+        id: "other",
+        label: "Other",
+        recommended: false,
+        defaultMeterMode: "KM",
+      },
+    ];
   const group =
-    category === "agricultural" || category === "heavy_machinery" ? "agriculture_heavy" : category;
-  const items = catalog.categories.find((item) => item.id === group)?.subtypes ?? [];
+    category === "agricultural" || category === "heavy_machinery"
+      ? "agriculture_heavy"
+      : category;
+  const items =
+    catalog.categories.find((item) => item.id === group)?.subtypes ?? [];
   const filtered =
     category === "agricultural"
       ? items.filter((item) => agriculturalIds.has(item.id))

@@ -6,6 +6,7 @@ import { suggestedSubtypeMeter } from "./subtypes";
 import { type CurrencyCode } from "@/src/utils/currency";
 export const categories = [
   "two_wheeler",
+  "three_wheeler",
   "four_wheeler",
   "commercial",
   "agricultural",
@@ -57,9 +58,10 @@ export const vehicleSchema = z
     nickname: z.string().trim().max(120),
     registration_number: z.string().max(40).transform(normalizeRegistration),
     category: z.enum(categories),
-    subtype: z.string().trim().min(1).max(80),
+    subtype: z.string().trim().max(80),
     brand: z.string().trim().max(80),
     model: z.string().trim().max(80),
+    model_year: z.union([z.literal(""), z.string().regex(/^\d{4}$/)]),
     energy_type: z.enum(vehicleEnergyTypes),
     meter_mode: z.enum(meterModes),
     timezone: z.string().refine((v) => {
@@ -76,6 +78,16 @@ export const vehicleSchema = z
     observed_at: z.iso.datetime({ offset: true }),
   })
   .superRefine((v, ctx) => {
+    if (
+      v.model_year &&
+      (Number(v.model_year) < 1950 ||
+        Number(v.model_year) > new Date().getFullYear())
+    )
+      ctx.addIssue({
+        code: "custom",
+        path: ["model_year"],
+        message: t("invalidModelYear"),
+      });
     for (const key of ["km", "hours"] as const)
       if (v[key] && !isReading(v[key]!))
         ctx.addIssue({
@@ -103,6 +115,7 @@ export type Vehicle = {
   subtype: string;
   brand: string;
   model: string;
+  model_year: number | null;
   energy_type: VehicleInput["energy_type"];
   meter_mode: VehicleInput["meter_mode"];
   timezone: string;
@@ -127,6 +140,7 @@ export const vehicleRecordSchema = z.object({
   subtype: z.string(),
   brand: z.string(),
   model: z.string(),
+  model_year: z.number().int().nullable().optional().default(null),
   energy_type: vehicleSchema.shape.energy_type,
   meter_mode: z.enum(meterModes),
   timezone: z.string(),

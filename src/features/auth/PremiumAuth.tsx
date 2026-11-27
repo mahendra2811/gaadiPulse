@@ -9,7 +9,6 @@ import {
   Text,
   TextInput,
   View,
-  useWindowDimensions,
   type TextInputProps,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -23,7 +22,6 @@ import { artwork } from "@/src/lib/assets";
 import { useTheme } from "@/src/lib/theme";
 import { t } from "@/src/lib/i18n";
 
-const hero = require("@/assets/images/auth/gaadipulse-auth-hero.png");
 type IconName = ComponentProps<typeof Ionicons>["name"];
 const AuthShellContext = createContext(false);
 
@@ -31,51 +29,43 @@ const AuthShellContext = createContext(false);
 export function AuthShell({ children }: { children: ReactNode }) {
   const c = useTheme();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
   return (
     <AuthShellContext.Provider value>
       <SafeAreaView style={{ flex: 1, backgroundColor: c.background }} edges={[]}>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         <View
           style={{
             width: "100%",
-            height: Math.min(width * 0.5, 240),
-            backgroundColor: "#006F63",
-            overflow: "hidden",
-            borderBottomLeftRadius: 28,
-            borderBottomRightRadius: 28,
+            minHeight: 84 + insets.top,
+            paddingTop: insets.top + 12,
+            paddingBottom: 12,
+            paddingHorizontal: 22 + insets.left,
+            backgroundColor: c.background,
+            justifyContent: "center",
           }}
         >
-          <Image
-            source={hero}
-            resizeMode="cover"
-            style={{ width: "100%", height: "100%", position: "absolute" }}
-          />
-          <View
-            style={{
-              position: "absolute",
-              left: 18 + insets.left,
-              right: 18 + insets.right,
-              top: insets.top + 24,
-              alignItems: "flex-start",
-            }}
-          >
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
             <Image
               accessibilityLabel={t("app")}
-              source={artwork.wordmarkDark}
+              source={artwork.logoCircle}
               resizeMode="contain"
-              style={{ width: 184, height: 46 }}
+              style={{ width: 42, height: 42 }}
             />
-            <Text
-              style={{
-                color: "#E0FAF1",
-                fontSize: 12,
-                fontWeight: "600",
-                paddingLeft: 8,
-              }}
-            >
-              {t("tagline")}
-            </Text>
+            <View style={{ gap: 2 }}>
+              <Text
+                style={{
+                  color: c.ink,
+                  fontSize: 20,
+                  fontWeight: "800",
+                  letterSpacing: 0.2,
+                }}
+              >
+                GaadiPulse
+              </Text>
+              <Text style={{ color: c.muted, fontSize: 12, fontWeight: "500" }}>
+                {t("authTagline")}
+              </Text>
+            </View>
           </View>
         </View>
         <View style={{ flex: 1, minHeight: 0 }}>{children}</View>
@@ -90,7 +80,7 @@ export function PremiumAuthLayout({
   loading,
   children,
   onBack,
-  showFeatures = true,
+  showFeatures = false,
 }: {
   title: string;
   subtitle?: string;

@@ -102,8 +102,8 @@ import {
 import {
   notificationPermission,
   reconcileReminders,
-  nextRecurrence,
 } from "@/src/features/reminders/notifications";
+import { nextRecurrence } from "@/src/features/reminders/recurrence";
 const metadataLabels: Record<string, string> = {
   start_date: "startDate",
   expiry_date: "expiryDate",
@@ -112,6 +112,38 @@ const metadataLabels: Record<string, string> = {
   next_hours: "thresholdHours",
   size: "tyreSize",
 };
+function ReminderAdvanceDays({
+  value,
+  onChange,
+}: {
+  value: unknown;
+  onChange: (days: number[]) => void;
+}) {
+  const selected = Array.isArray(value)
+    ? value.filter((item): item is number => typeof item === "number")
+    : [30, 15, 7, 1];
+  return (
+    <View style={{ gap: 8 }}>
+      <AppText>{t("notifications.advanceDays")}</AppText>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+        {[30, 15, 7, 1].map((days) => (
+          <ChoiceChip
+            key={days}
+            label={`${days} ${t("notifications.days")}`}
+            selected={selected.includes(days)}
+            onPress={() =>
+              onChange(
+                selected.includes(days)
+                  ? selected.filter((item) => item !== days)
+                  : [...selected, days].sort((a, b) => b - a),
+              )
+            }
+          />
+        ))}
+      </View>
+    </View>
+  );
+}
 export function useRouteKind(fixed?: Kind) {
   const params = useLocalSearchParams<{
     kind: string;
@@ -956,12 +988,15 @@ export function RecordForm() {
   const choose = (
     name: "category" | "unit" | "payment_method" | "recurrence" | "energy_type",
     options: readonly string[],
+    labels?: Record<string, string>,
   ) => (
     <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
       {options.map((option) => (
         <ChoiceChip
           key={option}
-          label={r(option as keyof typeof recordCopy) ?? option}
+          label={
+            labels?.[option] ?? r(option as keyof typeof recordCopy) ?? option
+          }
           selected={values[name] === option}
           onPress={() => {
             const apply = () => {
@@ -985,7 +1020,7 @@ export function RecordForm() {
       ))}
     </View>
   );
-  const updateMeta = (name: string, value: string | boolean) => {
+  const updateMeta = (name: string, value: string | boolean | number[]) => {
     let meta: Record<string, unknown> = {};
     try {
       meta = JSON.parse(values.metadata) as Record<string, unknown>;
@@ -1744,6 +1779,7 @@ export function RecordForm() {
           "FITNESS",
           "TAX",
           "LOAN",
+          "DRIVING_LICENCE",
           "OTHER",
         ])}
       {kind === "documents" && (
@@ -1776,7 +1812,30 @@ export function RecordForm() {
                 {metadata.create_reminder === true && (
                   <>
                     <AppText muted>{t("linkedReminderHelp")}</AppText>
-                    <AppText muted>{t("linkedOwnerOnly")}</AppText>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        minHeight: 56,
+                        gap: 12,
+                      }}
+                    >
+                      <AppText>{r("sharePilot")}</AppText>
+                      <Switch
+                        accessibilityLabel={r("sharePilot")}
+                        value={metadata.reminder_pilot_visible === true}
+                        onValueChange={(value) =>
+                          updateMeta("reminder_pilot_visible", value)
+                        }
+                      />
+                    </View>
+                    <ReminderAdvanceDays
+                      value={metadata.reminder_advance_days}
+                      onChange={(days) =>
+                        updateMeta("reminder_advance_days", days)
+                      }
+                    />
                   </>
                 )}
               </Card>
@@ -1786,7 +1845,29 @@ export function RecordForm() {
         </>
       )}
       {kind === "reminders" &&
-        choose("category", ["SERVICE", "EMI", "INSURANCE", "OTHER"])}
+        choose(
+          "category",
+          [
+            "SERVICE",
+            "EMI",
+            "INSURANCE",
+            "PUC",
+            "REGISTRATION",
+            "FITNESS",
+            "DRIVING_LICENCE",
+            "OTHER",
+          ],
+          {
+            SERVICE: t("notifications.service"),
+            EMI: r("EMI"),
+            INSURANCE: t("notifications.insurance"),
+            PUC: t("notifications.puc"),
+            REGISTRATION: t("notifications.registration"),
+            FITNESS: t("notifications.fitness"),
+            DRIVING_LICENCE: t("notifications.drivingLicence"),
+            OTHER: r("OTHER"),
+          },
+        )}
       {kind === "reminders" && field("title", r("title"))}
       {kind === "reminders" && field("due_at", r("due"))}
       {kind === "reminders" && owner && (
@@ -1807,6 +1888,10 @@ export function RecordForm() {
             field("threshold_km", r("thresholdKm"), true)}
           {v.meter_mode !== "KM" &&
             field("threshold_hours", r("thresholdHours"), true)}
+          <ReminderAdvanceDays
+            value={metadata.advance_days}
+            onChange={(days) => updateMeta("advance_days", days)}
+          />
           {choose("recurrence", ["NONE", "MONTHLY", "YEARLY"])}
           {field("notes", r("notes"))}
         </>
@@ -1899,6 +1984,30 @@ export function RecordForm() {
                         {metaField("next_date", r("nextService"))}
                         {metaField("next_km", r("thresholdKm"))}
                         {metaField("next_hours", r("thresholdHours"))}
+                        <View
+                          style={{
+                            flexDirection: "row",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            minHeight: 56,
+                            gap: 12,
+                          }}
+                        >
+                          <AppText>{r("sharePilot")}</AppText>
+                          <Switch
+                            accessibilityLabel={r("sharePilot")}
+                            value={metadata.reminder_pilot_visible === true}
+                            onValueChange={(value) =>
+                              updateMeta("reminder_pilot_visible", value)
+                            }
+                          />
+                        </View>
+                        <ReminderAdvanceDays
+                          value={metadata.reminder_advance_days}
+                          onChange={(days) =>
+                            updateMeta("reminder_advance_days", days)
+                          }
+                        />
                       </>
                     )}
                 </>
@@ -2032,7 +2141,30 @@ export function RecordForm() {
                 {metadata.create_reminder === true && (
                   <>
                     <AppText muted>{t("linkedReminderHelp")}</AppText>
-                    <AppText muted>{t("linkedOwnerOnly")}</AppText>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        minHeight: 56,
+                        gap: 12,
+                      }}
+                    >
+                      <AppText>{r("sharePilot")}</AppText>
+                      <Switch
+                        accessibilityLabel={r("sharePilot")}
+                        value={metadata.reminder_pilot_visible === true}
+                        onValueChange={(value) =>
+                          updateMeta("reminder_pilot_visible", value)
+                        }
+                      />
+                    </View>
+                    <ReminderAdvanceDays
+                      value={metadata.reminder_advance_days}
+                      onChange={(days) =>
+                        updateMeta("reminder_advance_days", days)
+                      }
+                    />
                     {kind === "expenses" && (
                       <>
                         {metaField("reminder_due_at", t("nextEmiDue"))}
@@ -2619,6 +2751,7 @@ export function RecordDetail({
                       ? nextRecurrence(
                           String(row.payload.due_at),
                           String(row.payload.recurrence),
+                          timezone,
                         )
                       : null;
                   void mutate(

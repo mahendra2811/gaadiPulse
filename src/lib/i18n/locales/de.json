@@ -113,7 +113,8 @@
     "uiTime": "",
     "unsaved": "",
     "unsavedBody": "",
-    "validPastTime": ""
+    "validPastTime": "",
+    "lastUpdatedAt": ""
   },
   "onboarding": {
     "onboardingContinue": "Weiter zur Startseite",
@@ -774,7 +775,8 @@
     "week": "",
     "year": "",
     "yes": "",
-    "yesterday": ""
+    "yesterday": "",
+    "reminderHistory": ""
   },
   "reminders": {
     "documentExpiry": "Ablauf- oder Verlängerungsdatum",
@@ -1265,5 +1267,43 @@
     "time": "",
     "title": "",
     "twoValues": ""
+  },
+  "notifications": {
+    "accountUpdates": "",
+    "advanceDays": "",
+    "autoLanguage": "",
+    "center": "",
+    "dailyLimit": "",
+    "dailyLimitHint": "",
+    "drivingLicence": "",
+    "empty": "",
+    "enablePush": "",
+    "enablePushHint": "",
+    "fitness": "",
+    "inApp": "",
+    "insurance": "",
+    "language": "",
+    "loadMore": "",
+    "markAllRead": "",
+    "notificationSaved": "",
+    "permissionDenied": "",
+    "preferences": "",
+    "puc": "",
+    "quietEnd": "",
+    "quietHours": "",
+    "quietStart": "",
+    "registration": "",
+    "reminderAlerts": "",
+    "service": "",
+    "signInForInbox": "",
+    "unread": "",
+    "permissionError": "",
+    "savePreferences": "",
+    "days": "",
+    "permissionEnabled": "",
+    "pushEnabled": "",
+    "signInForSettings": "",
+    "timeFormat": "",
+    "unreadCount": ""
   }
 }

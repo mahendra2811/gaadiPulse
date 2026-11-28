@@ -10,7 +10,9 @@ export type PlayUpdateCheck = "unavailable" | "current" | "available";
 
 export async function checkPlayUpdate(): Promise<PlayUpdateCheck> {
   if (Platform.OS !== "android" || __DEV__) return "unavailable";
-  const { default: SpInAppUpdates } = await import("sp-react-native-in-app-updates");
+  const { default: SpInAppUpdates } = await import(
+    "sp-react-native-in-app-updates"
+  );
   const updates = new SpInAppUpdates(false);
   const result = await updates.checkNeedsUpdate({
     curVersion: Constants.expoConfig?.version ?? "0.0.0",
@@ -33,7 +35,9 @@ export async function checkAndStartPlayUpdate() {
     return "store" as const;
   }
 
-  const { default: SpInAppUpdates, IAUUpdateKind } = await import("sp-react-native-in-app-updates");
+  const { default: SpInAppUpdates, IAUUpdateKind } = await import(
+    "sp-react-native-in-app-updates"
+  );
   const updates = new SpInAppUpdates(false);
   const result = await updates.checkNeedsUpdate({
     curVersion: Constants.expoConfig?.version ?? "0.0.0",

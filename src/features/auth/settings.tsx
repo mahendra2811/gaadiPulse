@@ -7,7 +7,6 @@ import { TimezoneField } from "@/src/features/garage/TimezoneField";
 import { errorMessage } from "@/src/lib/errors";
 import { MenuRow, SectionHeading, InfoRows } from "@/src/components/ui/premium";
 import { SignOutButton } from "./SignOutButton";
-import { notificationPermission } from "@/src/features/reminders/notifications";
 import { r } from "@/src/features/records/copy";
 import { useEffect, useState, useRef } from "react";
 import { router, usePreventRemove } from "expo-router";
@@ -38,7 +37,6 @@ import {
 } from "./playStore";
 export { MoreDrawerRoute as More } from "@/src/components/navigation/MoreDrawer";
 export function Settings() {
-  const toast = useToast();
   const [error, setError] = useState("");
   const [themeBusy, setThemeBusy] = useState(false);
   const profile = useProfile();
@@ -185,19 +183,10 @@ export function Settings() {
         )}
         {releaseFeatures.advancedTools && (
           <MenuRow
-            label={r("notificationPermission")}
+            label={t("notifications.preferences")}
             icon="notifications"
             tone="coral"
-            onPress={() => {
-              void notificationPermission()
-                .then((allowed) =>
-                  toast(
-                    r(allowed ? "notificationsEnabled" : "notificationDenied"),
-                    allowed ? "info" : "warning",
-                  ),
-                )
-                .catch((e) => setError(String(e)));
-            }}
+            onPress={() => router.push("/settings/notifications")}
           />
         )}
       </Card>

@@ -15,10 +15,21 @@ import {
 import { useTheme } from "@/src/lib/theme";
 import { t } from "@/src/lib/i18n";
 import { r } from "@/src/features/records/copy";
+import { useAccountId, useSession } from "@/src/features/auth/session";
+import { useQuery } from "@/src/lib/query";
+import { unreadNotificationCount } from "@/src/features/notifications/api";
 export function MoreMenu({ navigate }: { navigate: (href: Href) => void }) {
   const active = useActiveVehicle();
   const access = usePermissions(active.vehicle?.id);
   const profile = useProfile();
+  const user = useAccountId();
+  const { development } = useSession();
+  const unread = useQuery({
+    queryKey: [user, "notification-unread-count"],
+    enabled: !!user && !development,
+    queryFn: unreadNotificationCount,
+    staleTime: 15_000,
+  });
   const c = useTheme();
   const record = (
     kind: string,
@@ -118,6 +129,12 @@ export function MoreMenu({ navigate }: { navigate: (href: Href) => void }) {
     {
       title: t("uiAccount"),
       items: [
+        {
+          label: t("notifications.center"),
+          icon: "notifications",
+          tone: "coral",
+          href: "/notifications",
+        },
         {
           label: t("settings"),
           icon: "settings",
@@ -224,6 +241,11 @@ export function MoreMenu({ navigate }: { navigate: (href: Href) => void }) {
                 >
                   <MenuRow
                     label={item.label}
+                    subtitle={
+                      item.href === "/notifications" && (unread.data ?? 0) > 0
+                        ? `${unread.data} ${t("notifications.unreadCount")}`
+                        : undefined
+                    }
                     icon={item.icon}
                     tone={item.tone}
                     onPress={() => navigate(item.href)}

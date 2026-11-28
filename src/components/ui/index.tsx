@@ -295,6 +295,7 @@ export function Screen({
   banner,
   onRefresh,
   refreshing = false,
+  scrollable = true,
 }: {
   title: string;
   children: ReactNode;
@@ -306,6 +307,7 @@ export function Screen({
   banner?: ScreenBannerName;
   onRefresh?: () => void;
   refreshing?: boolean;
+  scrollable?: boolean;
 }) {
   const c = useTheme();
   const path = usePathname();
@@ -333,26 +335,43 @@ export function Screen({
         style={{ flex: 1, minHeight: 0 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <ScrollView
-          key={contentKey}
-          style={{ flex: 1, minHeight: 0 }}
-          keyboardShouldPersistTaps="handled"
-          refreshControl={
-            onRefresh ? (
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-            ) : undefined
-          }
-          contentContainerStyle={{
-            padding: compact ? 16 : 20,
-            gap: compact ? 12 : 18,
-            paddingBottom: action
-              ? 24
-              : Math.max(140, inset.bottom + 104 * fontScale),
-          }}
-        >
-          {children}
-          {banner ? <ScreenBanner name={banner} /> : null}
-        </ScrollView>
+        {scrollable ? (
+          <ScrollView
+            key={contentKey}
+            style={{ flex: 1, minHeight: 0 }}
+            keyboardShouldPersistTaps="handled"
+            refreshControl={
+              onRefresh ? (
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              ) : undefined
+            }
+            contentContainerStyle={{
+              padding: compact ? 16 : 20,
+              gap: compact ? 12 : 18,
+              paddingBottom: action
+                ? 24
+                : Math.max(140, inset.bottom + 104 * fontScale),
+            }}
+          >
+            {children}
+            {banner ? <ScreenBanner name={banner} /> : null}
+          </ScrollView>
+        ) : (
+          <View
+            key={contentKey}
+            style={{
+              flex: 1,
+              minHeight: 0,
+              padding: compact ? 16 : 20,
+              paddingBottom: action
+                ? 24
+                : Math.max(140, inset.bottom + 104 * fontScale),
+            }}
+          >
+            {children}
+            {banner ? <ScreenBanner name={banner} /> : null}
+          </View>
+        )}
         {action && (
           <SafeAreaView
             edges={["bottom"]}

@@ -475,6 +475,7 @@
     "uiViewAll": "View all"
   },
   "records": {
+    "reminderHistory": "Reminder history",
     "ACCESSORIES": "Accessories",
     "ACTIVE": "Active",
     "ALL": "All statuses",
@@ -782,7 +783,7 @@
     "documentStorage": "Document details",
     "linkedReminder": "Create a linked reminder",
     "linkedReminderDue": "Choose a date before enabling the linked reminder.",
-    "linkedReminderHelp": "Optional. The details and reminder sync together. Notification delivery settings will be planned separately."
+    "linkedReminderHelp": "Optional. The details and reminder sync together."
   },
   "members": {
     "backdateLimitAnyDate": "any date",
@@ -1266,5 +1267,43 @@
   },
   "_locale": "en-IN",
   "_fallback": "",
-  "_status": ""
+  "_status": "",
+  "notifications": {
+    "accountUpdates": "Account updates",
+    "advanceDays": "Notify me before the due date",
+    "autoLanguage": "Use app language",
+    "center": "Notifications",
+    "dailyLimit": "Maximum push notifications per day",
+    "dailyLimitHint": "Extra reminders wait until the next day.",
+    "days": "days before",
+    "drivingLicence": "Driving licence",
+    "empty": "You’re all caught up. New reminders will appear here.",
+    "enablePush": "Enable push notifications",
+    "enablePushHint": "Allow notifications in Android settings to receive reminders on this device.",
+    "fitness": "Fitness certificate",
+    "inApp": "In-app notification center",
+    "insurance": "Insurance expiry",
+    "language": "Notification language",
+    "loadMore": "Load more notifications",
+    "markAllRead": "Mark all as read",
+    "notificationSaved": "Notification preferences saved.",
+    "permissionDenied": "Notification permission is off. You can still see reminders in the app. Enable it in Android settings when ready.",
+    "preferences": "Notification preferences",
+    "puc": "PUC expiry",
+    "quietEnd": "Quiet hours end (HH:MM)",
+    "quietHours": "Pause push notifications during quiet hours",
+    "quietStart": "Quiet hours start (HH:MM)",
+    "registration": "Registration expiry",
+    "reminderAlerts": "Vehicle reminder alerts",
+    "service": "Vehicle servicing",
+    "signInForInbox": "Sign in to view your notification center.",
+    "unread": "Unread notification",
+    "permissionError": "Could not update notification permission. Retry or open Android settings.",
+    "permissionEnabled": "Notifications are allowed on this device.",
+    "pushEnabled": "Push notifications",
+    "signInForSettings": "Sign in to configure notification preferences.",
+    "timeFormat": "Enter a time in 24-hour format, such as 22:00.",
+    "unreadCount": "unread",
+    "savePreferences": "Save preferences"
+  }
 }

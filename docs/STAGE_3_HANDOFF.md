@@ -708,6 +708,7 @@ Removed the filled background and icon tile from the greeting. The greeting now 
 ## Single-line home greeting — 2026-11-28
 
 Combined the time-based greeting and profile name into one line beside the sun icon, with single-line truncation and font fitting for narrow screens. Validation: `npm run typecheck`, Prettier check on the changed screen, and `git diff --check` PASS. No device visual check was run.
+
 ## Garage add form update — 2026-11-28
 
 Added three-wheeler support end to end with bundled temporary auto-rickshaw artwork and an additive category constraint migration. Simplified vehicle setup to category → combined identity/details → meter setup → review; subtype is optional under Additional options. Fuel choices are streamlined, with advanced choices revealed through Other. Initial meter readings are directly visible and optional.
@@ -777,6 +778,13 @@ Validation: `npm run typecheck`, `npm run lint`, Prettier for `i18n.ts` and `en.
 Reorganized `en.json` into 16 named app-domain groups while preserving all 1,229 source strings and existing call-site keys. Lookup accepts typed `section.key` paths and existing flat aliases; missing and blank translations resolve to English. Mirrored the exact 1,229-key section/key structure into every other locale JSON. Preserved Hindi translations; blank Hindi entries and all values in the other 43 non-English catalogs remain pending translation, so those catalogs remain unregistered.
 
 Validation: catalog parity scan across all 44 non-English JSON files PASS; all sections and 1,229 keys match English; translated Hindi placeholders match source keys; `npm run typecheck`, `npm run lint`, Prettier on locale JSON and touched TypeScript/Markdown, and `git diff --check` PASS. Test suite and device language switching NOT RUN.
+
 ## Database performance follow-up — 2026-11-28
 
 Added additive migration `202611280006_query_indexes.sql` with vehicle-scoped history/cursor and membership lookup indexes, refreshed planner statistics, and narrowed the fuel history page projection while preserving its RPC signature, access model, filter semantics and totals. Existing idempotency/unique constraints and transactional record RPCs remain in place. Added `docs/DATABASE_PERFORMANCE.md` with production EXPLAIN, backup/restore, monitoring and pooling runbooks. No hosted migration was applied. `npx vitest run tests/migrations.test.ts tests/pilotAccess.test.ts tests/recentFuelActivity.test.ts --maxWorkers=1` PASS (7 tests); `npm run typecheck`, `npm run lint`, and `git diff --check` PASS. The migration suite's PGlite `EXPLAIN ANALYZE` is only a SQL/plan smoke check and does not demonstrate production index selection. Production query plans, backup/PITR settings and restore drill remain unverified; Supabase CLI and Docker were unavailable.
+
+## Notifications and reminders — 2026-11-28
+
+Implemented Expo Push/Android channel integration, authenticated installation token lifecycle, an RLS-scoped in-app inbox with unread/read operations and deep links, preferences, bilingual English/Hindi delivery content, and server-side delivery/receipt logs with retries and invalid-token deactivation. Added reminder scheduling for due dates at 09:00 vehicle local time, configurable lead days, meter thresholds from actual readings, Owner/Pilot permission filtering, quiet hours/daily limits, snooze/completion and dashboard completion history. Added migration `202611280007_notifications_reminders.sql`, Edge Function `notification-worker`, cron setup SQL and operator runbook. EAS FCM credentials, worker deployment/secrets, Vault/cron setup and production delivery are not performed by this code change.
+
+Validation executed: `npm run typecheck`, `npm run lint`, `npm run i18n:check`, `npx expo config --type public`, and `git diff --check` PASS. `npx vitest run tests/migrations.test.ts tests/reminderRecurrence.test.ts --maxWorkers=1` PASS (5 tests, including ordered migration compilation in PGlite). Full `npx vitest run` reports 8 existing unrelated failures across vehicle schema/meter-choice expectations, locale alias expectations, missing Expo `__DEV__` test global and PGlite timeout limits; 23 test files pass. Complete notification queue/RLS behavior is not integration-tested. Hosted migration, Edge deployment, FCM credentials, Android build and real-device delivery NOT PERFORMED.

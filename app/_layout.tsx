@@ -17,6 +17,7 @@ import {
   focusManager,
   QueryClient,
   QueryClientProvider,
+  useQueryClient,
 } from "@tanstack/react-query";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
@@ -42,7 +43,11 @@ import { releaseFeatures } from "@/src/features/release/scope";
 import {
   clearDeviceNotifications,
   startReminderFeedback,
+  watchPushToken,
 } from "@/src/features/reminders/notifications";
+import * as Notifications from "expo-notifications";
+import { markNotificationRead } from "@/src/features/notifications/api";
+import type { Kind } from "@/src/features/records/schema";
 const query = new QueryClient({
   defaultOptions: {
     queries: {
@@ -58,11 +63,27 @@ const query = new QueryClient({
 });
 function ReminderFeedback() {
   const user = useAccountId();
+  const { development } = useSession();
+  const queryClient = useQueryClient();
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
-    if (releaseFeatures.advancedTools) {
-      if (user) return startReminderFeedback(user);
+    if (releaseFeatures.advancedTools && Platform.OS !== "web") {
+      if (user) {
+        const stopFeedback = startReminderFeedback(user, () => {
+          void queryClient.invalidateQueries({
+            queryKey: [user, "notification-inbox"],
+          });
+          void queryClient.invalidateQueries({
+            queryKey: [user, "notification-unread-count"],
+          });
+        });
+        const stopTokenRefresh = watchPushToken(user, development);
+        return () => {
+          stopFeedback();
+          stopTokenRefresh();
+        };
+      }
       return;
     }
     let alive = true;
@@ -76,7 +97,7 @@ function ReminderFeedback() {
     return () => {
       alive = false;
     };
-  }, [user, attempt]);
+  }, [user, attempt, development, queryClient]);
   return error ? (
     <ErrorState
       message={error}
@@ -113,6 +134,81 @@ function Routes() {
   const router = useRouter();
   const segments = useSegments();
   const pathname = usePathname();
+  useEffect(() => {
+    if (auth.loading || Platform.OS === "web") return;
+    const user = auth.session?.user.id ?? null;
+    const routeFromResponse = (
+      response: Notifications.NotificationResponse,
+    ) => {
+      const data = response.notification.request.content.data;
+      if (!data || typeof data !== "object") {
+        Notifications.clearLastNotificationResponse();
+        return;
+      }
+      const value = data as Record<string, unknown>;
+      let routeData: Record<string, unknown> | null = null;
+      let inboxId: string | null = null;
+      if (value.type === "gaadipulse.reminder") {
+        if (!user || value.accountId !== user) {
+          Notifications.clearLastNotificationResponse();
+          return;
+        }
+        routeData = {
+          kind: "reminders",
+          record_id: value.reminderId,
+          vehicle_id: value.vehicleId,
+        };
+      } else if (value.type === "gaadipulse.notification") {
+        if (!user || value.recipient_id !== user) {
+          Notifications.clearLastNotificationResponse();
+          return;
+        }
+        routeData =
+          value.route_data && typeof value.route_data === "object"
+            ? (value.route_data as Record<string, unknown>)
+            : null;
+        inboxId =
+          typeof value.notification_id === "string"
+            ? value.notification_id
+            : null;
+      }
+      if (!routeData) return;
+      const kind = routeData.kind;
+      const id = routeData.record_id;
+      const vehicle = routeData.vehicle_id;
+      if (
+        typeof kind === "string" &&
+        ["reminders", "documents", "expenses"].includes(kind) &&
+        typeof id === "string" &&
+        typeof vehicle === "string"
+      ) {
+        router.push({
+          pathname: "/records/[kind]/[action]",
+          params: { kind: kind as Kind, action: id, vehicle },
+        });
+        if (inboxId && user) {
+          void markNotificationRead(inboxId)
+            .then(() => {
+              void query.invalidateQueries({
+                queryKey: [user, "notification-inbox"],
+              });
+              void query.invalidateQueries({
+                queryKey: [user, "notification-unread-count"],
+              });
+            })
+            .catch(() => {});
+        }
+      } else {
+        router.push("/notifications");
+      }
+      Notifications.clearLastNotificationResponse();
+    };
+    const initial = Notifications.getLastNotificationResponse();
+    if (initial) routeFromResponse(initial);
+    const subscription =
+      Notifications.addNotificationResponseReceivedListener(routeFromResponse);
+    return () => subscription.remove();
+  }, [auth.loading, auth.session?.user.id, router]);
   useEffect(() => {
     if (auth.loading || (auth.error && !auth.session && !auth.development))
       return;

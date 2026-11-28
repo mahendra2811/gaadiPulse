@@ -4,6 +4,12 @@ import { showToast } from "@/src/lib/toast";
 import * as Notifications from "expo-notifications";
 import { AndroidImportance } from "expo-notifications";
 import { secureStorage } from "@/src/lib/supabase";
+import Constants from "expo-constants";
+import {
+  deactivatePushToken,
+  pushInstallationId,
+  registerPushToken,
+} from "@/src/features/notifications/api";
 import type { RecordEntry } from "@/src/features/records/schema";
 import { access, listRecords } from "@/src/features/records/api";
 import { listVehicles } from "@/src/features/garage/api";
@@ -59,35 +65,85 @@ function appReminder(data: unknown): ReminderMetadata | null {
 }
 export async function notificationPermission() {
   if (Platform.OS === "web") return false;
-  if (Platform.OS === "android")
+  if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync("reminders", {
-      name: r("reminders"),
+      name: "Vehicle reminders",
       importance: AndroidImportance.DEFAULT,
     });
+    await Notifications.setNotificationChannelAsync("activity", {
+      name: "Account updates",
+      importance: AndroidImportance.DEFAULT,
+    });
+  }
   return (await Notifications.requestPermissionsAsync()).granted;
+}
+
+async function registerCurrentPushToken(user: string) {
+  const session = await (await import("@/src/lib/supabase")).client().auth.getSession();
+  if (session.data.session?.user.id !== user) throw new Error("NOTIFICATION_SESSION_CHANGED");
+  const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
+  if (!projectId) throw new Error("EXPO_PROJECT_ID_REQUIRED");
+  const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+  const installation = await pushInstallationId();
+  await registerPushToken(installation, token, Platform.OS === "ios" ? "ios" : "android");
+}
+
+export async function enablePushNotifications(user: string | null, development = false) {
+  const granted = await notificationPermission();
+  if (granted && user && !development) await registerCurrentPushToken(user);
+  return granted;
+}
+
+/** Refresh/deactivate the server token after permission or account state changes. */
+export function watchPushToken(user: string, development = false) {
+  if (Platform.OS === "web" || development) return () => {};
+  let alive = true;
+  const sync = async () => {
+    if (!alive) return;
+    const session = await (await import("@/src/lib/supabase")).client().auth.getSession();
+    if (session.data.session?.user.id !== user) return;
+    const installation = await pushInstallationId();
+    const permission = await Notifications.getPermissionsAsync();
+    if (!permission.granted) {
+      await deactivatePushToken(installation);
+      return;
+    }
+    await registerCurrentPushToken(user);
+  };
+  void sync().catch(() => {});
+  const appState = AppState.addEventListener("change", (state) => {
+    if (state === "active") void sync().catch(() => {});
+  });
+  const tokenListener = Notifications.addPushTokenListener(() => {
+    void sync().catch(() => {});
+  });
+  return () => {
+    alive = false;
+    appState.remove();
+    tokenListener.remove();
+  };
+}
+
+export async function deactivateCurrentPushToken() {
+  if (Platform.OS === "web") return;
+  await deactivatePushToken(await pushInstallationId());
 }
 export async function reconcileReminders(
   user: string,
   vehicle: string,
   records: RecordEntry[],
   latest: { km?: number; hours?: number },
-  development = false,
+  development = false
 ) {
   if (Platform.OS === "web") return;
   return serialized(`${user}:${vehicle}`, async () => {
     const expectedEpoch = epoch(user);
     if (!development) {
-      const session = await (
-        await import("@/src/lib/supabase")
-      )
-        .client()
-        .auth.getSession();
-      if (session.data.session?.user.id !== user)
-        throw new Error("REMINDER_SESSION_CHANGED");
+      const session = await (await import("@/src/lib/supabase")).client().auth.getSession();
+      if (session.data.session?.user.id !== user) throw new Error("REMINDER_SESSION_CHANGED");
     }
     const permissions = await access(vehicle, development);
-    if (expectedEpoch !== epoch(user))
-      throw new Error("REMINDER_SESSION_CHANGED");
+    if (expectedEpoch !== epoch(user)) throw new Error("REMINDER_SESSION_CHANGED");
     if (typeof permissions?.["reminders.read"] !== "boolean")
       throw new Error("INVALID_VEHICLE_ACCESS_RESPONSE");
     if (!permissions["reminders.read"]) {
@@ -96,13 +152,10 @@ export async function reconcileReminders(
     }
     if (!(await Notifications.getPermissionsAsync()).granted) return;
     const scheduledIds = new Set(
-      (await Notifications.getAllScheduledNotificationsAsync()).map(
-        (item) => item.identifier,
-      ),
+      (await Notifications.getAllScheduledNotificationsAsync()).map((item) => item.identifier)
     );
     for (const entry of records) {
-      if (expectedEpoch !== epoch(user))
-        throw new Error("REMINDER_SESSION_CHANGED");
+      if (expectedEpoch !== epoch(user)) throw new Error("REMINDER_SESSION_CHANGED");
       const key = `user.${user}.notification.${vehicle}.${entry.id}`;
       let old = (await readLocal(key)) as {
         revision: number;
@@ -117,14 +170,11 @@ export async function reconcileReminders(
         old = null;
       }
       if (entry.status !== "ACTIVE") {
-        if (old?.id)
-          await Notifications.cancelScheduledNotificationAsync(old.id);
+        if (old?.id) await Notifications.cancelScheduledNotificationAsync(old.id);
         await writeLocal(key, { revision: entry.revision, id: "" });
         continue;
       }
-      const due = entry.payload.due_at
-        ? new Date(String(entry.payload.due_at))
-        : null;
+      const due = entry.payload.due_at ? new Date(String(entry.payload.due_at)) : null;
       const threshold =
         (entry.payload.threshold_km !== "" &&
           entry.payload.threshold_km != null &&
@@ -194,40 +244,25 @@ async function cancelVehicleRemindersUnlocked(user: string, vehicle: string) {
     const meta = appReminder(item.content.data);
     if (meta?.accountId === user && meta.vehicleId === vehicle) {
       await Notifications.cancelScheduledNotificationAsync(item.identifier);
-      await secureStorage.removeItem(
-        `user.${user}.notification.${vehicle}.${meta.reminderId}`,
-      );
+      await secureStorage.removeItem(`user.${user}.notification.${vehicle}.${meta.reminderId}`);
     }
   }
 }
 async function cancelVehicleReminders(user: string, vehicle: string) {
-  await serialized(`${user}:${vehicle}`, () =>
-    cancelVehicleRemindersUnlocked(user, vehicle),
-  );
+  await serialized(`${user}:${vehicle}`, () => cancelVehicleRemindersUnlocked(user, vehicle));
 }
 
 /** Reconcile every vehicle for the signed in account against fresh server access. */
-export async function reconcileAccountReminders(
-  user: string,
-  development = false,
-) {
+export async function reconcileAccountReminders(user: string, development = false) {
   if (Platform.OS === "web") return;
   return serialized(`${user}:__account__`, async () => {
     const expectedEpoch = epoch(user);
     if (!development) {
-      const auth = await (
-        await import("@/src/lib/supabase")
-      )
-        .client()
-        .auth.getSession();
-      if (auth.data.session?.user.id !== user)
-        throw new Error("REMINDER_SESSION_CHANGED");
+      const auth = await (await import("@/src/lib/supabase")).client().auth.getSession();
+      if (auth.data.session?.user.id !== user) throw new Error("REMINDER_SESSION_CHANGED");
     }
     const vehicles = await listVehicles(development); // A successful list is the authority for removed memberships.
-    if (
-      !Array.isArray(vehicles) ||
-      vehicles.some((v) => !v || typeof v.id !== "string")
-    )
+    if (!Array.isArray(vehicles) || vehicles.some((v) => !v || typeof v.id !== "string"))
       throw new Error("INVALID_VEHICLE_ACCESS_RESPONSE");
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
     const scheduledByVehicle = new Map<string, Set<string>>();
@@ -241,16 +276,12 @@ export async function reconcileAccountReminders(
     }
     const authorized = new Map(vehicles.map((v) => [v.id, v]));
     for (const vehicleId of scheduledByVehicle.keys()) {
-      if (expectedEpoch !== epoch(user))
-        throw new Error("REMINDER_SESSION_CHANGED");
-      if (!authorized.has(vehicleId))
-        await cancelVehicleReminders(user, vehicleId);
+      if (expectedEpoch !== epoch(user)) throw new Error("REMINDER_SESSION_CHANGED");
+      if (!authorized.has(vehicleId)) await cancelVehicleReminders(user, vehicleId);
     }
-    const notificationGranted = (await Notifications.getPermissionsAsync())
-      .granted;
+    const notificationGranted = (await Notifications.getPermissionsAsync()).granted;
     for (const vehicle of vehicles) {
-      if (expectedEpoch !== epoch(user))
-        throw new Error("REMINDER_SESSION_CHANGED");
+      if (expectedEpoch !== epoch(user)) throw new Error("REMINDER_SESSION_CHANGED");
       if (vehicle.archived_at) {
         await cancelVehicleReminders(user, vehicle.id);
         continue;
@@ -266,23 +297,14 @@ export async function reconcileAccountReminders(
         await cancelVehicleReminders(user, vehicle.id);
         continue;
       }
-      const records = await listRecords(
-        user,
-        vehicle.id,
-        "reminders",
-        development,
-      );
-      if (expectedEpoch !== epoch(user))
-        throw new Error("REMINDER_SESSION_CHANGED");
+      const records = await listRecords(user, vehicle.id, "reminders", development);
+      if (expectedEpoch !== epoch(user)) throw new Error("REMINDER_SESSION_CHANGED");
       if (!notificationGranted) continue;
       await reconcileReminders(user, vehicle.id, records, {}, development);
-      const active = new Set(
-        records.filter((r) => r.status === "ACTIVE").map((r) => r.id),
-      );
+      const active = new Set(records.filter((r) => r.status === "ACTIVE").map((r) => r.id));
       for (const reminderId of scheduledByVehicle.get(vehicle.id) ?? []) {
         if (!active.has(reminderId)) {
-          const latest =
-            await Notifications.getAllScheduledNotificationsAsync();
+          const latest = await Notifications.getAllScheduledNotificationsAsync();
           for (const item of latest) {
             const meta = appReminder(item.content.data);
             if (
@@ -290,27 +312,12 @@ export async function reconcileAccountReminders(
               meta.vehicleId === vehicle.id &&
               meta.reminderId === reminderId
             )
-              await Notifications.cancelScheduledNotificationAsync(
-                item.identifier,
-              );
+              await Notifications.cancelScheduledNotificationAsync(item.identifier);
           }
         }
       }
     }
   });
-}
-export function nextRecurrence(date: string, repeat: string) {
-  const d = new Date(date);
-  const day = d.getUTCDate();
-  d.setUTCDate(1);
-  if (repeat === "MONTHLY") d.setUTCMonth(d.getUTCMonth() + 1);
-  else if (repeat === "YEARLY") d.setUTCFullYear(d.getUTCFullYear() + 1);
-  else return null;
-  const max = new Date(
-    Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0),
-  ).getUTCDate();
-  d.setUTCDate(Math.min(day, max));
-  return d.toISOString();
 }
 export async function clearDeviceNotifications(user?: string | null) {
   if (Platform.OS === "web") return;
@@ -327,42 +334,51 @@ export async function clearDeviceNotifications(user?: string | null) {
     if (!accountId || !vehicleId) continue;
     invalidateReminderSession(accountId);
     await serialized(`${accountId}:${vehicleId}`, () =>
-      cancelVehicleRemindersUnlocked(accountId, vehicleId),
+      cancelVehicleRemindersUnlocked(accountId, vehicleId)
     );
   }
   const presented = await Notifications.getPresentedNotificationsAsync();
   for (const item of presented) {
     const meta = appReminder(item.request.content.data);
-    if (meta && (!user || meta.accountId === user))
+    const recipient = item.request.content.data?.recipient_id;
+    if (
+      (meta && (!user || meta.accountId === user)) ||
+      (typeof recipient === "string" && (!user || recipient === user))
+    )
       await Notifications.dismissNotificationAsync(item.request.identifier);
   }
 }
 
 /** Foreground feedback is app-owned; background notifications keep the OS presentation. */
-export function startReminderFeedback(user: string) {
+export function startReminderFeedback(user: string, onServerNotification?: () => void) {
   if (Platform.OS === "web") return () => {};
   const belongsToAccount = (notification: Notifications.Notification) =>
     notification.request.content.data?.type === "gaadipulse.reminder" &&
     notification.request.content.data?.accountId === user;
+  const belongsToServerInbox = (notification: Notifications.Notification) =>
+    notification.request.content.data?.type === "gaadipulse.notification" &&
+    notification.request.content.data?.recipient_id === user;
   Notifications.setNotificationHandler({
     handleNotification: async (notification) => ({
-      shouldShowBanner:
-        !belongsToAccount(notification) || AppState.currentState !== "active",
-      shouldShowList:
-        !belongsToAccount(notification) || AppState.currentState !== "active",
+      shouldShowBanner: belongsToServerInbox(notification)
+        ? true
+        : !belongsToAccount(notification) || AppState.currentState !== "active",
+      shouldShowList: belongsToServerInbox(notification)
+        ? true
+        : !belongsToAccount(notification) || AppState.currentState !== "active",
       shouldPlaySound: !belongsToAccount(notification),
       shouldSetBadge: false,
     }),
   });
-  const subscription = Notifications.addNotificationReceivedListener(
-    (notification) => {
-      if (AppState.currentState !== "active" || !belongsToAccount(notification))
-        return;
-      const message =
-        notification.request.content.title || notification.request.content.body;
-      if (message) showToast(message, "reminder");
-    },
-  );
+  const subscription = Notifications.addNotificationReceivedListener((notification) => {
+    if (belongsToServerInbox(notification)) {
+      onServerNotification?.();
+      return;
+    }
+    if (AppState.currentState !== "active" || !belongsToAccount(notification)) return;
+    const message = notification.request.content.title || notification.request.content.body;
+    if (message) showToast(message, "reminder");
+  });
   return () => {
     subscription.remove();
     Notifications.setNotificationHandler(null);

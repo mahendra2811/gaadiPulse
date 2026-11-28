@@ -52,7 +52,13 @@ export function linkedReminder(
       origin: "DOCUMENT",
       due_at: payload.due_at,
       recurrence: "NONE",
-      metadata: { document_id: sourceId },
+      pilot_visible: meta.reminder_pilot_visible === true,
+      metadata: {
+        document_id: sourceId,
+        advance_days: Array.isArray(meta.reminder_advance_days)
+          ? meta.reminder_advance_days
+          : [30, 15, 7, 1],
+      },
     };
   if (
     kind === "expenses" &&
@@ -65,7 +71,13 @@ export function linkedReminder(
       origin: "EMI",
       due_at: meta.reminder_due_at,
       recurrence: meta.reminder_recurrence ?? "MONTHLY",
-      metadata: { expense_id: sourceId },
+      pilot_visible: meta.reminder_pilot_visible === true,
+      metadata: {
+        expense_id: sourceId,
+        advance_days: Array.isArray(meta.reminder_advance_days)
+          ? meta.reminder_advance_days
+          : [30, 15, 7, 1],
+      },
     };
   if (
     kind === "expenses" &&
@@ -80,7 +92,13 @@ export function linkedReminder(
       threshold_km: meta.next_km ?? "",
       threshold_hours: meta.next_hours ?? "",
       recurrence: "NONE",
-      metadata: { expense_id: sourceId },
+      pilot_visible: meta.reminder_pilot_visible === true,
+      metadata: {
+        expense_id: sourceId,
+        advance_days: Array.isArray(meta.reminder_advance_days)
+          ? meta.reminder_advance_days
+          : [30, 15, 7, 1],
+      },
     };
   return null;
 }

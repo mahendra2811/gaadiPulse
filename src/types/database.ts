@@ -201,6 +201,20 @@ export type Database = {
         requested_at: string;
         completed_at: string | null;
       }>;
+      user_notifications: Table<{
+        id: string;
+        user_id: string;
+        vehicle_id: string | null;
+        category: "REMINDER" | "ACCOUNT";
+        event_key: string;
+        title_en: string;
+        body_en: string;
+        title_hi: string;
+        body_hi: string;
+        route_data: Json;
+        created_at: string;
+        read_at: string | null;
+      }>;
     };
     Views: Record<string, never>;
     Functions: {
@@ -335,6 +349,47 @@ export type Database = {
       vehicle_access_grants_for_owner: {
         Args: { p_vehicle: string };
         Returns: Json;
+      };
+      register_push_device: {
+        Args: { p_installation: string; p_token: string; p_platform: string };
+        Returns: string;
+      };
+      deactivate_push_device: {
+        Args: { p_installation: string };
+        Returns: undefined;
+      };
+      read_notification_preferences: {
+        Args: Record<string, never>;
+        Returns: {
+          user_id: string;
+          push_enabled: boolean;
+          in_app_enabled: boolean;
+          reminders_enabled: boolean;
+          account_updates_enabled: boolean;
+          language: "AUTO" | "en-IN" | "hi-IN";
+          quiet_hours_enabled: boolean;
+          quiet_start: string;
+          quiet_end: string;
+          daily_push_limit: number;
+        };
+      };
+      save_notification_preferences: {
+        Args: {
+          p_push_enabled: boolean;
+          p_in_app_enabled: boolean;
+          p_reminders_enabled: boolean;
+          p_account_updates_enabled: boolean;
+          p_language: string;
+          p_quiet_hours_enabled: boolean;
+          p_quiet_start: string;
+          p_quiet_end: string;
+          p_daily_push_limit: number;
+        };
+        Returns: Database["public"]["Functions"]["read_notification_preferences"]["Returns"];
+      };
+      enqueue_due_reminder_notifications: {
+        Args: { p_now?: string };
+        Returns: number;
       };
     };
     Enums: Record<string, never>;

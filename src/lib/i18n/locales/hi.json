@@ -114,7 +114,8 @@
     "unsaved": "बिना सहेजे बाहर जाएँ?",
     "unsavedBody": "आपके बदलाव सेव नहीं हुए हैं। बाहर जाने पर उन्हें छोड़ दें या बदलाव जारी रखें।",
     "validPastTime": "रीडिंग दर्ज करने का असली समय चुनें। भविष्य का समय नहीं चुन सकते।",
-    "noPhoto": "फ़ोटो"
+    "noPhoto": "फ़ोटो",
+    "lastUpdatedAt": ""
   },
   "onboarding": {
     "onboardingContinue": "होम पर जाएँ",
@@ -775,7 +776,8 @@
     "yesterday": "कल",
     "noAttachment": "अटैचमेंट",
     "photo": "फ़ोटो",
-    "photoDisabled": "फ़ोटो ज़रूरी"
+    "photoDisabled": "फ़ोटो ज़रूरी",
+    "reminderHistory": ""
   },
   "reminders": {
     "documentExpiry": "एक्सपायरी / नवीनीकरण की तारीख",
@@ -1266,5 +1268,43 @@
     "time": "समय",
     "title": "शीर्षक दर्ज करें।",
     "twoValues": "इनमें से कोई भी दो दर्ज करें: रकम, मात्रा और प्रति यूनिट कीमत।"
+  },
+  "notifications": {
+    "accountUpdates": "",
+    "advanceDays": "",
+    "autoLanguage": "",
+    "center": "",
+    "dailyLimit": "",
+    "dailyLimitHint": "",
+    "drivingLicence": "",
+    "empty": "",
+    "enablePush": "",
+    "enablePushHint": "",
+    "fitness": "",
+    "inApp": "",
+    "insurance": "",
+    "language": "",
+    "loadMore": "",
+    "markAllRead": "",
+    "notificationSaved": "",
+    "permissionDenied": "",
+    "preferences": "",
+    "puc": "",
+    "quietEnd": "",
+    "quietHours": "",
+    "quietStart": "",
+    "registration": "",
+    "reminderAlerts": "",
+    "service": "",
+    "signInForInbox": "",
+    "unread": "",
+    "permissionError": "",
+    "savePreferences": "",
+    "days": "",
+    "permissionEnabled": "",
+    "pushEnabled": "",
+    "signInForSettings": "",
+    "timeFormat": "",
+    "unreadCount": ""
   }
 }

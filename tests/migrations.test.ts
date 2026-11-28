@@ -289,29 +289,54 @@ it("applies the linked project's missing migrations after its recorded versions"
     const result = await db.query<{
       record_author: string | null;
       recent_fuel: string | null;
+      fuel_page: string | null;
       expense_page: string | null;
       currency_column: string | null;
       archived_guard: number;
       active_locale_count: number;
       arabic_direction: string | null;
+      query_index_count: number;
+      fuel_page_projects_needed_fields: boolean;
     }>(`select
       to_regprocedure('public.record_author_name(text,uuid,uuid)')::text as record_author,
       to_regprocedure('public.recent_fuel_activity(uuid,integer)')::text as recent_fuel,
+      to_regprocedure('public.fuel_history_page(uuid,date,date,bigint,bigint,text,integer,integer)')::text as fuel_page,
       to_regprocedure('public.expense_history_page(uuid,date,text,text,timestamptz,uuid,integer)')::text as expense_page,
       (select column_name from information_schema.columns where table_schema='public' and table_name='vehicles' and column_name='currency_code') as currency_column,
       (select count(*)::int from pg_trigger where tgrelid='public.expenses'::regclass and tgname='archived_expense_guard' and not tgisinternal) as archived_guard,
       (select count(*)::int from public.supported_locales where active) as active_locale_count,
-      (select direction from public.supported_locales where code='ar-SA') as arabic_direction`);
+      (select direction from public.supported_locales where code='ar-SA') as arabic_direction,
+      (select count(*)::int from pg_indexes where schemaname='public' and indexname in (
+        'fuel_vehicle_history_cursor','expense_vehicle_history_cursor',
+        'meter_vehicle_type_status_observed','vehicle_members_user_active_vehicle',
+        'grants_resolved_user_status','expense_items_expense_currency',
+        'maintenance_vehicle_expense','progress_vehicle_created_cursor'
+      )) as query_index_count,
+      (select position('select f.id, f.vehicle_id, f.created_by, f.revision, f.status' in pg_get_functiondef('public.fuel_history_page(uuid,date,date,bigint,bigint,text,integer,integer)'::regprocedure)) > 0) as fuel_page_projects_needed_fields`);
     expect(result.rows[0]).toEqual({
       record_author: "record_author_name(text,uuid,uuid)",
       recent_fuel: "recent_fuel_activity(uuid,integer)",
+      fuel_page:
+        "fuel_history_page(uuid,date,date,bigint,bigint,text,integer,integer)",
       expense_page:
         "expense_history_page(uuid,date,text,text,timestamp with time zone,uuid,integer)",
       currency_column: "currency_code",
       archived_guard: 1,
       active_locale_count: 45,
       arabic_direction: "rtl",
+      query_index_count: 8,
+      fuel_page_projects_needed_fields: true,
     });
+    const plan = await db.query<{ "QUERY PLAN": string }>(
+      `explain (analyze, buffers, format text)
+       select id from public.fuel_logs
+       where vehicle_id='10000000-0000-4000-8000-000000000001'
+       order by created_at desc, id desc limit 30`,
+    );
+    expect(plan.rows.length).toBeGreaterThan(0);
+    expect(plan.rows.map((row) => row["QUERY PLAN"]).join("\n")).toContain(
+      "Execution Time",
+    );
   } finally {
     await db.close();
   }

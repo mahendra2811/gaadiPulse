@@ -54,8 +54,10 @@ export function useFuelHistory(
   const query = useInfiniteQuery({
     queryKey: [user, vehicle, "fuel-history", allowed, filters],
     enabled: !!user && !!vehicle && enabled,
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
     initialPageParam: 0,
-    queryFn: async ({ pageParam }) => {
+    queryFn: async ({ pageParam, signal }) => {
       if (!allowed) throw new Error("PERMISSION_DENIED");
       if (!development && !onlineManager.isOnline())
         throw new Error(t("networkError"));
@@ -105,7 +107,7 @@ export function useFuelHistory(
           ),
         };
       }
-      const { data, error } = await client().rpc("fuel_history_page", {
+      let request = client().rpc("fuel_history_page", {
         p_vehicle: vehicle!,
         p_start: filters.start || null,
         p_end: filters.end || null,
@@ -115,6 +117,8 @@ export function useFuelHistory(
         p_offset: pageParam,
         p_limit: pageSize,
       });
+      if ("abortSignal" in request) request = request.abortSignal(signal);
+      const { data, error } = await request;
       if (error) throw new Error(error.message);
       const result = parsePage(data);
       const rows = recordSchema.array().parse(result.rows);

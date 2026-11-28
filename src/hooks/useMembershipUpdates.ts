@@ -17,8 +17,42 @@ export function useMembershipUpdates() {
           table: "vehicle_members",
           filter: `user_id=eq.${session.user.id}`,
         },
-        () => {
-          void query.invalidateQueries();
+        (payload) => {
+          const vehicleId = String(
+            (payload.new as { vehicle_id?: string } | null)?.vehicle_id ??
+              (payload.old as { vehicle_id?: string } | null)?.vehicle_id ??
+              "",
+          );
+          if (!vehicleId) {
+            void query.invalidateQueries({
+              queryKey: [session.user.id, "vehicles"],
+            });
+            return;
+          }
+          void query.cancelQueries({
+            predicate: (item) =>
+              item.queryKey[0] === session.user.id &&
+              item.queryKey[1] === vehicleId,
+          });
+          const revoked =
+            (payload.new as { status?: string } | null)?.status === "REVOKED" ||
+            (payload.old as { status?: string } | null)?.status === "ACTIVE";
+          if (revoked) {
+            query.removeQueries({
+              predicate: (item) =>
+                item.queryKey[0] === session.user.id &&
+                item.queryKey[1] === vehicleId,
+            });
+          } else {
+            void query.invalidateQueries({
+              predicate: (item) =>
+                item.queryKey[0] === session.user.id &&
+                item.queryKey[1] === vehicleId,
+            });
+          }
+          void query.invalidateQueries({
+            queryKey: [session.user.id, "vehicles"],
+          });
         },
       )
       .subscribe();

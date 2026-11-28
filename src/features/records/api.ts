@@ -52,6 +52,7 @@ export async function listRecords(
   vehicle: string,
   kind: Kind,
   development: boolean,
+  signal?: AbortSignal,
 ): Promise<RecordEntry[]> {
   if (development) {
     const records = recordSchema
@@ -104,7 +105,8 @@ export async function listRecords(
               .order("created_at", { ascending: false })
               .order("id", { ascending: false })
               .range(offset, offset + 249);
-    const { data, error } = await request;
+    const cancellable = signal ? request.abortSignal(signal) : request;
+    const { data, error } = await cancellable;
     if (error) throw new Error(error.message);
     const responseRows =
       ["fuel", "expenses"].includes(kind) && data && !Array.isArray(data)

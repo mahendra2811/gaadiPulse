@@ -98,11 +98,14 @@ export function VehicleMembersSection({
   const query = useQuery({
     queryKey: [user, v?.id, "members"],
     enabled: !!v && access.data?.owner === true,
+    staleTime: 15_000,
+    gcTime: 60_000,
     queryFn: () => members(v!.id, development),
   });
   const pilotPolicy = useQuery({
     queryKey: [user, v?.id, "pilot-policy"],
     enabled: !!v && access.data?.owner === true,
+    staleTime: 5 * 60_000,
     queryFn: async () => {
       if (!development) await requirePilotPolicy();
       return true;
@@ -151,7 +154,11 @@ export function VehicleMembersSection({
     setError("");
     try {
       await action();
-      await qc.invalidateQueries();
+      await qc.invalidateQueries({
+        predicate: (entry) =>
+          entry.queryKey[0] === user &&
+          (entry.queryKey[1] === v.id || entry.queryKey[1] === "vehicles"),
+      });
       toast(message, "success");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

@@ -6,14 +6,18 @@ import {
   keepsAuthenticatedAuthScreen,
   profileRedirect,
 } from "@/src/features/auth/routing";
-import { View, Appearance, Platform } from "react-native";
+import { AppState, View, Appearance, Platform } from "react-native";
 import { AuthLayout } from "@/src/features/auth/AuthLayout";
 import { useConnectivity } from "@/src/lib/connectivity";
 import { ErrorBoundary } from "@/src/components/ui/ErrorBoundary";
 import "react-native-gesture-handler";
 import { useEffect, useState } from "react";
 import { Stack, useRouter, useSegments, usePathname } from "expo-router";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  focusManager,
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -33,6 +37,7 @@ import {
 } from "@/src/components/ui";
 import { setLocale, t } from "@/src/lib/i18n";
 import { useLocaleSubscription } from "@/src/hooks/useLocale";
+import { queryRetryDelay, shouldRetryQuery } from "@/src/lib/query";
 import { releaseFeatures } from "@/src/features/release/scope";
 import {
   clearDeviceNotifications,
@@ -41,11 +46,12 @@ import {
 const query = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: false,
       staleTime: 30_000,
       gcTime: 5 * 60_000,
       networkMode: "always",
       refetchOnWindowFocus: true,
+      retry: shouldRetryQuery,
+      retryDelay: queryRetryDelay,
     },
     mutations: { retry: false, networkMode: "always" },
   },
@@ -220,6 +226,13 @@ function Routes() {
   );
 }
 export default function RootLayout() {
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    const subscription = AppState.addEventListener("change", (state) => {
+      focusManager.setFocused(state === "active");
+    });
+    return () => subscription.remove();
+  }, []);
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={query}>

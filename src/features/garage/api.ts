@@ -10,12 +10,18 @@ import {
   type Vehicle,
   type VehicleInput,
 } from "./schema";
-export async function listVehicles(development = false): Promise<Vehicle[]> {
+export async function listVehicles(
+  development = false,
+  signal?: AbortSignal,
+): Promise<Vehicle[]> {
   if (development) return listDevelopmentVehicles();
   const session = await client().auth.getSession();
   const user = session.data.session?.user.id;
   if (!user) throw new Error("NOT_AUTHENTICATED");
-  const { data, error } = await client().rpc("list_my_vehicles_v2");
+  const request = client().rpc("list_my_vehicles_v2");
+  const cancellable =
+    signal && "abortSignal" in request ? request.abortSignal(signal) : request;
+  const { data, error } = await cancellable;
   if (error) throw new Error(error.message);
   // Null is an unknown/malformed response, not confirmation of no access.
   return vehicleRecordSchema.array().parse(data);

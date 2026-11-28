@@ -19,6 +19,7 @@ export async function observations(
   history = false,
   offset = 0,
   limit = 30,
+  signal?: AbortSignal,
 ) {
   if (development)
     return observationSchema
@@ -36,6 +37,7 @@ export async function observations(
     .order("observed_at", { ascending: false })
     .order("id", { ascending: false })
     .range(offset, offset + Math.max(1, Math.min(limit, 100)) - 1);
+  if (signal && "abortSignal" in request) request = request.abortSignal(signal);
   if (!history) request = request.eq("status", "ACTIVE");
   const { data, error } = await request;
   if (error) throw new Error(error.message);

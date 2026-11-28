@@ -27,6 +27,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   Text,
   TextInput,
@@ -292,6 +293,8 @@ export function Screen({
   compact = false,
   contentKey,
   banner,
+  onRefresh,
+  refreshing = false,
 }: {
   title: string;
   children: ReactNode;
@@ -301,6 +304,8 @@ export function Screen({
   compact?: boolean;
   contentKey?: string | number;
   banner?: ScreenBannerName;
+  onRefresh?: () => void;
+  refreshing?: boolean;
 }) {
   const c = useTheme();
   const path = usePathname();
@@ -332,6 +337,11 @@ export function Screen({
           key={contentKey}
           style={{ flex: 1, minHeight: 0 }}
           keyboardShouldPersistTaps="handled"
+          refreshControl={
+            onRefresh ? (
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            ) : undefined
+          }
           contentContainerStyle={{
             padding: compact ? 16 : 20,
             gap: compact ? 12 : 18,

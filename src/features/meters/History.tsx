@@ -60,10 +60,10 @@ function MeterHistoryContent() {
   const [type, setType] = useState("ALL");
   const [limit, setLimit] = useState(12);
   const query = useQuery({
-    queryKey: [user, vehicle?.id, "observations", limit],
+    queryKey: [user, vehicle?.id, "observations", "history", limit],
     enabled: !!vehicle,
-    queryFn: () =>
-      loadObservations(user!, vehicle!.id, development, true, 0, limit),
+    queryFn: ({ signal }) =>
+      loadObservations(user!, vehicle!.id, development, true, 0, limit, signal),
   });
   const correct = async (retract = false) => {
     if (!selected || !vehicle || busy) return;
@@ -95,7 +95,10 @@ function MeterHistoryContent() {
       }
       setOperation(Crypto.randomUUID());
       await qc.invalidateQueries({
-        queryKey: [user, vehicle.id, "observations"],
+        predicate: (entry) =>
+          entry.queryKey[0] === user &&
+          entry.queryKey[1] === vehicle.id &&
+          entry.queryKey[2] === "observations",
       });
       setSelected(null);
       setCorrecting(false);
@@ -142,6 +145,14 @@ function MeterHistoryContent() {
           })
         }
       />
+      {query.dataUpdatedAt > 0 && (
+        <AppText muted>
+          {t("lastUpdatedAt").replace(
+            "{time}",
+            new Date(query.dataUpdatedAt).toLocaleTimeString(),
+          )}
+        </AppText>
+      )}
       {permissions.data?.owner === false && (
         <AppText muted>{t("pilotHistoryHint")}</AppText>
       )}

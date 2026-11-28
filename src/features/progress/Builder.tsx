@@ -73,6 +73,8 @@ function BuilderEditor() {
   const query = useQuery({
     queryKey: [user, vehicle?.id, "forms"],
     enabled: !!vehicle,
+    staleTime: 5 * 60_000,
+    gcTime: 15 * 60_000,
     queryFn: () => formVersions(vehicle!.id, development),
   });
   const [definition, setDefinition] =

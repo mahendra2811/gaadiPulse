@@ -7,10 +7,48 @@ import { validatePayload } from "@/src/features/records/payloadSchemas";
 import { recordSchema } from "@/src/features/records/schema";
 import { recentFuelRows, recentFuelWithFallback } from "./recentFuel";
 
+export async function loadRecentFuel(
+  user: string,
+  vehicle: { id: string; role: "OWNER" | "PILOT"; timezone: string },
+  development: boolean,
+  now: number,
+  signal?: AbortSignal,
+) {
+  if (development)
+    return recentFuelRows(
+      await listRecords(user, vehicle.id, "fuel", true, signal),
+      vehicle.role,
+      vehicle.timezone,
+      now,
+    );
+  let request = client().rpc("recent_fuel_activity", {
+    p_vehicle: vehicle.id,
+    p_limit: 10,
+  });
+  if (signal && "abortSignal" in request) request = request.abortSignal(signal);
+  const result = await request;
+  const data = await recentFuelWithFallback(result, async () =>
+    recentFuelRows(
+      await listRecords(user, vehicle.id, "fuel", false, signal),
+      vehicle.role,
+      vehicle.timezone,
+      now,
+    ),
+  );
+  return recordSchema
+    .array()
+    .parse(data)
+    .map((row) => ({
+      ...row,
+      payload: validatePayload("fuel", row.payload),
+    }));
+}
+
 export function useRecentFuel(
-  vehicle: { id: string; role: "OWNER" | "PILOT"; timezone: string } | undefined,
+  vehicle:
+    { id: string; role: "OWNER" | "PILOT"; timezone: string } | undefined,
   enabled: boolean,
-  now: number
+  now: number,
 ) {
   const user = useAccountId();
   const { development } = useSession();
@@ -18,34 +56,9 @@ export function useRecentFuel(
   return useQuery({
     queryKey: [user, vehicle?.id, "recent-fuel", vehicle?.role, localDate],
     enabled: !!user && !!vehicle && enabled,
-    queryFn: async () => {
-      if (development) {
-        return recentFuelRows(
-          await listRecords(user!, vehicle!.id, "fuel", true),
-          vehicle!.role,
-          vehicle!.timezone,
-          Date.now()
-        );
-      }
-      const result = await client().rpc("recent_fuel_activity", {
-        p_vehicle: vehicle!.id,
-        p_limit: 10,
-      });
-      const data = await recentFuelWithFallback(result, async () =>
-        recentFuelRows(
-          await listRecords(user!, vehicle!.id, "fuel", false),
-          vehicle!.role,
-          vehicle!.timezone,
-          Date.now()
-        )
-      );
-      return recordSchema
-        .array()
-        .parse(data)
-        .map((row) => ({
-          ...row,
-          payload: validatePayload("fuel", row.payload),
-        }));
-    },
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+    queryFn: ({ signal }) =>
+      loadRecentFuel(user!, vehicle!, development, Date.now(), signal),
   });
 }

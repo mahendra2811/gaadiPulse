@@ -12,9 +12,13 @@ export function useVehicles() {
   const previous = useRef<string[]>([]);
   const result = useQuery({
     queryKey: [user, "vehicles"],
-    queryFn: () => listVehicles(development),
+    queryFn: ({ signal }) => listVehicles(development, signal),
     enabled: !!user,
-    refetchInterval: 30000,
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+    refetchOnMount: "always",
+    refetchOnReconnect: true,
+    refetchOnWindowFocus: true,
   });
   useEffect(() => {
     if (!result.data || !user) return;

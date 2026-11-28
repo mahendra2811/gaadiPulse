@@ -352,6 +352,26 @@ export function RecordsList({
         active.isPending || (!!v && (permissions.isPending || query.isPending))
       }
       banner={kind === "fuel" ? "fuel" : "expenses"}
+      onRefresh={() =>
+        void Promise.all([
+          active.refetch(),
+          permissions.refetch(),
+          kind === "fuel"
+            ? fuelQuery.refetch()
+            : kind === "expenses"
+              ? expenseQuery.refetch()
+              : otherQuery.refetch(),
+        ])
+      }
+      refreshing={
+        active.isRefetching ||
+        permissions.isRefetching ||
+        (kind === "fuel"
+          ? fuelQuery.isRefetching
+          : kind === "expenses"
+            ? expenseQuery.isRefetching
+            : otherQuery.isRefetching)
+      }
     >
       <VehicleHeader vehicleId={v?.id} allowSwitch={!contextVehicle} />
       {active.error && (
@@ -384,6 +404,14 @@ export function RecordsList({
             }
             onAction={() => go(kind, "add", v.id)}
           />
+          {query.dataUpdatedAt > 0 && (
+            <AppText muted>
+              {t("lastUpdatedAt").replace(
+                "{time}",
+                new Date(query.dataUpdatedAt).toLocaleTimeString(),
+              )}
+            </AppText>
+          )}
           {permissions.data?.owner === false && (
             <AppText muted>{t("pilotHistoryHint")}</AppText>
           )}
@@ -2169,7 +2197,12 @@ export function RecordDetail({
         status,
       );
       setMutationOperation(Crypto.randomUUID());
-      await qc.invalidateQueries();
+      await qc.invalidateQueries({
+        predicate: (entry) =>
+          entry.queryKey[0] === user &&
+          (entry.queryKey[1] === row.vehicle_id ||
+            entry.queryKey[1] === "vehicles"),
+      });
       toast(status === "ARCHIVED" ? r("recordDeleted") : r("saved"), "success");
       if (status === "ARCHIVED") {
         if (onClose) onClose();
@@ -2193,7 +2226,10 @@ export function RecordDetail({
         note,
         development,
       );
-      await qc.invalidateQueries();
+      await qc.invalidateQueries({
+        predicate: (entry) =>
+          entry.queryKey[0] === user && entry.queryKey[1] === row.vehicle_id,
+      });
       toast(r("saved"), "success");
     } catch (e) {
       setError(String(e));

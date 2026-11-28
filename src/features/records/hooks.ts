@@ -10,6 +10,8 @@ export function usePermissions(vehicleId?: string) {
   const query = useQuery({
     queryKey: [user, vehicleId, "permissions"],
     enabled: !!user && !!vehicleId,
+    staleTime: 15_000,
+    gcTime: 60_000,
     queryFn: () => access(vehicleId!, development),
   });
   return { ...query, data: query.error ? undefined : query.data };
@@ -22,7 +24,10 @@ export function useRecords(kind: Kind, vehicleId?: string, enabled = true) {
   const query = useQuery({
     queryKey: [user, vehicle, "records", kind],
     enabled: enabled && !!user && !!vehicle && supportsRecord(kind),
-    queryFn: () => listRecords(user!, vehicle!, kind, development),
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+    queryFn: ({ signal }) =>
+      listRecords(user!, vehicle!, kind, development, signal),
   });
   return { ...query, data: query.error ? undefined : query.data };
 }

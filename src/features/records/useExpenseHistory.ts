@@ -116,8 +116,10 @@ export function useExpenseHistory(
       allowed,
     ],
     enabled: !!user && !!vehicle && enabled,
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
     initialPageParam: null as Cursor,
-    queryFn: async ({ pageParam }) => {
+    queryFn: async ({ pageParam, signal }) => {
       if (!allowed) throw new Error("PERMISSION_DENIED");
       if (!development && !onlineManager.isOnline())
         throw new Error(t("networkError"));
@@ -128,7 +130,7 @@ export function useExpenseHistory(
           pageParam,
         );
       }
-      const { data, error } = await client().rpc("expense_history_page", {
+      let request = client().rpc("expense_history_page", {
         p_vehicle: vehicle!.id,
         p_start: filters.start,
         p_status: filters.status,
@@ -137,6 +139,8 @@ export function useExpenseHistory(
         p_before_id: pageParam?.id ?? null,
         p_limit: pageSize,
       });
+      if ("abortSignal" in request) request = request.abortSignal(signal);
+      const { data, error } = await request;
       if (error) throw new Error(error.message);
       if (!data || typeof data !== "object")
         throw new Error("EXPENSE_HISTORY_RESPONSE_INVALID");

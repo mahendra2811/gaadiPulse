@@ -61,6 +61,7 @@
     "leaveForm": "Leave form",
     "linkedOwnerOnly": "The linked reminder is Owner-only by default; its visibility can be changed in Reminders.",
     "loadingMore": "Loading more…",
+    "lastUpdatedAt": "Last updated {time}",
     "name": "Display name",
     "networkError": "Unable to confirm the request. Keep this form open, check your connection and retry. Nothing will upload automatically.",
     "noAccess": "You do not have permission to read meter history.",

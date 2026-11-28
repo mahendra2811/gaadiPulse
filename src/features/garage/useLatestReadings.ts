@@ -12,7 +12,11 @@ export function useLatestReadings(vehicleId?: string) {
   return useQuery({
     queryKey: [user, vehicleId, "latest-observations"],
     enabled: !!user && !!vehicleId && access.data?.metersRead === true,
-    refetchInterval: 15000,
+    gcTime: 2 * 60_000,
+    staleTime: 30_000,
+    refetchOnMount: true,
+    refetchOnReconnect: true,
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       if (development) return developmentReadings(vehicleId!);
       const { data, error } = await client().rpc("latest_meter_readings", {

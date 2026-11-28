@@ -8,7 +8,7 @@ import { SearchField } from "@/src/components/ui/SearchField";
 import { r } from "@/src/features/records/copy";
 import { Dashboard } from "@/src/features/dashboard/Dashboard";
 import { useVehicleAccess } from "@/src/hooks/useVehicleAccess";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { View, Text, Pressable, useWindowDimensions } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import {
@@ -38,6 +38,12 @@ import { vehicleArt } from "@/src/lib/assets";
 import { formatNumber, t } from "@/src/lib/i18n";
 import { useSession, useAccountId } from "@/src/features/auth/session";
 import { useProfile } from "@/src/features/auth/profile";
+import { dateInZone } from "@/src/features/progress/schema";
+function permissionsAllowFuel(
+  value: Record<string, boolean | number> | undefined,
+) {
+  return value?.["fuel.read"] === true;
+}
 export function Garage() {
   const query = useVehicles();
   const active = useActiveVehicle();
@@ -75,6 +81,8 @@ export function Garage() {
       loading={query.isPending}
       compact
       banner="garage"
+      onRefresh={() => void query.refetch()}
+      refreshing={query.isRefetching}
     >
       <AppText muted>{t("uiGarageHint")}</AppText>
       <AppButton label={t("add")} onPress={() => router.push("/garage/add")} />
@@ -307,6 +315,7 @@ export function Garage() {
 }
 export function VehicleDetails() {
   const { development } = useSession();
+  const user = useAccountId();
   const { id, add } = useLocalSearchParams<{ id: string; add?: string }>();
   const query = useVehicles();
   const vehicle = query.data?.find((v) => v.id === id);
@@ -319,7 +328,7 @@ export function VehicleDetails() {
     setBusy(true);
     try {
       await archiveVehicle(id, !vehicle?.archived_at, development);
-      await qc.invalidateQueries();
+      await qc.invalidateQueries({ queryKey: [user, "vehicles"] });
       toast(t("saved"), "success");
     } catch (e) {
       setError(String(e));
@@ -444,6 +453,7 @@ export function VehicleDetails() {
 }
 export function Home() {
   const query = useActiveVehicle();
+  const { development } = useSession();
   const profile = useProfile();
   const user = useAccountId();
   const v = query.vehicle;
@@ -452,6 +462,20 @@ export function Home() {
   const now = useCurrentTime();
   const readings = useLatestReadings(v?.id);
   const queryClient = useQueryClient();
+  useEffect(() => {
+    if (!user || !v || !permissionsAllowFuel(access.data) || development)
+      return;
+    const day = dateInZone(new Date(now), v.timezone);
+    void queryClient.prefetchQuery({
+      queryKey: [user, v.id, "recent-fuel", v.role, day],
+      staleTime: 60_000,
+      queryFn: async ({ signal }) => {
+        const { loadRecentFuel } =
+          await import("@/src/features/dashboard/useRecentFuel");
+        return loadRecentFuel(user, v, false, now, signal);
+      },
+    });
+  }, [queryClient, user, v, access.data, now, development]);
   useFocusEffect(
     useCallback(() => {
       if (user && vehicleId)
@@ -478,6 +502,16 @@ export function Home() {
         (!!v &&
           (access.isPending ||
             (access.data?.metersRead === true && readings.isPending)))
+      }
+      onRefresh={() =>
+        void Promise.all([
+          query.refetch(),
+          access.refetch(),
+          readings.refetch(),
+        ])
+      }
+      refreshing={
+        query.isRefetching || access.isRefetching || readings.isRefetching
       }
     >
       <View

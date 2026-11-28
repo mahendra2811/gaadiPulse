@@ -30,7 +30,9 @@ export function useProfile() {
   return useQuery({
     queryKey: [user, "profile"],
     enabled: !!user,
-    queryFn: async (): Promise<Profile> => {
+    staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
+    queryFn: async ({ signal }): Promise<Profile> => {
       if (development) {
         const profile = await developmentProfile();
         return {
@@ -48,11 +50,17 @@ export function useProfile() {
             : "INR",
         };
       }
-      const { data, error } = await client()
+      let request = client()
         .from("profiles")
         .select("*")
         .eq("id", session!.user.id)
         .single();
+      const abortable = request as typeof request & {
+        abortSignal?: (value: AbortSignal) => typeof request;
+      };
+      if (typeof abortable.abortSignal === "function")
+        request = abortable.abortSignal(signal);
+      const { data, error } = await request;
       if (error) throw new Error(error.message);
       const record = z
         .object({

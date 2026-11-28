@@ -28,6 +28,7 @@ import {
 } from "./schema";
 import { useVehicles } from "./hooks";
 import { saveVehicle } from "./api";
+import { trackAnalyticsEvent } from "@/src/features/analytics/analytics";
 import { useSession, useAccountId } from "@/src/features/auth/session";
 import { useProfile } from "@/src/features/auth/profile";
 import { subtypeOptions, subtypeLabel } from "./subtypes";
@@ -229,6 +230,10 @@ export default function VehicleForm() {
           vehicle?.updated_at,
           development,
         );
+        if (!id && !development) {
+          trackAnalyticsEvent("vehicle_created");
+          trackAnalyticsEvent("form_completed", { feature: "garage" });
+        }
         setAllowExit(true);
         await qc.invalidateQueries({ queryKey: [user!, "vehicles"] });
         toast(t("saved"), "success");

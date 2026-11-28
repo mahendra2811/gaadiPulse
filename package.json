@@ -77,6 +77,7 @@
     "format": "prettier --write app src tests scripts *.json *.ts",
     "format:check": "prettier --check app src tests scripts *.json *.ts",
     "i18n:check": "node scripts/check-locales.mjs",
+    "i18n:check:required": "node scripts/check-locales.mjs --required",
     "i18n:check:complete": "node scripts/check-locales.mjs --strict",
     "test": "vitest run"
   },

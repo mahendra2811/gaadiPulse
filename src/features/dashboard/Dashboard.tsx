@@ -1,7 +1,7 @@
 import { PageSkeleton } from "@/src/components/ui/PageSkeleton";
 import { releaseFeatures } from "@/src/features/release/scope";
 import { useState } from "react";
-import { View, Text } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
 import { useReminderReconciliation } from "@/src/features/reminders/useReminders";
@@ -21,18 +21,17 @@ import {
 import { useActiveVehicle } from "@/src/features/garage/hooks";
 import { useRecords, usePermissions } from "@/src/features/records/hooks";
 import { useFuelHistory } from "@/src/features/records/useFuelHistory";
+import { useExpenseHistory } from "@/src/features/records/useExpenseHistory";
 import { useRecentFuel } from "./useRecentFuel";
+import { useRecentExpenses } from "./useRecentExpenses";
 import { compareRecentEvents } from "./recentFuel";
 import { r } from "@/src/features/records/copy";
 import { moneyIn } from "@/src/utils/money";
-import {
-  recordMoney,
-  recordMinorAmount,
-  recordCurrency,
-} from "@/src/features/records/currency";
+import { recordMoney } from "@/src/features/records/currency";
 import { dateInZone } from "@/src/features/progress/schema";
 import { useTheme } from "@/src/lib/theme";
 import { formatDate, t } from "@/src/lib/i18n";
+import { summaryBounds, type SummaryPeriod } from "./summaryPeriod";
 export function Dashboard() {
   return releaseFeatures.advancedTools ? (
     <AdvancedDashboard />
@@ -70,49 +69,55 @@ function DashboardContent({
 }) {
   const { vehicle } = useActiveVehicle();
   const permissions = usePermissions(vehicle?.id);
-  const expenses = useRecords("expenses");
   const reminders = useRecords("reminders");
   const now = useCurrentTime();
   const c = useTheme();
+  const [summaryPeriod, setSummaryPeriod] = useState<SummaryPeriod>("week");
   const [moreActions, setMoreActions] = useState(false);
   const [moreActivity, setMoreActivity] = useState(false);
-  const month = dateInZone(
-    new Date(now),
-    vehicle?.timezone ?? "Asia/Kolkata",
-  ).slice(0, 7);
-  const [monthYear, monthNumber] = month.split("-").map(Number);
-  const monthEnd = `${month}-${String(new Date(Date.UTC(monthYear, monthNumber, 0)).getUTCDate()).padStart(2, "0")}`;
+  const timezone = vehicle?.timezone ?? "Asia/Kolkata";
+  const localDate = dateInZone(new Date(now), timezone);
+  const bounds = summaryBounds(now, timezone, summaryPeriod);
   const fuel = useRecentFuel(vehicle, !!permissions.data?.["fuel.read"], now);
-  const monthlyFuel = useFuelHistory(
+  const recentExpenses = useRecentExpenses(
+    vehicle,
+    !!permissions.data?.["expenses.read"],
+    now,
+  );
+  const summaryFuel = useFuelHistory(
     vehicle?.id,
     !!permissions.data?.owner && !!permissions.data["fuel.read"],
     true,
     {
-      start: `${month}-01`,
-      end: monthEnd,
+      start: bounds.start,
+      end: bounds.end,
       min: null,
       max: null,
       search: "",
-      timezone: vehicle?.timezone ?? "Asia/Kolkata",
+      timezone,
       currency: vehicle?.default_currency_code,
     },
   );
-  const total = (entries: typeof expenses.data) =>
-    entries
-      ?.filter(
-        (row) =>
-          row.status !== "ARCHIVED" &&
-          dateInZone(
-            new Date(String(row.payload.event_at)),
-            vehicle?.timezone ?? "Asia/Kolkata",
-          ).startsWith(month),
-      )
-      .filter(
-        (row) =>
-          recordCurrency(row.payload) ===
-          (vehicle?.default_currency_code ?? "INR"),
-      )
-      .reduce((sum, row) => sum + recordMinorAmount(row.payload), 0) ?? 0;
+  const expenseSummary = useExpenseHistory(
+    vehicle
+      ? {
+          id: vehicle.id,
+          role: vehicle.role,
+          timezone,
+          default_currency_code: vehicle.default_currency_code,
+        }
+      : undefined,
+    !!permissions.data?.owner,
+    !!permissions.data?.["expenses.read"],
+    {
+      start: bounds.start,
+      search: "",
+      status: "ALL",
+      timezone,
+      localDate,
+      currency: vehicle?.default_currency_code,
+    },
+  );
   const navigate = (kind: string, action?: string) =>
     router.push(
       action
@@ -189,12 +194,13 @@ function DashboardContent({
         kind: "fuel",
       }),
     ),
-    ...(permissions.data?.["expenses.read"] ? (expenses.data ?? []) : []).map(
-      (row) => ({
-        ...row,
-        kind: "expenses",
-      }),
-    ),
+    ...(permissions.data?.["expenses.read"]
+      ? (recentExpenses.data ?? [])
+      : []
+    ).map((row) => ({
+      ...row,
+      kind: "expenses",
+    })),
   ]
     .filter(
       (row) =>
@@ -225,8 +231,8 @@ function DashboardContent({
   const activityPending =
     (!!permissions.data?.["fuel.read"] && fuel.isPending && !fuel.error) ||
     (!!permissions.data?.["expenses.read"] &&
-      expenses.isPending &&
-      !expenses.error);
+      recentExpenses.isPending &&
+      !recentExpenses.error);
   return (
     <>
       {permissions.error && (
@@ -298,7 +304,84 @@ function DashboardContent({
         (permissions.data?.["fuel.read"] ||
           permissions.data?.["expenses.read"]) && (
           <>
-            <SectionHeading title={t("uiThisMonth")} />
+            <SectionHeading
+              title={t(summaryPeriod === "week" ? "uiThisWeek" : "uiThisMonth")}
+            />
+            <View
+              accessibilityRole="radiogroup"
+              style={{ flexDirection: "row", gap: 8 }}
+            >
+              {(["week", "month"] as const).map((period) => {
+                const selected = summaryPeriod === period;
+                const label = t(period === "week" ? "uiWeekly" : "uiMonthly");
+                return (
+                  <Pressable
+                    key={period}
+                    accessibilityRole="radio"
+                    accessibilityLabel={label}
+                    accessibilityState={{ checked: selected }}
+                    onPress={() => setSummaryPeriod(period)}
+                    style={{
+                      flex: 1,
+                      minHeight: 56,
+                      paddingHorizontal: 12,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderWidth: selected ? 2 : 1,
+                      borderColor: selected ? c.primary : c.line,
+                      borderRadius: 16,
+                      backgroundColor: selected ? c.surface : c.background,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: selected ? c.primary : c.ink,
+                        fontSize: 15,
+                        fontWeight: "700",
+                      }}
+                    >
+                      {label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <AppText muted>
+              {t("uiPeriodRange")
+                .replace(
+                  "{start}",
+                  formatDate(
+                    new Date(`${bounds.start}T08:00:00.000Z`),
+                    { day: "numeric", month: "short" },
+                    timezone,
+                  ),
+                )
+                .replace(
+                  "{end}",
+                  formatDate(
+                    new Date(`${bounds.end}T08:00:00.000Z`),
+                    { day: "numeric", month: "short" },
+                    timezone,
+                  ),
+                )}
+            </AppText>
+            {summaryFuel.dataUpdatedAt || expenseSummary.dataUpdatedAt ? (
+              <AppText muted>
+                {t("lastUpdatedAt").replace(
+                  "{time}",
+                  formatDate(
+                    new Date(
+                      Math.max(
+                        summaryFuel.dataUpdatedAt,
+                        expenseSummary.dataUpdatedAt,
+                      ),
+                    ),
+                    { hour: "numeric", minute: "2-digit" },
+                    timezone,
+                  ),
+                )}
+              </AppText>
+            ) : null}
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12 }}>
               {permissions.data?.["fuel.read"] && (
                 <Card
@@ -316,7 +399,7 @@ function DashboardContent({
                       ? t("charging")
                       : r("fuel")}
                   </Text>
-                  {monthlyFuel.isPending ? (
+                  {summaryFuel.isPending ? (
                     <PageSkeleton shape="amount" />
                   ) : (
                     <Text
@@ -326,10 +409,10 @@ function DashboardContent({
                         fontWeight: "800",
                       }}
                     >
-                      {monthlyFuel.error
+                      {summaryFuel.error
                         ? "—"
                         : moneyIn(
-                            monthlyFuel.total,
+                            summaryFuel.total,
                             vehicle?.default_currency_code ?? "INR",
                           )}
                     </Text>
@@ -354,7 +437,7 @@ function DashboardContent({
                   <Text style={{ color: c.muted, fontSize: 14 }}>
                     {r("expenses")}
                   </Text>
-                  {expenses.isPending ? (
+                  {expenseSummary.isPending ? (
                     <PageSkeleton shape="amount" />
                   ) : (
                     <Text
@@ -364,10 +447,10 @@ function DashboardContent({
                         fontWeight: "800",
                       }}
                     >
-                      {expenses.error
+                      {expenseSummary.error
                         ? "—"
                         : moneyIn(
-                            total(expenses.data),
+                            expenseSummary.total,
                             vehicle?.default_currency_code ?? "INR",
                           )}
                     </Text>
@@ -380,19 +463,19 @@ function DashboardContent({
               )}
             </View>
             {permissions.data?.["fuel.read"] &&
-              (fuel.error || monthlyFuel.error) && (
+              (fuel.error || summaryFuel.error) && (
                 <ErrorState
-                  message={(fuel.error || monthlyFuel.error)!.message}
+                  message={(fuel.error || summaryFuel.error)!.message}
                   retry={() => {
                     void fuel.refetch();
-                    void monthlyFuel.refetch();
+                    void summaryFuel.refetch();
                   }}
                 />
               )}
-            {permissions.data?.["expenses.read"] && expenses.error && (
+            {permissions.data?.["expenses.read"] && expenseSummary.error && (
               <ErrorState
-                message={expenses.error.message}
-                retry={() => void expenses.refetch()}
+                message={expenseSummary.error.message}
+                retry={() => void expenseSummary.refetch()}
               />
             )}
           </>
@@ -409,10 +492,10 @@ function DashboardContent({
       {permissions.data &&
         !permissions.data.owner &&
         permissions.data["expenses.read"] &&
-        expenses.error && (
+        expenseSummary.error && (
           <ErrorState
-            message={expenses.error.message}
-            retry={() => void expenses.refetch()}
+            message={expenseSummary.error.message}
+            retry={() => void expenseSummary.refetch()}
           />
         )}
       {releaseFeatures.advancedTools &&
@@ -513,6 +596,34 @@ function DashboardContent({
             />
           )}
         </>
+      )}
+      {!activityPending &&
+        !activity.length &&
+        !!vehicle &&
+        (permissions.data?.["fuel.create"] ||
+          permissions.data?.["expenses.create"]) && (
+          <Card style={{ padding: 16, gap: 8 }}>
+            <AppText large>
+              {t("firstVehicleProgress")
+                .replace("{done}", "1")
+                .replace("{total}", "2")}
+            </AppText>
+            <AppText>{t("firstVehicleNext")}</AppText>
+            <AppText muted>{t("firstActivityHint")}</AppText>
+            <AppText muted>
+              {t(
+                vehicle.energy_type === "ELECTRIC"
+                  ? "tipElectricCharge"
+                  : "tipMeasuredMileage",
+              )}
+            </AppText>
+          </Card>
+        )}
+      {permissions.data?.["expenses.read"] && recentExpenses.error && (
+        <ErrorState
+          message={recentExpenses.error.message}
+          retry={() => void recentExpenses.refetch()}
+        />
       )}
     </>
   );

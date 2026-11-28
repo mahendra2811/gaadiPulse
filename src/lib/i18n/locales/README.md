@@ -174,9 +174,10 @@ formatting rules explicitly require a display-format change.
 ## Verified catalog coverage
 
 Catalog coverage is calculated by `npm run i18n:check` against the current
-English source, so it cannot silently become stale when keys change. All locale
-drafts must retain the same domain/key shape. Registered partial catalogs use
-English fallback; unregistered drafts are never loaded by the app.
+English source, so it cannot silently become stale when keys change. Complete
+catalogs must retain the full domain/key shape. Registered partial catalogs may
+omit unfinished keys and use English fallback; unregistered drafts are never
+loaded by the app.
 
 ## Editing workflow
 
@@ -184,14 +185,16 @@ English fallback; unregistered drafts are never loaded by the app.
 
 1. Add the semantic key to the appropriate domain in `en.json`. Keep key names
    stable and avoid using the English sentence itself as a key.
-2. Add the corresponding key to every locale JSON with a natural translation.
-   Preserve every `{placeholder}` exactly; do not translate user values, IDs,
-   units, API values, or product names.
-3. For work in progress, use an empty string only in a locale marked `partial`.
-   Empty or missing text displays English at runtime. Never mark an incomplete
-   catalog complete to silence validation.
-4. Remove or rename a key in English and every locale in the same change. Run
-   both i18n checks and relevant app checks before merging.
+2. Translate required English and Hindi copy in `en.json` and `hi.json` in the
+   same change. Preserve every `{placeholder}` exactly; do not translate user
+   values, IDs, units, API values, or product names.
+3. Other partial locales may omit new keys and use runtime English fallback;
+   the coverage checker reports missing keys as untranslated. Do not edit those
+   catalogs just to add blank placeholders. Complete catalogs must contain all
+   keys and have no blank translations.
+4. Remove or rename a key in English and Hindi in the same change. Run
+   `npm run i18n:check:required` and the general `npm run i18n:check` before
+   merging.
 
 ### Add, enable, disable, or remove a locale
 
@@ -229,8 +232,10 @@ missing/extra paths and placeholder drift.
 ### Validation and release gate
 
 - `npm run i18n:check`: JSON parse, catalog key parity, non-empty English,
-  placeholder parity for translated strings, registry metadata, and translation
-  coverage reporting.
+  complete-catalog key parity, placeholder parity for translated strings,
+  registry metadata, and translation coverage reporting.
+- `npm run i18n:check:required`: verifies complete English and Hindi catalogs
+  while allowing the other registered partial catalogs to use English fallback.
 - `npm run i18n:check:complete`: the same checks plus failure if any registered
   locale is partial or contains blank entries.
 - `npm run typecheck`, `npm run lint`, and `npm test`: app checks.

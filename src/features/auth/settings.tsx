@@ -39,6 +39,12 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useTheme } from "@/src/lib/theme";
 import { artwork } from "@/src/lib/assets";
 import {
+  enableAnalytics,
+  disableAnalytics,
+  getAnalyticsConsent,
+  subscribeAnalyticsConsent,
+} from "@/src/features/analytics/analytics";
+import {
   checkAndStartPlayUpdate,
   openPlayStore,
   PLAY_STORE_URL,
@@ -54,6 +60,46 @@ export function Settings() {
   const queryClient = useQueryClient();
   const colors = useTheme();
   const [localeBusy, setLocaleBusy] = useState(false);
+  const [analyticsEnabled, setAnalyticsEnabled] = useState<boolean | null>(
+    null,
+  );
+  const [analyticsBusy, setAnalyticsBusy] = useState(false);
+  const [analyticsDeletePending, setAnalyticsDeletePending] = useState(false);
+  useEffect(() => {
+    let active = true;
+    const unsubscribe = subscribeAnalyticsConsent(setAnalyticsEnabled);
+    void getAnalyticsConsent().then((value) => {
+      if (active) setAnalyticsEnabled(value);
+    });
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, []);
+  const changeAnalyticsConsent = async () => {
+    if (analyticsEnabled === null || analyticsBusy) return;
+    const wasEnabled = analyticsEnabled;
+    setAnalyticsBusy(true);
+    setError("");
+    try {
+      if (analyticsEnabled) {
+        await disableAnalytics();
+        setAnalyticsDeletePending(false);
+      } else {
+        await enableAnalytics();
+        setAnalyticsDeletePending(false);
+      }
+    } catch (e) {
+      if (wasEnabled) {
+        setAnalyticsEnabled(false);
+        setAnalyticsDeletePending(true);
+      } else {
+        setError(errorMessage(e));
+      }
+    } finally {
+      setAnalyticsBusy(false);
+    }
+  };
   const changeTheme = async (theme: ThemeMode) => {
     if (!user || themeBusy || !profile.data || profile.data.theme === theme)
       return;
@@ -162,6 +208,51 @@ export function Settings() {
         <Text style={{ color: colors.muted, fontSize: 14, lineHeight: 23 }}>
           System follows your device appearance.
         </Text>
+        <Card style={{ padding: 14, gap: 8 }}>
+          <SectionHeading title={t("analyticsTitle")} />
+          <AppText muted>{t("analyticsDescription")}</AppText>
+          <Pressable
+            accessibilityRole="switch"
+            accessibilityLabel={t("analyticsEnable")}
+            accessibilityState={{
+              checked: analyticsEnabled === true,
+              disabled: analyticsEnabled === null || analyticsBusy,
+            }}
+            disabled={analyticsEnabled === null || analyticsBusy}
+            onPress={() => void changeAnalyticsConsent()}
+            style={{
+              minHeight: 56,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              paddingHorizontal: 8,
+            }}
+          >
+            <Text
+              style={{
+                color: colors.ink,
+                fontSize: 16,
+                lineHeight: 26,
+                flex: 1,
+              }}
+            >
+              {analyticsEnabled === null
+                ? t("loading")
+                : analyticsEnabled
+                  ? t("analyticsEnabled")
+                  : t("analyticsDisabled")}
+            </Text>
+            <Ionicons
+              name={analyticsEnabled ? "toggle" : "toggle-outline"}
+              size={32}
+              color={analyticsEnabled ? colors.primary : colors.muted}
+            />
+          </Pressable>
+          {analyticsDeletePending && (
+            <AppText muted>{t("analyticsDeletePending")}</AppText>
+          )}
+        </Card>
         {profile.data && (
           <LocaleField
             value={profile.data.locale}
@@ -441,6 +532,12 @@ export function About() {
         />
         <AppText large>{t("app")}</AppText>
         <AppText muted>{t("tagline")}</AppText>
+      </Card>
+      <Card style={{ padding: 16, gap: 8 }}>
+        <SectionHeading title={t("whatsNew")} />
+        <AppText large>{t("whatsNewTitle")}</AppText>
+        <AppText muted>{t("whatsNewUpdates")}</AppText>
+        <AppText muted>{t("whatsNewReviews")}</AppText>
       </Card>
       <Card style={{ padding: 16 }}>
         <AppText large>{t("appSupportAndUpdates")}</AppText>

@@ -21,6 +21,7 @@ import { type Session } from "@supabase/supabase-js";
 import { useQueryClient } from "@tanstack/react-query";
 import { client, supabase, secureStorage } from "@/src/lib/supabase";
 import { useUI } from "@/src/state/ui";
+import { trackAnalyticsEvent } from "@/src/features/analytics/analytics";
 type AuthState = {
   session: Session | null;
   development: boolean;
@@ -60,8 +61,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         if (next && alive && generation === authGeneration.current)
           setSession(next);
         if (next) {
-          const result = await client().rpc("resolve_my_access_grants");
-          if (result.error) throw new Error(result.error.message);
+          const analyticsResolution = await client().rpc(
+            "resolve_my_access_grants_with_roles",
+          );
+          if (
+            analyticsResolution.error &&
+            ["PGRST202", "42883"].includes(analyticsResolution.error.code ?? "")
+          ) {
+            const fallback = await client().rpc("resolve_my_access_grants");
+            if (fallback.error) throw new Error(fallback.error.message);
+          } else if (analyticsResolution.error) {
+            throw new Error(analyticsResolution.error.message);
+          } else if (Array.isArray(analyticsResolution.data)) {
+            for (const role of analyticsResolution.data) {
+              if (role === "OWNER" || role === "PILOT")
+                trackAnalyticsEvent("grant_resolved", { role });
+            }
+          }
         }
         if (alive && generation === authGeneration.current) {
           previousUser.current = next?.user.id ?? null;

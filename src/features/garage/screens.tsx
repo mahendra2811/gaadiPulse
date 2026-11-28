@@ -85,7 +85,12 @@ export function Garage() {
       refreshing={query.isRefetching}
     >
       <AppText muted>{t("uiGarageHint")}</AppText>
-      <AppButton label={t("add")} onPress={() => router.push("/garage/add")} />
+      {(query.data?.length ?? 1) > 0 && (
+        <AppButton
+          label={t("add")}
+          onPress={() => router.push("/garage/add")}
+        />
+      )}
       <SearchField value={search} onChange={setSearch} />
       {query.error ? (
         <ErrorState
@@ -95,7 +100,26 @@ export function Garage() {
       ) : query.isPending ? (
         <PageSkeleton shape="garage" />
       ) : query.data?.length === 0 ? (
-        <EmptyState title={t("empty")} body={t("emptyBody")} />
+        <>
+          <EmptyState
+            title={t("addFirstVehicle")}
+            body={t("introFirstVehicle")}
+            action={
+              <AppButton
+                label={t("addFirstVehicle")}
+                onPress={() => router.push("/garage/add")}
+              />
+            }
+          />
+          <Card style={{ padding: 16, gap: 8 }}>
+            <AppText large>
+              {t("firstVehicleProgress")
+                .replace("{done}", "0")
+                .replace("{total}", "2")}
+            </AppText>
+            <AppText>{t("introFirstVehicle")}</AppText>
+          </Card>
+        </>
       ) : (
         <>
           {!query.isPending && !vehicles.length && (

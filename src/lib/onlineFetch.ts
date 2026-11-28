@@ -4,6 +4,9 @@ import { recordNetworkRequest } from "./networkHealth";
 
 /** Fail promptly rather than pause work for an automatic upload on reconnect. */
 export const onlineFetch: typeof fetch = async (input, init) => {
+  const isTelemetryRequest = String(input).includes(
+    "/functions/v1/collect-analytics",
+  );
   if (!onlineManager.isOnline()) {
     const error = new Error(`NETWORK_UNAVAILABLE: ${t("networkError")}`);
     error.name = "NetworkUnavailableError";
@@ -22,11 +25,16 @@ export const onlineFetch: typeof fetch = async (input, init) => {
   }, 20000);
   try {
     const response = await fetch(input, { ...init, signal: controller.signal });
-    recordNetworkRequest(Date.now() - startedAt, true);
+    if (!isTelemetryRequest)
+      recordNetworkRequest(
+        Date.now() - startedAt,
+        response.status < 500 && response.status !== 429,
+      );
     return response;
   } catch (error) {
     if (timedOut) {
-      recordNetworkRequest(Date.now() - startedAt, false);
+      if (!isTelemetryRequest)
+        recordNetworkRequest(Date.now() - startedAt, false);
       const timeoutError = new Error(
         "The request was aborted after timing out.",
       );
@@ -34,7 +42,8 @@ export const onlineFetch: typeof fetch = async (input, init) => {
       Object.assign(timeoutError, { code: "REQUEST_TIMEOUT" });
       throw timeoutError;
     }
-    if (!original?.aborted) recordNetworkRequest(Date.now() - startedAt, false);
+    if (!original?.aborted && !isTelemetryRequest)
+      recordNetworkRequest(Date.now() - startedAt, false);
     throw error;
   } finally {
     clearTimeout(timeout);

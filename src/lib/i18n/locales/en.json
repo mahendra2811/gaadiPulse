@@ -28,7 +28,11 @@
     "stage3": "Daily Progress and collaboration controls are scheduled for Stage 3.",
     "tagline": "Every Vehicle. Every Detail.",
     "upcoming": "Next implementation stage",
-    "welcome": "Your whole garage. One clear view."
+    "welcome": "Your whole garage. One clear view.",
+    "introRoleOwner": "Owner — manage a vehicle and choose who can see its records.",
+    "introRolePilot": "Pilot — record activity for vehicles shared with your verified account.",
+    "introFirstVehicle": "Start with one vehicle. Add a first fuel or expense entry when you are ready.",
+    "introSkip": "Skip introduction"
   },
   "common": {
     "add": "Add new vehicle",
@@ -113,7 +117,14 @@
     "validPastTime": "Choose the actual observation time; future readings are not allowed.",
     "noPhoto": "Photo",
     "slowConnection": "Requests are taking longer than usual. Check your connection and retry if needed.",
-    "unstableConnection": "Your connection is unstable. Keep this screen open while requests finish."
+    "unstableConnection": "Your connection is unstable. Keep this screen open while requests finish.",
+    "firstVehicleProgress": "Setup progress: {done} of {total}",
+    "firstVehicleNext": "Next: add your first fuel or expense entry.",
+    "firstVehicleComplete": "Your vehicle is ready. Add records whenever useful.",
+    "addFirstVehicle": "Add your first vehicle",
+    "firstActivityHint": "Your dashboard will show permitted summaries after your first confirmed entry.",
+    "tipElectricCharge": "Record each charge and its kWh to make cost tracking more useful.",
+    "tipMeasuredMileage": "Add an actual meter reading with fuel entries to build measured mileage intervals."
   },
   "onboarding": {
     "onboardingContinue": "Continue to Home",
@@ -474,7 +485,11 @@
     "uiRecords": "Records",
     "uiSummary": "Summary",
     "uiThisMonth": "This month",
-    "uiViewAll": "View all"
+    "uiViewAll": "View all",
+    "uiThisWeek": "This week",
+    "uiWeekly": "Weekly",
+    "uiMonthly": "Monthly",
+    "uiPeriodRange": "{start} – {end}"
   },
   "records": {
     "reminderHistory": "Reminder history",
@@ -1019,6 +1034,16 @@
     "whatsNewUpdates": "Compatible over-the-air and Play Store updates, with a safer optional update flow.",
     "whatsNewReviews": "Review requests wait until after meaningful use. About now includes Rate, Share and Send Feedback.",
     "whatsNewDismiss": "Got it",
+    "analyticsTitle": "Help improve GaadiPulse",
+    "analyticsDescription": "Optional anonymous usage and performance data helps us understand app reliability and feature use. We do not collect your account, vehicle IDs, registration numbers, record details or free text. Data is retained for up to 90 days. You can turn this off at any time.",
+    "analyticsEnable": "Share anonymous app analytics",
+    "analyticsEnabled": "Anonymous analytics is on",
+    "analyticsDisabled": "Anonymous analytics is off",
+    "analyticsDeletePending": "Analytics is off. We could not confirm deletion; stored data will expire within 90 days.",
+    "analyticsDeleteRetry": "Retry data deletion",
+    "whatsNew": "What’s New",
+    "firstOpenMetricNote": "First open is counted when optional analytics is enabled on this installation; it does not verify a store install.",
+    "analyticsLegal": "If you opt in, GaadiPulse sends a random installation ID, app version, language, allowlisted feature events and coarse startup/API timing. It does not send account or vehicle IDs, registration numbers, record details, request URLs or free text. Turning analytics off stops collection and requests deletion of this installation’s events. Events expire after 90 days.",
     "about": "About",
     "accountNameHelp": "You will choose your display name after verification. Sign in with your email address; a separate username is not required.",
     "accountSecurityTitle": "Account security",

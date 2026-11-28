@@ -28,6 +28,7 @@ import { CountryField } from "./CountryField";
 import { LocaleField } from "./LocaleField";
 import { SignOutButton } from "./SignOutButton";
 import { useProfile, updateProfile } from "./profile";
+import { trackAnalyticsEvent } from "@/src/features/analytics/analytics";
 import { useAccountId, useSession } from "./session";
 import {
   onboardingDefaults,
@@ -54,6 +55,9 @@ export default function OnboardingScreen() {
   const [error, setError] = useState("");
   const hydrated = useRef(false);
   const running = useRef(false);
+  useEffect(() => {
+    if (!auth.development) trackAnalyticsEvent("onboarding_started");
+  }, [auth.development]);
   useEffect(() => {
     if (!profile.data || hydrated.current) return;
     hydrated.current = true;
@@ -103,6 +107,7 @@ export default function OnboardingScreen() {
         },
         auth.development,
       );
+      if (!auth.development) trackAnalyticsEvent("onboarding_completed");
       setLocale(locale);
       await qc.invalidateQueries({ queryKey: [user, "profile"] });
       toast(t("saved"), "success");

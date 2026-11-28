@@ -1,6 +1,9 @@
 import { resolveNetworkStatus, type NetworkStatus } from "./networkStatus";
 
 const listeners = new Set<() => void>();
+const requestMetricListeners = new Set<
+  (sample: { durationMs: number; succeeded: boolean }) => void
+>();
 const recentRequestLatencies: number[] = [];
 const recentRequestFailures: number[] = [];
 let unstableUntil = 0;
@@ -57,6 +60,8 @@ export function setNetworkAvailability(
 
 /** In-memory request health only; no URL, credentials or payload is retained. */
 export function recordNetworkRequest(durationMs: number, succeeded: boolean) {
+  for (const listener of requestMetricListeners)
+    listener({ durationMs: Math.max(0, Math.round(durationMs)), succeeded });
   const now = Date.now();
   while (
     recentRequestFailures.length &&
@@ -75,6 +80,13 @@ export function recordNetworkRequest(durationMs: number, succeeded: boolean) {
     if (recentRequestFailures.length >= 2) unstableUntil = now + 60_000;
   }
   publishStatus();
+}
+
+export function subscribeNetworkRequestMetrics(
+  listener: (sample: { durationMs: number; succeeded: boolean }) => void,
+) {
+  requestMetricListeners.add(listener);
+  return () => requestMetricListeners.delete(listener);
 }
 
 export function clearNetworkHealthTimer() {

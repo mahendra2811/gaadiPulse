@@ -320,6 +320,10 @@ export type Database = {
         Args: Record<string, never>;
         Returns: undefined;
       };
+      resolve_my_access_grants_with_roles: {
+        Args: Record<string, never>;
+        Returns: string[];
+      };
       grant_vehicle_access_with_backdate: {
         Args: {
           p_vehicle: string;

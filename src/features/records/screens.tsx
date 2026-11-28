@@ -1,4 +1,5 @@
 import { PageSkeleton } from "@/src/components/ui/PageSkeleton";
+import { trackAnalyticsEvent } from "@/src/features/analytics/analytics";
 import { releaseFeatures } from "@/src/features/release/scope";
 import { isPilotHistoryVisible } from "@/src/features/members/history";
 import { useCurrentTime } from "@/src/hooks/useCurrentTime";
@@ -1235,6 +1236,16 @@ export function RecordForm() {
         existing?.revision,
         status,
       );
+      if (!id && !development && (kind === "fuel" || kind === "expenses")) {
+        trackAnalyticsEvent(
+          kind === "fuel" ? "fuel_created" : "expense_created",
+        );
+        trackAnalyticsEvent("form_completed", {
+          feature: kind === "fuel" ? "fuel" : "expenses",
+        });
+      }
+      if (!id && !development && kind === "meters")
+        trackAnalyticsEvent("form_completed", { feature: "meters" });
       // Keep the meter history cache aligned with the save form's observation
       // query. Await its refresh before showing success and returning to history.
       const refresh = qc.invalidateQueries({

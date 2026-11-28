@@ -64,6 +64,7 @@ import {
   useReleasePolicy,
   isVersionBelow,
 } from "@/src/features/release/policy";
+import { AnalyticsCoordinator } from "@/src/features/analytics/AnalyticsCoordinator";
 const query = new QueryClient({
   defaultOptions: {
     queries: {
@@ -369,6 +370,12 @@ function Routes() {
     <ThemeContext.Provider value={profile.data?.theme ?? "system"}>
       <StatusBar style="auto" />
       <ToastProvider>
+        <AnalyticsCoordinator
+          ready={
+            !auth.loading &&
+            (!auth.session || (!profile.isPending && !profile.error))
+          }
+        />
         <DeferredStartupTasks />
         {auth.development && (
           <View style={{ padding: 8 }}>

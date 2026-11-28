@@ -1,0 +1,26 @@
+# Stage 4 Implementation Handoff — 2026-11-28
+
+- **Stage:** Onboarding, product monitoring and required localization (user sections 12–14).
+- **Git revision / commit:** Not committed in this working tree.
+- **Implemented user-visible features:** First-run skippable welcome; Owner/Pilot explanation; first vehicle setup guidance in Garage/Home; weekly/monthly Owner summary with vehicle-timezone bounds; last-updated label; analytics consent toggle and opt-out status; What's New placement retained in About; Hindi coverage for onboarding, dashboards, consent, and previously missing common/account/notification strings.
+- **Implemented routes/components/hooks:** Root redirect + first-run secure preference; Welcome; Garage empty/progress state; dashboard summary and bounded recent expense hook; consent-controlled analytics coordinator and event helper; profile/grant/save event hooks; required locale validation mode.
+- **Migrations, RLS policies and Edge Functions:** Additive migrations `202611280010_anonymous_analytics.sql`, `202611280011_recent_expense_activity.sql`, and `202611280012_grant_resolution_analytics.sql`; public `collect-analytics` Edge Function with event allowlist and payload validation. Hosted migration/function deployment was not performed. Existing expense RLS is retained via SECURITY INVOKER for the recent feed. Analytics table has RLS enabled and no client grants; writes/deletion go through service-role-only RPCs.
+- **Local assets integrated:** None.
+- **Tested command log:**
+  - `npm run typecheck` → **PASS** after removing unsupported `loading` prop from the welcome button.
+  - `npm run lint` → **PASS** (zero output, exit 0).
+  - `npm test -- --maxWorkers=1` → **PASS**, 34 files / 118 tests.
+  - `npm run format:check` → **PASS**.
+  - `npm run i18n:check:required` → **PASS**, 45 catalog structures valid, 1,309 English/Hindi keys; Hindi 1,309/1,309 populated. Remaining catalogs are correctly marked partial.
+  - `npm run i18n:check` → **PASS** with partial catalog reporting.
+  - `npx expo config --type public` → **PASS**, config rendered (Expo SDK 58, runtime policy `appVersion`).
+  - `npx expo export --platform web` → **PASS**, 44 web bundles exported to ignored `dist/`.
+  - `git diff --check` → **PASS** before final doc additions; rerun after handoff update.
+  - SQL apply/migration tests / Edge Function typecheck → **NOT TESTED**: Supabase CLI and Deno are not installed, and local PostgreSQL is not running (`psql` could not connect). Static source review only; no hosted mutation.
+- **Evidence of Android boot / physical device tests:** **NOT TESTED**. Web bundling is not Android native-module or low-end-device verification.
+- **Security scenarios tested:** **NOT TESTED** against live Supabase. Source config keeps telemetry data out of client grants and the Edge Function service key is environment-only. Validate function allowlist, request limits, deletion, rate limiting and per-vehicle expense RLS against a disposable Supabase project before production enablement.
+- **Accessibility/performance observations:** Welcome skip and role explanations are inline; analytics switch has switch semantics and 56dp minimum height. Recent expenses are capped at ten in production by an invoker RPC. Owner totals use server history summary RPCs. No physical-device CPU, memory, battery, screen-reader or Hindi large-font layout profiling was run.
+- **Known bugs and outstanding blockers:** `first_open` means first observed open after consent, not Play install attribution. D1/D7/D30 cohorts are exact UTC day offsets. Analytics is opt-in and failed non-first-open events are dropped, not queued. Production 90-day cleanup requires verifying `pg_cron` scheduling or setting it up. A protected operator dashboard has not been provisioned. Production analytics is not functional until migrations and Edge Function are deployed in order.
+- **External setup still needed from app owner:** Review privacy disclosure; apply all three migrations on a disposable project and test them; deploy `collect-analytics`; verify/enable retention scheduling; validate dashboards and error/rate behavior; device-check Android, Hindi, accessibility and performance. No deploy, dashboard setup or hosted database change was made.
+- **Risks for next prompt:** Existing locale catalogs other than English and Hindi remain intentionally partial. Legacy fallback for a missing recent-expenses RPC can fetch a complete development/older-backend expense list; production should deploy migration 011 before release. Analytics remains blocked from reliable production reporting until server-side setup is complete.
+- **Reproduction steps:** Run `npm run i18n:check:required`, `npm run typecheck`, `npm run lint`, `npm test -- --maxWorkers=1`; then `npx expo start` and check first-run routing, Garage empty state, dashboard periods and Settings consent on supported devices. Use a disposable Supabase instance to apply migrations and exercise the telemetry endpoint; do not reset or alter the linked production project.

@@ -18,8 +18,49 @@ import { FormError } from "@/src/components/ui/FormError";
 
 import { sendOtp, verifyOtp } from "./api";
 import { useSession } from "./session";
+import { markFirstRunIntroSeen } from "./firstRun";
 export function Welcome() {
-  return <Redirect href="/auth/login" />;
+  const auth = useSession();
+  const [busy, setBusy] = useState(false);
+  if (auth.session || auth.development) return <Redirect href="/(tabs)" />;
+  const continueTo = (path: "/auth/login" | "/auth/signup") => {
+    if (busy) return;
+    setBusy(true);
+    void markFirstRunIntroSeen()
+      .catch(() => undefined)
+      .finally(() => router.replace(path));
+  };
+  return (
+    <Screen title={t("welcome")} compact>
+      <AppText large>{t("intro1")}</AppText>
+      <AppText muted>{t("introBody1")}</AppText>
+      <Card>
+        <AppText large>{t("owner")}</AppText>
+        <AppText>{t("introRoleOwner")}</AppText>
+        <AppText large>{t("pilot")}</AppText>
+        <AppText>{t("introRolePilot")}</AppText>
+      </Card>
+      <AppText>{t("introFirstVehicle")}</AppText>
+      <AppText muted>{t("introBody3")}</AppText>
+      <AppButton
+        label={t("createAccount")}
+        disabled={busy}
+        onPress={() => continueTo("/auth/signup")}
+      />
+      <AppButton
+        secondary
+        label={t("login")}
+        disabled={busy}
+        onPress={() => continueTo("/auth/login")}
+      />
+      <AppButton
+        secondary
+        label={t("introSkip")}
+        disabled={busy}
+        onPress={() => continueTo("/auth/login")}
+      />
+    </Screen>
+  );
 }
 export function Login() {
   return <PasswordScreen mode="login" />;
@@ -128,6 +169,7 @@ export function Legal() {
           session and scheduled local notifications on this device, but does not
           delete server records or exported files.
         </AppText>
+        <AppText>{t("analyticsLegal")}</AppText>
         <AppText>
           To request account deletion, open Settings → Security → Request
           account deletion, or contact mahendrapuniya92@gmail.com. Requests

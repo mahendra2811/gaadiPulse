@@ -11,6 +11,7 @@ const english = JSON.parse(
   fs.readFileSync(path.join(localeDir, "en.json"), "utf8"),
 );
 const strict = process.argv.includes("--strict");
+const required = process.argv.includes("--required");
 const failures = [];
 const placeholders = (text) =>
   [...text.matchAll(/\{([^{}]+)\}/g)].map((match) => match[0]).sort();
@@ -72,7 +73,10 @@ for (const file of catalogs) {
 
   const missing = [...source.keys()].filter((key) => !actual.has(key));
   const extra = [...actual.keys()].filter((key) => !source.has(key));
-  if (missing.length)
+  if (
+    missing.length &&
+    (file === "en.json" || registry[code]?.status === "complete")
+  )
     failures.push(
       `${file}: ${missing.length} missing keys (${missing.slice(0, 5).join(", ")})`,
     );
@@ -126,6 +130,12 @@ for (const [code, metadata] of Object.entries(registry)) {
     );
   if (strict && metadata.status !== "complete")
     failures.push(`registry: ${code} is not marked complete`);
+  if (
+    required &&
+    ["en-IN", "hi-IN"].includes(code) &&
+    metadata.status !== "complete"
+  )
+    failures.push(`registry: required locale ${code} is not marked complete`);
 }
 
 if (failures.length) {
@@ -145,8 +155,14 @@ if (failures.length) {
     );
   }
   if (
-    strict &&
-    coverage.some((item) => registry[item.code]?.status !== "complete")
+    (strict &&
+      coverage.some((item) => registry[item.code]?.status !== "complete")) ||
+    (required &&
+      coverage.some(
+        (item) =>
+          ["en-IN", "hi-IN"].includes(item.code) &&
+          registry[item.code]?.status !== "complete",
+      ))
   )
     process.exitCode = 1;
 }

@@ -31,7 +31,7 @@ export const readPermission = (kind: Kind) =>
 export async function access(
   vehicle: string,
   development: boolean,
-): Promise<Record<string, boolean>> {
+): Promise<Record<string, boolean | number>> {
   if (development) {
     requireDevelopment();
     return new Proxy({ owner: true }, { get: () => true });
@@ -43,7 +43,7 @@ export async function access(
     p_vehicle: vehicle,
   });
   if (error) throw new Error(error.message);
-  const permissions = data as Record<string, boolean>;
+  const permissions = data as Record<string, boolean | number>;
   if (!permissions.owner) await requirePilotPolicy();
   return permissions;
 }

@@ -25,7 +25,6 @@ import { useActiveVehicle } from "@/src/features/garage/hooks";
 import { useSession, useAccountId } from "@/src/features/auth/session";
 import { usePermissions } from "@/src/features/records/hooks";
 import { r } from "@/src/features/records/copy";
-import { releaseFeatures } from "@/src/features/release/scope";
 import { requirePilotPolicy } from "./pilotPolicy";
 import { resolveMemberVehicle } from "./vehicleContext";
 import type { Vehicle } from "@/src/features/garage/schema";
@@ -35,10 +34,11 @@ import {
   changeMember,
   revokeGrant,
   saveDefaults,
+  backdatePermissionKey,
   type Member,
 } from "./api";
-import { PermissionEditor, RolePicker } from "./MemberControls";
-import { pilotPermissionSummary } from "./permissions";
+import { BackdateEditor, PermissionEditor, RolePicker } from "./MemberControls";
+import { effectiveBackdateDays, pilotPermissionSummary } from "./permissions";
 
 export default function Members() {
   const { vehicle: vehicleId, add } = useLocalSearchParams<{
@@ -115,6 +115,12 @@ export function VehicleMembersSection({
   const [defaults, setDefaults] = useState<Record<string, boolean> | null>(
     null,
   );
+  const [defaultBackdateDays, setDefaultBackdateDays] = useState<
+    import("./api").BackdateWindow | null
+  >(null);
+  const [grantBackdateDays, setGrantBackdateDays] = useState<
+    import("./api").BackdateWindow | null
+  >(null);
   const [selected, setSelected] = useState<Member | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -127,6 +133,7 @@ export function VehicleMembersSection({
       setEmail("");
       setRole("PILOT");
       setOverrides({});
+      setGrantBackdateDays(null);
       setError("");
     }
   };
@@ -177,10 +184,10 @@ export function VehicleMembersSection({
         ? member.role === "OWNER"
           ? "Full Owner access"
           : pilotPolicy.data
-            ? pilotPermissionSummary(
+            ? `${pilotPermissionSummary(
                 member.permission_overrides,
                 query.data?.defaults ?? {},
-              )
+              )} · ${effectiveBackdateDays(member.backdate_days, query.data?.defaults ?? {}) === -1 ? "Unlimited backdating" : `${effectiveBackdateDays(member.backdate_days, query.data?.defaults ?? {})} day(s) back`}`
             : "Pilot permissions unavailable until the access policy is verified"
         : "";
     const subtitle = details ? `${status}\n${details}` : status;
@@ -305,12 +312,11 @@ export function VehicleMembersSection({
               )}
             </>
           )}
-          {releaseFeatures.advancedTools && query.data && (
+          {query.data && (
             <Card style={{ padding: 16 }}>
-              <SectionHeading title="Pilot defaults" />
+              <SectionHeading title="Pilot access defaults" />
               <AppText muted>
-                Defaults apply to Pilots who have no personal override for that
-                permission.
+                Defaults apply to Pilots who have no personal override.
               </AppText>
               <TextAction
                 label={
@@ -320,6 +326,19 @@ export function VehicleMembersSection({
                 }
                 icon="options-outline"
                 onPress={() => {
+                  setDefaults(
+                    Object.fromEntries(
+                      Object.entries(query.data!.defaults).filter(
+                        ([key]) => key !== backdatePermissionKey,
+                      ),
+                    ),
+                  );
+                  setDefaultBackdateDays(
+                    effectiveBackdateDays(
+                      undefined,
+                      query.data!.defaults,
+                    ) as import("./api").BackdateWindow,
+                  );
                   setShowDefaults(!showDefaults);
                   setError("");
                 }}
@@ -331,13 +350,45 @@ export function VehicleMembersSection({
                     onChange={setDefaults}
                     disabled={locked || busy}
                   />
+                  <BackdateEditor
+                    value={
+                      defaultBackdateDays ??
+                      effectiveBackdateDays(undefined, query.data.defaults)
+                    }
+                    onChange={(days) =>
+                      setDefaultBackdateDays(
+                        days as import("./api").BackdateWindow,
+                      )
+                    }
+                    disabled={locked || busy}
+                  />
                   <AppButton
                     label="Save vehicle defaults"
-                    disabled={locked || busy || !pilotPolicy.data || !defaults}
+                    disabled={
+                      locked ||
+                      busy ||
+                      !pilotPolicy.data ||
+                      (!defaults && defaultBackdateDays === null)
+                    }
                     onPress={() =>
                       void run(async () => {
-                        await saveDefaults(v.id, defaults!, development);
+                        await saveDefaults(
+                          v.id,
+                          defaults ??
+                            Object.fromEntries(
+                              Object.entries(query.data!.defaults).filter(
+                                ([key]) => key !== backdatePermissionKey,
+                              ),
+                            ),
+                          (defaultBackdateDays ??
+                            effectiveBackdateDays(
+                              undefined,
+                              query.data!.defaults,
+                            )) as import("./api").BackdateWindow,
+                          development,
+                        );
                         setDefaults(null);
+                        setDefaultBackdateDays(null);
                         setShowDefaults(false);
                       })
                     }
@@ -383,6 +434,12 @@ export function VehicleMembersSection({
               onChange={setOverrides}
               disabled={busy || locked}
             />
+            <BackdateEditor
+              value={grantBackdateDays}
+              onChange={setGrantBackdateDays}
+              inherited
+              disabled={busy || locked}
+            />
           </>
         )}
         {!!error && <ErrorState message={error} retry={() => setError("")} />}
@@ -402,11 +459,15 @@ export function VehicleMembersSection({
                 email,
                 role,
                 role === "PILOT" ? overrides : {},
+                role === "PILOT"
+                  ? (grantBackdateDays as import("./api").BackdateWindow | null)
+                  : null,
                 development,
               );
               setEmail("");
               setRole("PILOT");
               setOverrides({});
+              setGrantBackdateDays(null);
               setShowGrant(false);
             }, r("grantSaved"))
           }
@@ -457,6 +518,18 @@ export function VehicleMembersSection({
                   }
                   disabled={busy || locked || selected.is_primary_admin}
                 />
+                <BackdateEditor
+                  value={selected.backdate_days}
+                  onChange={(backdate_days) =>
+                    setSelected({
+                      ...selected,
+                      backdate_days: backdate_days as
+                        import("./api").BackdateWindow | null,
+                    })
+                  }
+                  inherited
+                  disabled={busy || locked || selected.is_primary_admin}
+                />
               </>
             )}
             {!!error && (
@@ -481,6 +554,7 @@ export function VehicleMembersSection({
                           selected.role,
                           selected.permission_overrides,
                           "ACTIVE",
+                          selected.backdate_days,
                           development,
                         );
                         setSelected(null);
@@ -514,6 +588,7 @@ export function VehicleMembersSection({
                             selected.role,
                             selected.permission_overrides,
                             "REVOKED",
+                            selected.backdate_days,
                             development,
                           );
                           setSelected(null);
@@ -539,6 +614,7 @@ export function VehicleMembersSection({
                           selected.role,
                           selected.permission_overrides,
                           "ACTIVE",
+                          selected.backdate_days,
                           development,
                         );
                         setSelected(null);

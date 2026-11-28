@@ -12,6 +12,7 @@ export function DatePickerField({
   error,
   label = t("observed"),
   allowFuture = false,
+  minimumDate,
   mode = "datetime",
   required,
   optional,
@@ -36,6 +37,7 @@ export function DatePickerField({
           mode: part,
           display: part === "date" ? "calendar" : "clock",
           maximumDate: part === "date" && !allowFuture ? new Date() : undefined,
+          minimumDate: part === "date" ? minimumDate : undefined,
           onChange: (event: DateTimePickerEvent, date?: Date) => {
             if (event.type !== "set" || !date) return;
             const next = new Date(current);
@@ -130,6 +132,7 @@ export function DatePickerField({
             maximumDate={
               iosMode === "date" && !allowFuture ? new Date() : undefined
             }
+            minimumDate={iosMode === "date" ? minimumDate : undefined}
             onChange={(_, date) => {
               if (date) setDraft(date);
             }}

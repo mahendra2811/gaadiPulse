@@ -13,6 +13,8 @@ const config: ExpoConfig = {
   icon: "./assets/brand/generated/app-icon.png",
   web: { favicon: "./assets/brand/generated/favicon.png" },
   android: {
+    playStoreUrl:
+      "https://play.google.com/store/apps/details?id=com.pooniya.gaadipulse",
     softwareKeyboardLayoutMode: "resize",
     blockedPermissions: [
       "android.permission.READ_EXTERNAL_STORAGE",

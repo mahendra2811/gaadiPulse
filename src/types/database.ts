@@ -92,6 +92,7 @@ export type Database = {
         is_primary_admin: boolean;
         status: "ACTIVE" | "REVOKED";
         permission_overrides: Json;
+        backdate_days: number | null;
         joined_at: string;
         created_by: string;
       }>;
@@ -101,6 +102,7 @@ export type Database = {
         normalized_email: string;
         desired_role: "OWNER" | "PILOT";
         permission_overrides: Json;
+        backdate_days: number | null;
         granted_by: string;
         status: "UNRESOLVED" | "RESOLVED" | "REVOKED";
         resolved_user_id: string | null;
@@ -110,6 +112,7 @@ export type Database = {
       vehicle_settings: Table<{
         vehicle_id: string;
         pilot_permissions: Json;
+        pilot_backdate_days: number;
         progress_policy: Json;
       }>;
       meter_readings: Table<MeterRow>;
@@ -292,28 +295,46 @@ export type Database = {
         Args: Record<string, never>;
         Returns: undefined;
       };
-      grant_vehicle_access: {
+      grant_vehicle_access_with_backdate: {
         Args: {
           p_vehicle: string;
           p_email: string;
           p_role: string;
           p_permissions?: Json;
+          p_backdate_days?: number | null;
         };
         Returns: undefined;
       };
-      set_vehicle_membership: {
+      set_vehicle_membership_with_backdate: {
         Args: {
           p_vehicle: string;
           p_user: string;
           p_role: string;
           p_status?: string;
           p_permissions?: Json;
+          p_backdate_days?: number | null;
         };
         Returns: undefined;
       };
       revoke_vehicle_access: {
         Args: { p_vehicle: string; p_grant: string };
         Returns: undefined;
+      };
+      update_vehicle_defaults_with_backdate: {
+        Args: {
+          p_vehicle: string;
+          p_permissions: Json;
+          p_backdate_days?: number;
+        };
+        Returns: undefined;
+      };
+      vehicle_member_details: {
+        Args: { p_vehicle: string };
+        Returns: Json;
+      };
+      vehicle_access_grants_for_owner: {
+        Args: { p_vehicle: string };
+        Returns: Json;
       };
     };
     Enums: Record<string, never>;

@@ -1,6 +1,9 @@
+import hiCatalog from "./i18n/locales/hi.json";
+
 export const en = {
   onboardingTitle: "Set up your profile",
-  onboardingDescription: "A few details to get started. You can update them later in Settings.",
+  onboardingDescription:
+    "A few details to get started. You can update them later in Settings.",
   onboardingCountryHint:
     "Country is optional. The device region may be suggested; choose or clear it if needed.",
   onboardingTimezoneHint:
@@ -38,8 +41,10 @@ export const en = {
   currentPasswordRequired: "Enter your current password.",
   confirmNewPassword: "Confirm new password",
   passwordChangeSuccess: "Your password has been updated.",
-  forgotPasswordHelp: "If you don’t know your current password, reset it by email.",
-  emailRequired: "This account does not have an email address for password recovery.",
+  forgotPasswordHelp:
+    "If you don’t know your current password, reset it by email.",
+  emailRequired:
+    "This account does not have an email address for password recovery.",
 
   loadingMore: "Loading more…",
   authorUnavailable: "Name unavailable",
@@ -54,17 +59,20 @@ export const en = {
     "Confirm the reading was observed at the fill time, or choose its actual observation time.",
   fillConfirmationHelp:
     "If you observed the reading at the fill time, confirm below. Otherwise, choose the actual observation time.",
-  readingBelowPrevious: "Reading must be at least the previous reading ({value}).",
+  readingBelowPrevious:
+    "Reading must be at least the previous reading ({value}).",
   readingBelowPreviousServer:
     "Reading must be at least the previous reading for the selected time. Check the reading and try again.",
   closePopup: "Close popup",
-  fuelPrimaryRequired: "Enter the total amount and quantity to save this record.",
+  fuelPrimaryRequired:
+    "Enter the total amount and quantity to save this record.",
   readingAboveNextServer:
     "This reading is higher than a later reading. Check the value and observation time.",
   fuelQuickHelp:
     "Enter amount and quantity. The unit price is calculated automatically; you can enter the receipt rate under Additional options.",
 
-  chooseAllowedMeter: "Choose a meter mode available for this vehicle type and subtype.",
+  chooseAllowedMeter:
+    "Choose a meter mode available for this vehicle type and subtype.",
   selectOption: "Select an option",
   editEnergyLabel: "Fuel / energy type",
   editMeterHelp:
@@ -89,7 +97,8 @@ export const en = {
   authOrEmail: "or use email",
   authLoginTitle: "Welcome back",
   authLoginHint: "Log in to pick up where you left off.",
-  authSignupHint: "Create an account with your email and password, or continue with Google.",
+  authSignupHint:
+    "Create an account with your email and password, or continue with Google.",
   authEmailStep: "Step 1 of 3 · Your email",
   authPasswordStep: "Step 2 of 3 · Secure your account",
   authVerifyStep: "Enter the verification code sent to your email.",
@@ -106,12 +115,14 @@ export const en = {
 
   additionalOptions: "Additional options",
   additionalOptionsHint: "Optional details · tap to expand",
-  vehicleIdentityHelp: "Provide at least one: vehicle name, registration or model.",
+  vehicleIdentityHelp:
+    "Provide at least one: vehicle name, registration or model.",
   timezoneOptional: "Vehicle time zone (optional)",
   accountTimezone: "Account time zone",
   accountTimezoneHelp:
     "New vehicles use this time zone by default. Each vehicle can use a different time zone.",
-  timezoneHelp: "Used for vehicle dates and Pilot history. Defaults to your account time zone.",
+  timezoneHelp:
+    "Used for vehicle dates and Pilot history. Defaults to your account time zone.",
   timezoneDefaultHint:
     "Time zone defaults to your account setting. Change it in Additional options if needed.",
   timezoneSearch: "Search city, region or UTC offset",
@@ -133,8 +144,10 @@ export const en = {
   optionalField: "Optional",
   numericOnly: "Use numbers only, with the allowed decimal places.",
   invalidReading: "Use a non-negative reading with up to 3 decimal places.",
-  invalidPositiveReading: "Use a positive threshold with up to 3 decimal places.",
-  validPastTime: "Choose the actual observation time; future readings are not allowed.",
+  invalidPositiveReading:
+    "Use a positive threshold with up to 3 decimal places.",
+  validPastTime:
+    "Choose the actual observation time; future readings are not allowed.",
   requiredValue: "This field is required.",
   invalidTimeZone: "Choose a valid timezone.",
   reminderCriterion: "Choose a due date or at least one meter threshold.",
@@ -142,7 +155,8 @@ export const en = {
     "Monthly/yearly reminders require a due date and no meter thresholds. Use a separate reminder for meter-based service.",
   linkedReminderDue: "Choose a date before enabling the linked reminder.",
   linkedReminder: "Create a linked reminder",
-  progressMeterPolicy: "Reading requirements follow the published vehicle form.",
+  progressMeterPolicy:
+    "Reading requirements follow the published vehicle form.",
   linkedOwnerOnly:
     "The linked reminder is Owner-only by default; its visibility can be changed in Reminders.",
   linkedReminderHelp:
@@ -151,13 +165,15 @@ export const en = {
   documentExpiry: "Expiry / renewal date",
   documentStorage:
     "Document details and linked reminders sync with your account. Photo/PDF attachments are not implemented yet; future files will stay on your phone.",
-  fuelAnyTwo: "Required: any two of amount, quantity and unit price. The third is calculated.",
+  fuelAnyTwo:
+    "Required: any two of amount, quantity and unit price. The third is calculated.",
   optionalMeters:
     "Readings are optional. Missing readings stay pending and are excluded from efficiency calculations.",
   meterOnlyTime:
     "Enter when you actually observed the meter. The app records the entry time separately.",
   meterRequired: "Enter at least one actual reading.",
-  optionalObservation: "Choose an observation time only when you enter a reading.",
+  optionalObservation:
+    "Choose an observation time only when you enter a reading.",
   dateOrder: "The end/expiry date cannot be before the start date.",
   invalidCalendarDate: "Choose a valid calendar date.",
   reviewReason: "Enter a reason for rejection or a correction request.",
@@ -190,8 +206,10 @@ export const en = {
     "This entry uses a fuel that is not configured for this vehicle. Review the fuel selection before saving.",
   fuelHistorical:
     "This older record keeps its original fuel. The vehicle's current configuration applies to new entries.",
-  fuelMismatch: "Choose a fuel configured for this vehicle. Its measurement unit is fixed.",
-  discardUnsaved: "Your changes on this screen have not been saved. Leave without saving them?",
+  fuelMismatch:
+    "Choose a fuel configured for this vehicle. Its measurement unit is fixed.",
+  discardUnsaved:
+    "Your changes on this screen have not been saved. Leave without saving them?",
   keepEditing: "Keep editing",
   leaveForm: "Leave form",
 
@@ -231,7 +249,8 @@ export const en = {
   emptyChargingTitle: "No charging records found",
   emptyExpensesTitle: "No expenses found",
   emptyMetersTitle: "No meter readings yet",
-  emptyMetersBody: "Add a reading to start tracking this vehicle’s distance or engine hours.",
+  emptyMetersBody:
+    "Add a reading to start tracking this vehicle’s distance or engine hours.",
   emptyMeterFilterTitle: "No readings for this meter",
   emptyMeterFilterBody: "Choose another meter type to see its readings.",
   emptyDocumentsTitle: "No document details found",
@@ -246,21 +265,27 @@ export const en = {
   emptyMeterReadOnlyBody: "Recorded readings will appear here.",
   emptySearchTitle: "No vehicles found",
   uiNoSearchResults: "No vehicles match your search.",
-  uiCategoryHint: "Choose the basic vehicle structure, such as a two wheeler, car or truck.",
-  uiModelHint: "Brand and model are optional. Enter your own or choose a suggestion.",
-  uiMeterHint: "Choose what you track. Initial readings are optional and can be added later.",
+  uiCategoryHint:
+    "Choose the basic vehicle structure, such as a two wheeler, car or truck.",
+  uiModelHint:
+    "Brand and model are optional. Enter your own or choose a suggestion.",
+  uiMeterHint:
+    "Choose what you track. Initial readings are optional and can be added later.",
   uiDetailsHint: "Identify your vehicle and choose the fuel or energy it uses.",
-  uiReviewHint: "Review your details before saving. You can go back to any step.",
+  uiReviewHint:
+    "Review your details before saving. You can go back to any step.",
   fuelFillType: "Fill type",
   chargingFillType: "Charging type",
   fuelFillTypeHelp:
     "Full-to-full entries with valid meter readings can be used to calculate efficiency.",
   insightsScope: "Insights include only the record types you can access:",
-  insightsNoRecordsAccess: "You do not have access to fuel or expense records for this vehicle.",
+  insightsNoRecordsAccess:
+    "You do not have access to fuel or expense records for this vehicle.",
   insightsNoFuelAccess: "Fuel records are unavailable for your role.",
   insightsNoExpenseAccess: "Expense records are unavailable for your role.",
   insightsNoMeterAccess: "Meter readings are unavailable for your role.",
-  insightsNoReportAccess: "You do not have permission to view insights for this vehicle.",
+  insightsNoReportAccess:
+    "You do not have permission to view insights for this vehicle.",
   insightsChartShowDetails: "Show chart details",
   insightsChartHideDetails: "Hide chart details",
   uiRecentActivity: "Recent activity",
@@ -293,7 +318,8 @@ export const en = {
   subtypeNoMatch: "No matching vehicle types.",
   subtypeManual: "Other vehicle type",
   subtypeRequired: "Choose a vehicle type to continue.",
-  subtypeIllustration: "Illustration only; model and energy type are entered separately.",
+  subtypeIllustration:
+    "Illustration only; model and energy type are entered separately.",
   subtype_motorcycle: "Motorcycle",
   subtype_scooter: "Scooter",
   subtype_electric_scooter: "Electric Scooter",
@@ -357,7 +383,8 @@ export const en = {
   passwordUpdated: "Your password was updated.",
   invalidEmail: "Enter a valid email address.",
   invalidCode: "Enter the 6–8 digit code from your email.",
-  codeSessionMissing: "Verification did not complete. Request a new code and try again.",
+  codeSessionMissing:
+    "Verification did not complete. Request a new code and try again.",
   useOtp: "Sign in with an email code",
   signupVerify: "Verify your account",
   recoveryVerify: "Verify reset code",
@@ -374,7 +401,8 @@ export const en = {
   networkError:
     "Unable to confirm the request. Keep this form open, check your connection and retry. Nothing will upload automatically.",
   invalidData: "Some values are invalid. Review the form and try again.",
-  deletionPending: "Your account deletion request is pending. Contact your operator for support.",
+  deletionPending:
+    "Your account deletion request is pending. Contact your operator for support.",
   deletionArchiveFirst:
     "Archive all vehicles you administer before requesting deletion. Go to Garage to review them, then return here.",
   serviceSetup:
@@ -459,7 +487,8 @@ export const en = {
   cancel: "Cancel",
   discard: "Discard",
   unsaved: "Leave this form?",
-  unsavedBody: "Your changes have not been saved. Leave and discard them, or keep editing.",
+  unsavedBody:
+    "Your changes have not been saved. Leave and discard them, or keep editing.",
   profileCountry: "Country or territory (optional)",
   countrySearch: "Search country or territory",
   countryNoResults: "No matching country or territory.",
@@ -474,25 +503,31 @@ export const en = {
   garage: "My Garage",
   add: "Add new vehicle",
   empty: "Your garage starts here",
-  emptyBody: "Add your first vehicle or ask an Owner to grant access to your verified email.",
+  emptyBody:
+    "Add your first vehicle or ask an Owner to grant access to your verified email.",
   search: "Search vehicles",
   switch: "Switch vehicle",
   owner: "Owner",
   pilot: "Pilot",
   pilotAccessHint:
     "By default, pilots can add fuel, expenses and meter readings and view today and yesterday. You can restrict access or allow Daily Progress below. Pilots cannot edit or delete records.",
-  pilotPolicyUnavailable: "Pilot access needs a server update. Try again after the update.",
-  pilotHistoryHint: "Pilot access: showing today and yesterday in the vehicle’s time zone.",
+  pilotPolicyUnavailable:
+    "Pilot access needs a server update. Try again after the update.",
+  pilotHistoryHint:
+    "Pilot access: showing today and yesterday in the vehicle’s time zone.",
   activeVehicles: "Active vehicles",
   archivedVehicles: "Archived vehicles",
-  archivedVehicleReadOnly: "This vehicle is archived. Restore it to edit details or add records.",
+  archivedVehicleReadOnly:
+    "This vehicle is archived. Restore it to edit details or add records.",
   archiveVehicleBody:
     "Archive this vehicle? It will be removed from the vehicle switcher and new records will be blocked. You can restore it from your garage.",
-  recoverVehicleBody: "Restore this vehicle? It will be available in the vehicle switcher again.",
+  recoverVehicleBody:
+    "Restore this vehicle? It will be available in the vehicle switcher again.",
   archived: "Archived",
   archive: "Archive vehicle",
   recover: "Recover vehicle",
-  archiveBody: "This vehicle stays in your garage history and can be recovered.",
+  archiveBody:
+    "This vehicle stays in your garage history and can be recovered.",
   edit: "Edit vehicle",
   details: "Vehicle details",
   two_wheeler: "Two wheeler",
@@ -522,7 +557,8 @@ export const en = {
   detailsStep: "Vehicle details",
   meterStep: "Set up your meters",
   reviewStep: "Ready for your garage",
-  catalog: "Suggestions are a small curated catalog. You can enter any make or model.",
+  catalog:
+    "Suggestions are a small curated catalog. You can enter any make or model.",
   PETROL: "Petrol",
   DIESEL: "Diesel",
   ELECTRIC: "Electric",
@@ -551,7 +587,8 @@ export const en = {
     "Changing currency clears the money fields so existing values are not silently reinterpreted.",
   localeEnglish: "English (India)",
   localeHindi: "Hindi (India)",
-  localeHint: "Labels use your selected language. Missing translations fall back to English.",
+  localeHint:
+    "Labels use your selected language. Missing translations fall back to English.",
   appearance: "Appearance",
   light: "Light",
   dark: "Dark",
@@ -560,12 +597,28 @@ export const en = {
   sync: "Connection",
   saveUnconfirmed:
     "Could not confirm this save. Retry with the same values. If you changed them after an earlier attempt, check the latest server record before starting a new entry.",
-  onlineFormNotice: "Changes stay on this screen until you save. Leaving discards unsaved changes.",
+  onlineFormNotice:
+    "Changes stay on this screen until you save. Leaving discards unsaved changes.",
   onlineOnlyBody:
     "An internet connection is required. Records appear only after the server accepts them. There are no offline drafts or background uploads.",
   developmentNotice:
     "Frontend preview only. Test data stays in memory, disappears when the app reloads and is never uploaded.",
   about: "About",
+  appSupportAndUpdates: "App support and updates",
+  checkForUpdates: "Check for updates",
+  checkingForUpdates: "Checking for updates…",
+  appUpToDate: "GaadiPulse is up to date.",
+  updateAvailableTitle: "GaadiPulse update available",
+  updateAvailableHint:
+    "A newer version is ready. Install it now for the latest improvements.",
+  installUpdate: "Install update",
+  updateLater: "Remind me later",
+  updateCheckFailed:
+    "Could not check for updates. Open Google Play to check manually.",
+  appPlayPage: "App page and information",
+  appPlayPageHint: "Open GaadiPulse on Google Play for details and updates.",
+  rateApp: "Rate GaadiPulse",
+  rateAppHint: "Open the Google Play reviews page.",
   legal: "Privacy and terms",
   privacy:
     "Your account and vehicle data are stored in the Supabase project configured by the app operator. Vehicle Owners control access. Forms are held in memory while open; offline drafts and record caches are not stored. This app does not track GPS or serve ads. For privacy and account deletion questions, email mahendrapuniya92@gmail.com. This pre-release policy must be reviewed by the operator before public distribution.",
@@ -577,21 +630,74 @@ export const en = {
   denied: "Vehicle unavailable or access removed",
   sessionError: "Could not restore your session",
   stage2: "Fuel and expense recording is scheduled for Stage 2.",
-  stage3: "Daily Progress and collaboration controls are scheduled for Stage 3.",
+  stage3:
+    "Daily Progress and collaboration controls are scheduled for Stage 3.",
   progress: "Daily Progress",
   upcoming: "Next implementation stage",
   meters: "Latest observed readings",
   noReadings: "No observed readings yet",
   noAccess: "You do not have permission to read meter history.",
   refresh: "Refresh",
-  roleInfo: "Access applies to this vehicle. App role is separate from legal ownership.",
+  roleInfo:
+    "Access applies to this vehicle. App role is separate from legal ownership.",
   noPhoto: "Photo capture and uploads are coming later.",
   signoutBody: "Signing out clears your session and current unsaved changes.",
+  permissionFuelRead: "View fuel and amounts",
+  permissionFuelCreate: "Add fuel",
+  permissionFuelEditOwn: "Edit own fuel",
+  permissionExpensesRead: "View expenses and amounts",
+  permissionExpensesCreate: "Add expenses",
+  permissionExpensesEditOwn: "Edit own expenses",
+  permissionMetersRead: "View meter observations",
+  permissionMetersCreate: "Add meter observations",
+  permissionProgressSubmit: "Submit daily progress",
+  permissionProgressView: "View progress history",
+  permissionProgressEditOwn: "Edit own progress",
+  permissionReportsRead: "View permitted reports and exports",
+  permissionDocumentsRead: "View document details",
+  permissionDocumentsCreate: "Add document details",
+  permissionRemindersRead: "View shared reminders",
+  permissionRemindersCreate: "Add reminders",
+  memberAccessTitle: "Vehicle member access",
+  memberLoadingAccess: "Loading vehicle access…",
+  memberLoading: "Loading members…",
+  memberNoneActive: "No active members to display.",
+  memberNonePending: "No pending access grants.",
+  memberAddTitle: "Add vehicle member",
+  memberChooseRole: "Choose a role",
+  memberPilotPermissions: "Pilot permissions",
+  memberRole: "Role",
+  memberFullOwnerAccess: "Full Owner access",
+  memberActive: "Active",
+  memberRevoked: "Access revoked",
+  memberPrimaryAdmin: "Primary administrator",
+  memberPilotPolicyUnavailable:
+    "Pilot permissions unavailable until the access policy is verified",
+  memberUnlimitedBackdating: "Unlimited backdating",
+  memberDaysBack: "{days} day(s) back",
+  memberOpenGarage: "Open Garage",
+  memberAdd: "Add vehicle member",
+  memberCancelPending: "Cancel pending access",
+  memberSaveDefaults: "Save vehicle defaults",
+  memberGrant: "Grant access",
+  memberCancel: "Cancel",
+  memberSaveChanges: "Save changes",
+  memberRevoke: "Revoke access",
+  memberRestore: "Restore access",
+  backdateRangeLabel: "Fuel and expense entry date range",
+  insightsTitle: "Insights",
+  insightsLoadError: "Some insight data could not be loaded.",
+  reportTotalSpend: "Total recorded spend",
+  reportCompletedFuelIntervals: "Completed fuel intervals",
+  reportRecordedSpend: "Recorded spend",
+  reportNoRecords: "No records for this period.",
+  reportExpenseCategories: "Expense categories",
+  reportNoExpenses: "No expense records in this period.",
+  reportFuelEfficiency: "Fuel efficiency",
+  reportMeasuredDistance: "Measured distance and use",
 } as const;
 export type TranslationKey = keyof typeof en;
-// Only English is enabled until reviewed translations are added to the JSON
-// catalogs under locales/. The database can carry more locales later.
-export const supportedLocales = ["en-IN"] as const;
+export const supportedLocales = ["en-IN", "hi-IN"] as const;
 export type SupportedLocale = (typeof supportedLocales)[number];
 
 let activeLocale: SupportedLocale = "en-IN";
@@ -600,7 +706,9 @@ export function getLocale(): SupportedLocale {
   return activeLocale;
 }
 export function setLocale(locale: string) {
-  const next: SupportedLocale = supportedLocales.includes(locale as SupportedLocale)
+  const next: SupportedLocale = supportedLocales.includes(
+    locale as SupportedLocale,
+  )
     ? (locale as SupportedLocale)
     : "en-IN";
   if (next === activeLocale) return;
@@ -612,5 +720,11 @@ export function subscribeLocale(listener: () => void) {
   return () => localeListeners.delete(listener);
 }
 export function t(key: TranslationKey) {
+  if (activeLocale === "hi-IN") {
+    const translated = (hiCatalog as Partial<Record<TranslationKey, string>>)[
+      key
+    ];
+    if (typeof translated === "string") return translated;
+  }
   return en[key];
 }

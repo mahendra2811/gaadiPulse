@@ -4,6 +4,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { AppText } from "@/src/components/ui";
 import { useTheme } from "@/src/lib/theme";
 import {
+  BACKDATE_OPTIONS,
   effectivePilotPermission,
   pilotPermissionGroups,
   resetPilotOverrides,
@@ -147,6 +148,87 @@ export const PermissionEditor = memo(function PermissionEditor({
           </Text>
         </Pressable>
       )}
+    </View>
+  );
+});
+
+export const BackdateEditor = memo(function BackdateEditor({
+  value,
+  onChange,
+  inherited = false,
+  disabled = false,
+}: {
+  value: number | null;
+  onChange: (value: (typeof BACKDATE_OPTIONS)[number] | null) => void;
+  inherited?: boolean;
+  disabled?: boolean;
+}) {
+  const c = useTheme();
+  return (
+    <View style={{ gap: 8 }}>
+      <AppText>Fuel and expense entry date range</AppText>
+      <AppText muted>
+        Choose how far back this Pilot may date new Fuel and Expense records.
+        Days use this vehicle’s timezone.
+      </AppText>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+        {BACKDATE_OPTIONS.map((days) => {
+          const selected = value === days;
+          const label =
+            days === -1
+              ? "Unlimited"
+              : days === 0
+                ? "Today only"
+                : `${days} ${days === 1 ? "day" : "days"}`;
+          return (
+            <Pressable
+              key={days}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: selected, disabled }}
+              disabled={disabled}
+              onPress={() => onChange(days)}
+              style={{
+                minHeight: 44,
+                justifyContent: "center",
+                paddingHorizontal: 14,
+                borderWidth: 1,
+                borderColor: selected ? c.primary : c.line,
+                borderRadius: 22,
+                opacity: disabled ? 0.6 : 1,
+              }}
+            >
+              <Text
+                style={{
+                  color: selected ? c.primary : c.ink,
+                  fontWeight: "600",
+                }}
+              >
+                {label}
+              </Text>
+            </Pressable>
+          );
+        })}
+        {inherited && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ disabled }}
+            disabled={disabled}
+            onPress={() => onChange(null)}
+            style={{
+              minHeight: 44,
+              justifyContent: "center",
+              paddingHorizontal: 14,
+              borderWidth: 1,
+              borderColor: value === null ? c.primary : c.line,
+              borderRadius: 22,
+            }}
+          >
+            <Text style={{ color: c.primary, fontWeight: "600" }}>
+              Use vehicle default
+            </Text>
+          </Pressable>
+        )}
+      </View>
     </View>
   );
 });

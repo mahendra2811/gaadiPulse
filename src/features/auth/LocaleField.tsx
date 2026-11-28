@@ -5,6 +5,7 @@ import { t, type SupportedLocale } from "@/src/lib/i18n";
 
 const options: readonly [SupportedLocale, string][] = [
   ["en-IN", "localeEnglish"],
+  ["hi-IN", "localeHindi"],
 ];
 
 export function LocaleField({
@@ -25,7 +26,7 @@ export function LocaleField({
           <Pressable
             key={locale}
             accessibilityRole="radio"
-            accessibilityLabel={t(labelKey as "localeEnglish")}
+            accessibilityLabel={t(labelKey as "localeEnglish" | "localeHindi")}
             accessibilityState={{ checked: value === locale, disabled }}
             disabled={disabled}
             onPress={() => onChange(locale)}
@@ -42,7 +43,7 @@ export function LocaleField({
             }}
           >
             <Text style={{ color: colors.ink, flex: 1 }}>
-              {t(labelKey as "localeEnglish")}
+              {t(labelKey as "localeEnglish" | "localeHindi")}
             </Text>
             <Text
               style={{

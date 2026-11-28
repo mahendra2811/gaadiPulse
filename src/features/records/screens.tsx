@@ -89,6 +89,7 @@ import {
   type RecordEntry,
 } from "./schema";
 import { r, recordCopy } from "./copy";
+import { maybeRequestReviewAfterSave } from "@/src/features/auth/reviewPrompt";
 import { formVersions, reviewProgress } from "@/src/features/progress/api";
 import { DynamicFields } from "@/src/features/progress/DynamicFields";
 import {
@@ -722,6 +723,9 @@ export function RecordForm() {
     forms.data?.find((f) => f.published)?.definition ??
     defaultDefinition;
   const owner = access.data?.owner === true;
+  const backdateDays = owner
+    ? 0
+    : (access.data?.["records.backdate_days"] ?? 1);
   const meterHistory = useQuery({
     queryKey: [user, v?.id, "meter-history-for-entry"],
     enabled:
@@ -847,6 +851,16 @@ export function RecordForm() {
                   form.setValue("confirmed_observation", false);
               }}
               allowFuture={name === "due_at"}
+              minimumDate={
+                (kind === "fuel" || kind === "expenses") &&
+                name === "event_at" &&
+                !owner &&
+                Number(backdateDays) !== -1
+                  ? new Date(
+                      `${shiftDay(dateInZone(new Date(), v?.timezone ?? "Asia/Kolkata"), -(backdateDays as number))}T12:00:00`,
+                    )
+                  : undefined
+              }
               mode={name === "progress_date" ? "date" : "datetime"}
               required={required}
               optional={!required}
@@ -1084,6 +1098,21 @@ export function RecordForm() {
         hoursRequired: kind === "progress" && definition.hours_required,
         notesRequired: kind === "progress" && definition.notes_required,
       });
+      if (!owner && (kind === "fuel" || kind === "expenses")) {
+        const allowedDays = Number.isInteger(backdateDays)
+          ? (backdateDays as number)
+          : 1;
+        const minimum =
+          allowedDays === -1
+            ? "0000-01-01"
+            : shiftDay(dateInZone(new Date(), v.timezone), -allowedDays);
+        const eventDate = dateInZone(new Date(values.event_at), v.timezone);
+        if (eventDate < minimum) {
+          const message = `This vehicle allows entries up to ${allowedDays === -1 ? "any date" : `${allowedDays} ${allowedDays === 1 ? "day" : "days"} back`}. Choose a more recent date or ask the Owner to change your access.`;
+          form.setError("event_at", { message });
+          throw new Error(message);
+        }
+      }
       if (kind === "progress") {
         const version = forms.data?.find(
           (f) =>
@@ -1144,11 +1173,16 @@ export function RecordForm() {
         predicate: (query) =>
           query.queryKey[0] === user &&
           query.queryKey[1] === v.id &&
-          ["records", "expense-history", "fuel-history", "observations"].includes(
-            String(query.queryKey[2]),
-          ),
+          [
+            "records",
+            "expense-history",
+            "fuel-history",
+            "observations",
+          ].includes(String(query.queryKey[2])),
         refetchType: "active",
       });
+      if (!id && !development && ["fuel", "expenses", "meters"].includes(kind))
+        void maybeRequestReviewAfterSave();
       if (kind === "fuel") active.select(v.id);
       toast(r("saved"), "success");
       if (another) {

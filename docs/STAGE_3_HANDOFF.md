@@ -721,3 +721,29 @@ Step 2 copy now distinguishes vehicle nickname, full vehicle name, model year an
 The model-year chooser is a compact scrollable grid from the current year through 1950, with a high-contrast selected state and clear action. Country, currency and time-zone searchable selectors now use the shared popup backdrop, so outside taps close them.
 
 Validation: `npm run typecheck`, ESLint on changed picker files, Prettier on changed files, and `git diff --check` PASS. No browser/device visual check or test suite was run.
+
+## Hindi catalog draft and compact latest readings — 2026-11-28
+
+Added a small set of translated Hindi labels to the existing `src/lib/i18n/locales/hi.json` draft. It remains incomplete (70/512 English keys) and is not connected to runtime; English stays active as requested. Latest meter reading timestamps now use a compact date/time format and one-line layout on the garage home view.
+
+Validation: JSON formatting, `npm run typecheck`, ESLint for changed UI files, Prettier, and `git diff --check` PASS. No device/browser visual check or test suite was run.
+
+## Pilot fuel/expense backdate access — 2026-11-28
+
+Added owner-configurable backdate windows for Pilot Fuel and Expense creation. Vehicle defaults and per-Pilot overrides offer today only, 1, 2, 10, 30, or 60 calendar days back, plus unlimited. “Use vehicle default” lets an individual Pilot inherit the vehicle setting. Existing Pilots and grants retain a default of one day back. The selected window is shown in Owner member details. Date boundaries use the vehicle timezone and include today plus the configured number of preceding calendar dates.
+
+Updated the shared date picker, Add Fuel/Add Expense validation, and `vehicle_access` permission data. Added migration `202611280003_pilot_record_backdate_window.sql` to persist settings, audit changes, expose member/grant configuration through Owner-only RPCs, resolve verified email grants with the setting, and reject out-of-window Pilot inserts at the database trigger. Fuel/Expense read-history visibility remains independently limited to today and yesterday.
+
+Validation executed: `npm run typecheck` PASS; `npm run lint` PASS; targeted Prettier on changed TypeScript PASS. Test suite NOT RUN. SQL migration application, SQL syntax/RLS verification, hosted Supabase behavior, UI/device interaction and Android build NOT TESTED. Apply the migration before using this setting against a backend. The migration adds versioned RPCs while preserving compatibility wrappers for the existing membership, grant and defaults RPCs. Apply it to a disposable local database and verify SQL/RLS behavior before production application.
+
+## Play Store update, app page and review actions — 2026-11-28
+
+Added About actions to check for a Play Store update, open the GaadiPulse listing, and open its reviews page. On eligible Android installs, the update action uses Google Play's immediate in-app update flow; debug and non-Android installs open the Play listing as a recovery path. Configured the same listing URL as Expo's Play Store review URL. Added an in-app review request after five successfully created production fuel, expense or meter records, with a six-month local cooldown. The explicit Rate action always opens the listing's reviews section. Google Play may suppress in-app review requests due to its quota.
+
+Validation executed: `npm run typecheck` PASS; `npx expo config --type public` PASS and confirmed package/version/listing URL; `git diff --check` PASS. Test suite, lint, Play-distributed Android install, native build and live update/review flow NOT RUN. New native dependencies require a new Android build and Play upload before existing installations receive these actions. Operator must validate from a Play testing track; no API key or user secret is needed.
+
+## Automatic Play update and review cadence — 2026-11-28
+
+Added a root-level Play update check once per day while the Android app is active. When Play reports an update, an in-app card offers Install update (Google Play immediate flow) or Remind me later (snoozes the card for one day). The About manual check remains. Review requests are attempted after five confirmed production fuel, expense or meter creates, then after each ten further creates; Play may suppress them. The app cannot inspect whether a review was submitted or its star rating, so there is no rating-based stop rule. No review gating or custom star survey was added.
+
+Validation: `npm run typecheck`, targeted ESLint for changed UI/auth/catalog files, and `git diff --check` PASS. Play track distribution, native build, Android prompt flow and review submission NOT TESTED. New native dependencies and the automatic update component require a new Android build and Play testing-track validation. The app should be downloaded from a Play test track to exercise real update/review APIs.

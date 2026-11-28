@@ -24,12 +24,18 @@ import {
   ErrorState,
   useToast,
 } from "@/src/components/ui";
-import { t } from "@/src/lib/i18n";
+import { setLocale, t } from "@/src/lib/i18n";
+import { LocaleField } from "./LocaleField";
 import { resolveTheme, useThemeMode, type ThemeMode } from "@/src/lib/theme";
 import { Image, Pressable, View, Text, useColorScheme } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useTheme } from "@/src/lib/theme";
 import { artwork } from "@/src/lib/assets";
+import {
+  checkAndStartPlayUpdate,
+  openPlayStore,
+  PLAY_REVIEW_URL,
+} from "./playStore";
 export { MoreDrawerRoute as More } from "@/src/components/navigation/MoreDrawer";
 export function Settings() {
   const toast = useToast();
@@ -40,6 +46,7 @@ export function Settings() {
   const auth = useSession();
   const queryClient = useQueryClient();
   const colors = useTheme();
+  const [localeBusy, setLocaleBusy] = useState(false);
   const changeTheme = async (theme: ThemeMode) => {
     if (!user || themeBusy || !profile.data || profile.data.theme === theme)
       return;
@@ -148,8 +155,34 @@ export function Settings() {
         <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 17 }}>
           System follows your device appearance.
         </Text>
-        <InfoRows items={[{ label: t("language"), value: t("english") }]} />
-        <AppText muted>{t("hindi")}</AppText>
+        {profile.data && (
+          <LocaleField
+            value={profile.data.locale}
+            disabled={localeBusy}
+            onChange={(locale) => {
+              if (!user || !profile.data || localeBusy) return;
+              setLocaleBusy(true);
+              setLocale(locale);
+              void updateProfile(user, {
+                display_name: profile.data.display_name,
+                theme: profile.data.theme,
+                timezone: profile.data.timezone,
+                locale,
+              })
+                .then(() =>
+                  queryClient.setQueryData([user, "profile"], {
+                    ...profile.data,
+                    locale,
+                  }),
+                )
+                .catch((e) => {
+                  setLocale(profile.data!.locale);
+                  setError(errorMessage(e));
+                })
+                .finally(() => setLocaleBusy(false));
+            }}
+          />
+        )}
         {releaseFeatures.advancedTools && (
           <MenuRow
             label={r("notificationPermission")}
@@ -354,6 +387,25 @@ export function Profile() {
 }
 export function About() {
   const dark = resolveTheme(useThemeMode(), useColorScheme()) === "dark";
+  const [checkingUpdates, setCheckingUpdates] = useState(false);
+  const toast = useToast();
+  const checkForUpdates = async () => {
+    if (checkingUpdates) return;
+    setCheckingUpdates(true);
+    try {
+      const result = await checkAndStartPlayUpdate();
+      if (result === "current") toast(t("appUpToDate"), "success");
+    } catch {
+      toast(t("updateCheckFailed"), "warning");
+      try {
+        await openPlayStore();
+      } catch {
+        // Toast already gives a recovery path if the store app is unavailable.
+      }
+    } finally {
+      setCheckingUpdates(false);
+    }
+  };
   return (
     <Screen title={t("about")} compact>
       <Card style={{ padding: 18 }}>
@@ -365,6 +417,31 @@ export function About() {
         />
         <AppText large>{t("app")}</AppText>
         <AppText muted>{t("tagline")}</AppText>
+      </Card>
+      <Card style={{ padding: 16 }}>
+        <AppText large>{t("appSupportAndUpdates")}</AppText>
+        <AppButton
+          secondary
+          label={
+            checkingUpdates ? t("checkingForUpdates") : t("checkForUpdates")
+          }
+          disabled={checkingUpdates}
+          onPress={() => void checkForUpdates()}
+        />
+        <MenuRow
+          label={t("appPlayPage")}
+          subtitle={t("appPlayPageHint")}
+          icon="open-outline"
+          tone="violet"
+          onPress={() => void openPlayStore()}
+        />
+        <MenuRow
+          label={t("rateApp")}
+          subtitle={t("rateAppHint")}
+          icon="star-outline"
+          tone="amber"
+          onPress={() => void openPlayStore(PLAY_REVIEW_URL)}
+        />
       </Card>
       <Card style={{ padding: 16 }}>
         <AppText>{t("roleInfo")}</AppText>

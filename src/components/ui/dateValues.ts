@@ -5,6 +5,7 @@ export type DateFieldProps = {
   error?: string;
   label?: string;
   allowFuture?: boolean;
+  minimumDate?: Date;
   mode?: DateFieldMode;
   required?: boolean;
   optional?: boolean;

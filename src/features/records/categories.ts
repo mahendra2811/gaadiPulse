@@ -1,21 +1,24 @@
+import { t } from "@/src/lib/i18n";
+
 export function permissionLabel(key: string) {
-  const labels: Record<string, string> = {
-    "fuel.read": "View fuel and amounts",
-    "fuel.create": "Add fuel",
-    "fuel.edit_own": "Edit own fuel",
-    "expenses.read": "View expenses and amounts",
-    "expenses.create": "Add expenses",
-    "expenses.edit_own": "Edit own expenses",
-    "meters.read": "View meter observations",
-    "meters.create": "Add meter observations",
-    "progress.submit": "Submit daily progress",
-    "progress.view": "View progress history",
-    "progress.edit_own": "Edit own progress",
-    "reports.read": "View permitted reports and exports",
-    "documents.read": "View document details",
-    "documents.create": "Add document details",
-    "reminders.read": "View shared reminders",
-    "reminders.create": "Add reminders",
+  const labels: Record<string, Parameters<typeof t>[0]> = {
+    "fuel.read": "permissionFuelRead",
+    "fuel.create": "permissionFuelCreate",
+    "fuel.edit_own": "permissionFuelEditOwn",
+    "expenses.read": "permissionExpensesRead",
+    "expenses.create": "permissionExpensesCreate",
+    "expenses.edit_own": "permissionExpensesEditOwn",
+    "meters.read": "permissionMetersRead",
+    "meters.create": "permissionMetersCreate",
+    "progress.submit": "permissionProgressSubmit",
+    "progress.view": "permissionProgressView",
+    "progress.edit_own": "permissionProgressEditOwn",
+    "reports.read": "permissionReportsRead",
+    "documents.read": "permissionDocumentsRead",
+    "documents.create": "permissionDocumentsCreate",
+    "reminders.read": "permissionRemindersRead",
+    "reminders.create": "permissionRemindersCreate",
   };
-  return labels[key] ?? key;
+  const label = labels[key];
+  return label ? t(label) : key;
 }

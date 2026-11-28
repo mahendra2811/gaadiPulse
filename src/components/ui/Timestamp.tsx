@@ -7,13 +7,33 @@ export function Timestamp({
   value,
   timezone,
   label,
+  compact = false,
 }: {
   value?: string | null;
   timezone?: string;
   label?: string;
+  compact?: boolean;
 }) {
   const c = useTheme();
   const date = displayDateTime(value, timezone);
+  if (compact) {
+    const shortDate = date.date.replace(/,?\s+\d{4}$/, "");
+    const shortTime = date.time.replace(/\s?([AP])M$/i, "$1");
+    return (
+      <Text
+        accessibilityLabel={`${label ?? ""} ${date.date} ${date.time} ${date.zone ?? ""}`}
+        numberOfLines={1}
+        style={{
+          color: c.muted,
+          fontSize: 11,
+          flexShrink: 1,
+          textAlign: "right",
+        }}
+      >
+        {[shortDate, shortTime].filter(Boolean).join(" · ")}
+      </Text>
+    );
+  }
   return (
     <View
       accessibilityLabel={`${label ?? ""} ${date.date} ${date.time} ${date.zone ?? ""}`}

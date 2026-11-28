@@ -7,10 +7,7 @@ import {
 import { ConfirmationHost } from "@/src/components/ui/ConfirmationHost";
 import { MoreDrawerProvider } from "@/src/components/navigation/MoreDrawer";
 import { useMembershipUpdates } from "@/src/hooks/useMembershipUpdates";
-import {
-  keepsAuthenticatedAuthScreen,
-  profileRedirect,
-} from "@/src/features/auth/routing";
+import { keepsAuthenticatedAuthScreen, profileRedirect } from "@/src/features/auth/routing";
 import { View, Appearance, Platform } from "react-native";
 import { AuthLayout } from "@/src/features/auth/AuthLayout";
 import { useConnectivity } from "@/src/lib/connectivity";
@@ -21,11 +18,7 @@ import { Stack, useRouter, useSegments, usePathname } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import {
-  SessionProvider,
-  useSession,
-  useAccountId,
-} from "@/src/features/auth/session";
+import { SessionProvider, useSession, useAccountId } from "@/src/features/auth/session";
 import { useProfile } from "@/src/features/auth/profile";
 import { ThemeContext } from "@/src/lib/theme";
 import {
@@ -38,6 +31,7 @@ import {
 } from "@/src/components/ui";
 import { setLocale, t } from "@/src/lib/i18n";
 import { useLocaleSubscription } from "@/src/hooks/useLocale";
+import { PlayUpdatePrompt } from "@/src/features/auth/PlayUpdatePrompt";
 const query = new QueryClient({
   defaultOptions: {
     queries: { retry: false, staleTime: 0, gcTime: 0, networkMode: "always" },
@@ -66,10 +60,7 @@ function ReminderFeedback() {
     };
   }, [user, attempt]);
   return error ? (
-    <ErrorState
-      message={error}
-      retry={() => setAttempt((value) => value + 1)}
-    />
+    <ErrorState message={error} retry={() => setAttempt((value) => value + 1)} />
   ) : null;
 }
 function Routes() {
@@ -86,27 +77,18 @@ function Routes() {
       Appearance.setColorScheme(
         profile.data?.theme === "system" || !profile.data?.theme
           ? "unspecified"
-          : profile.data.theme,
+          : profile.data.theme
       );
   }, [profile.data?.theme]);
   const router = useRouter();
   const segments = useSegments();
   const pathname = usePathname();
   useEffect(() => {
-    if (auth.loading || (auth.error && !auth.session && !auth.development))
-      return;
+    if (auth.loading || (auth.error && !auth.session && !auth.development)) return;
     const path = segments[0];
-    if (!auth.session && !auth.development && path !== "auth")
-      router.replace("/auth/login");
-    if (
-      (auth.session || auth.development) &&
-      !profile.isPending &&
-      !profile.error
-    ) {
-      const destination = profileRedirect(
-        pathname,
-        !!profile.data?.display_name?.trim(),
-      );
+    if (!auth.session && !auth.development && path !== "auth") router.replace("/auth/login");
+    if ((auth.session || auth.development) && !profile.isPending && !profile.error) {
+      const destination = profileRedirect(pathname, !!profile.data?.display_name?.trim());
       if (destination) router.replace(destination as "/(tabs)" | "/onboarding");
     }
   }, [
@@ -124,11 +106,7 @@ function Routes() {
   if (auth.loading && !auth.session && !auth.development)
     return (
       <ThemeContext.Provider value="system">
-        <AuthLayout
-          title={t("authRestoreTitle")}
-          subtitle={t("authRestoreHint")}
-          loading
-        >
+        <AuthLayout title={t("authRestoreTitle")} subtitle={t("authRestoreHint")} loading>
           <Skeleton />
         </AuthLayout>
       </ThemeContext.Provider>
@@ -151,11 +129,7 @@ function Routes() {
   )
     return (
       <ThemeContext.Provider value="system">
-        <AuthLayout
-          title={t("authRestoreTitle")}
-          subtitle={t("authRestoreHint")}
-          loading
-        >
+        <AuthLayout title={t("authRestoreTitle")} subtitle={t("authRestoreHint")} loading>
           <Skeleton />
         </AuthLayout>
       </ThemeContext.Provider>
@@ -168,10 +142,7 @@ function Routes() {
     return (
       <ThemeContext.Provider value="system">
         <AuthLayout title={t("profile")} subtitle={t("profileLoadError")}>
-          <ErrorState
-            message={profile.error.message}
-            retry={() => void profile.refetch()}
-          />
+          <ErrorState message={profile.error.message} retry={() => void profile.refetch()} />
           <AppButton
             secondary
             label={t("logout")}
@@ -185,6 +156,7 @@ function Routes() {
       <StatusBar style="auto" />
       <ToastProvider>
         <ReminderFeedback />
+        <PlayUpdatePrompt />
         {auth.development && (
           <View style={{ padding: 8 }}>
             <AppText>{t("developmentNotice")}</AppText>

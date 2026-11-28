@@ -1,4 +1,4 @@
-import { t, type TranslationKey } from "@/src/lib/i18n";
+import { getLocale, t, type TranslationKey } from "@/src/lib/i18n";
 
 /**
  * Bundled currency catalog. Codes and precision are data, not UI symbols.
@@ -94,7 +94,7 @@ export function parseMinorUnits(
 export function formatMinorUnits(
   amount: number,
   currency: CurrencyCode,
-  locale = "en-IN",
+  locale: string = getLocale(),
 ): string {
   if (!Number.isSafeInteger(amount)) throw new Error(t("currencySafeInteger"));
   const digits = currencies[currency].decimals;
@@ -132,7 +132,7 @@ export function formatMinorUnits(
 export function formatMoney(
   amount: number,
   currency: CurrencyCode = "INR",
-  locale = "en-IN",
+  locale: string = getLocale(),
 ) {
   return formatMinorUnits(amount, currency, locale);
 }

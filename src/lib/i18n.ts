@@ -1,5 +1,6 @@
 import enCatalog from "./i18n/locales/en.json";
 import hiCatalog from "./i18n/locales/hi.json";
+import localeRegistry from "./i18n/locales/registry.json";
 
 export const en = enCatalog;
 type CatalogSection = keyof typeof en;
@@ -14,18 +15,54 @@ type CatalogPath = {
   [Section in CatalogSection]: `${Section}.${CatalogKey<Section>}`;
 }[CatalogSection];
 export type TranslationKey = CatalogLeafKey | CatalogPath;
-export const supportedLocales = ["en-IN", "hi-IN"] as const;
-export type SupportedLocale = (typeof supportedLocales)[number];
-const localeCatalogs: Partial<
-  Record<SupportedLocale, Readonly<Record<string, unknown>>>
-> = {
-  "hi-IN": hiCatalog,
+export const supportedLocales = Object.keys(
+  localeRegistry,
+) as (keyof typeof localeRegistry)[];
+export type SupportedLocale = keyof typeof localeRegistry;
+export const localeOptions = Object.entries(localeRegistry).map(
+  ([code, metadata]) => ({
+    code: code as SupportedLocale,
+    ...metadata,
+    labelKey: metadata.labelKey as TranslationKey,
+  }),
+);
+const importedCatalogs: Record<string, Readonly<Record<string, unknown>>> = {
+  "en.json": enCatalog,
+  "hi.json": hiCatalog,
 };
+const localeCatalogs = Object.fromEntries(
+  Object.entries(localeRegistry).map(([code, metadata]) => {
+    const catalog = importedCatalogs[metadata.file];
+    if (!catalog)
+      throw new Error(`Locale catalog is not imported: ${metadata.file}`);
+    return [code, catalog];
+  }),
+) as Record<SupportedLocale, Readonly<Record<string, unknown>>>;
 
 let activeLocale: SupportedLocale = "en-IN";
 const localeListeners = new Set<() => void>();
 export function getLocale(): SupportedLocale {
   return activeLocale;
+}
+export function getLocaleDirection(locale: string = activeLocale) {
+  if (!supportedLocales.includes(locale as SupportedLocale)) return "ltr";
+  return localeRegistry[locale as SupportedLocale].direction;
+}
+export function formatDate(
+  value: Date,
+  options: Intl.DateTimeFormatOptions = {},
+  timeZone?: string,
+) {
+  return new Intl.DateTimeFormat(activeLocale, {
+    ...options,
+    ...(timeZone ? { timeZone } : {}),
+  }).format(value);
+}
+export function formatNumber(
+  value: number,
+  options: Intl.NumberFormatOptions = {},
+) {
+  return new Intl.NumberFormat(activeLocale, options).format(value);
 }
 export function setLocale(locale: string) {
   const next: SupportedLocale = supportedLocales.includes(

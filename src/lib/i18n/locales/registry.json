@@ -1,0 +1,16 @@
+{
+  "en-IN": {
+    "file": "en.json",
+    "labelKey": "localeEnglish",
+    "nativeName": "English (India)",
+    "direction": "ltr",
+    "status": "complete"
+  },
+  "hi-IN": {
+    "file": "hi.json",
+    "labelKey": "localeHindi",
+    "nativeName": "हिन्दी (भारत)",
+    "direction": "ltr",
+    "status": "partial"
+  }
+}

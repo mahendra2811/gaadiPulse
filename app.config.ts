@@ -1,4 +1,8 @@
 import type { ExpoConfig } from "expo/config";
+import localeRegistry from "./src/lib/i18n/locales/registry.json";
+const nativeLocales = [
+  ...new Set(Object.keys(localeRegistry).map((locale) => locale.split("-")[0])),
+];
 const config: ExpoConfig = {
   name: "GaadiPulse",
   slug: "gaadipulse",
@@ -50,8 +54,8 @@ const config: ExpoConfig = {
       "expo-localization",
       {
         supportedLocales: {
-          android: ["en"],
-          ios: ["en"],
+          android: nativeLocales,
+          ios: nativeLocales,
         },
       },
     ],

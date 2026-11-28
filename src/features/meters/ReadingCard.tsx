@@ -5,7 +5,7 @@ import { ColorIcon, Expandable, TextAction } from "@/src/components/ui/premium";
 import { Timestamp } from "@/src/components/ui/Timestamp";
 import { RecordBadge } from "@/src/features/records/RecordCard";
 import { useTheme } from "@/src/lib/theme";
-import { t } from "@/src/lib/i18n";
+import { formatNumber, t } from "@/src/lib/i18n";
 import { r } from "@/src/features/records/copy";
 export type HistoryReading = {
   id: string;
@@ -48,7 +48,7 @@ export function ReadingCard({
         />
         <View style={{ flex: 1, gap: 2 }}>
           <Text style={{ fontSize: 24, fontWeight: "800", color: c.ink }}>
-            {reading.value.toLocaleString("en-IN", {
+            {formatNumber(reading.value, {
               maximumFractionDigits: 3,
             })}
             <Text style={{ fontSize: 13, fontWeight: "500", color: c.muted }}>

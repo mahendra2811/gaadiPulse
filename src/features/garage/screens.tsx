@@ -35,7 +35,7 @@ import {
 import { VehicleHeader } from "@/src/components/navigation/VehicleHeader";
 import { subtypeLabel } from "./subtypes";
 import { vehicleArt } from "@/src/lib/assets";
-import { t } from "@/src/lib/i18n";
+import { formatNumber, t } from "@/src/lib/i18n";
 import { useSession, useAccountId } from "@/src/features/auth/session";
 import { useProfile } from "@/src/features/auth/profile";
 export function Garage() {
@@ -578,7 +578,7 @@ export function Home() {
                       >
                         <Text
                           numberOfLines={1}
-                          accessibilityLabel={`${t(reading.reading_type)}: ${reading.value.toLocaleString("en-IN", { maximumFractionDigits: 3 })}`}
+                          accessibilityLabel={`${t(reading.reading_type)}: ${formatNumber(reading.value, { maximumFractionDigits: 3 })}`}
                           style={{
                             color: colors.ink,
                             fontSize: 20,
@@ -586,7 +586,7 @@ export function Home() {
                             flexShrink: 1,
                           }}
                         >
-                          {reading.value.toLocaleString("en-IN", {
+                          {formatNumber(reading.value, {
                             maximumFractionDigits: 3,
                           })}
                           <Text

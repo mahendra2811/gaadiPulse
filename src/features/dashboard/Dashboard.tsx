@@ -32,7 +32,7 @@ import {
 } from "@/src/features/records/currency";
 import { dateInZone } from "@/src/features/progress/schema";
 import { useTheme } from "@/src/lib/theme";
-import { t } from "@/src/lib/i18n";
+import { formatDate, t } from "@/src/lib/i18n";
 export function Dashboard() {
   return releaseFeatures.advancedTools ? (
     <AdvancedDashboard />
@@ -442,11 +442,11 @@ function DashboardContent({
                       row.payload.due_at
                         ? Date.parse(String(row.payload.due_at)) < now
                           ? r("overdue")
-                          : new Date(
-                              String(row.payload.due_at),
-                            ).toLocaleDateString(undefined, {
-                              timeZone: vehicle?.timezone ?? "Asia/Kolkata",
-                            })
+                          : formatDate(
+                              new Date(String(row.payload.due_at)),
+                              {},
+                              vehicle?.timezone ?? "Asia/Kolkata",
+                            )
                         : r("dueReading")
                     }
                     icon="notifications"
@@ -474,7 +474,7 @@ function DashboardContent({
                 label={String(
                   row.payload.title || r(row.kind as "fuel" | "expenses"),
                 )}
-                subtitle={`${recordMoney(row.payload)} · ${new Date(String(row.payload.event_at)).toLocaleDateString(undefined, { timeZone: vehicle?.timezone ?? "Asia/Kolkata", day: "numeric", month: "short" })}`}
+                subtitle={`${recordMoney(row.payload)} · ${formatDate(new Date(String(row.payload.event_at)), { day: "numeric", month: "short" }, vehicle?.timezone ?? "Asia/Kolkata")}`}
                 icon={row.kind === "fuel" ? "water" : "receipt"}
                 tone={row.kind === "fuel" ? "blue" : "amber"}
                 onPress={() => navigate(row.kind, row.id)}

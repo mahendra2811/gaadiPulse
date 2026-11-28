@@ -271,6 +271,7 @@ The owner authorized a clean database if needed, but chose the existing linked p
 ### Vehicle-fixed record currency and subtype visibility — 2026-11-26
 
 Fuel and expense forms do not offer a currency override. They use the selected vehicle's `default_currency_code`, which is configured during vehicle creation or vehicle settings. Editing a historical record keeps that record's persisted currency to avoid silently reinterpreting its amount. The vehicle subtype grid shows all types for the chosen category by default, while search remains available. Existing subtype IDs and artwork are retained; add a catalog option when a distinct vehicle type is needed.
+
 ## Garage add form simplification — 2026-11-28
 
 The add vehicle wizard now selects a broad vehicle category first, combines nickname, make, model, registration and fuel on one details step, and puts subtype in collapsed Additional options. Baseline KM/HOURS fields appear directly in meter setup and remain optional. The primary fuel choices are Diesel, Petrol, Petrol + CNG, Electric and Other; Other reveals the extended fuel list. Added a Three wheeler category using the existing bundled auto-rickshaw illustration pending supplied artwork. Three-wheelers default to KM. The SQL category constraint is extended by an additive migration; no existing data is rewritten.
@@ -284,3 +285,7 @@ Keep all app-authored English copy in `src/lib/i18n/locales/en.json`. `src/lib/i
 ## Group locale catalogs by app domain — 2026-11-28
 
 Keep translation JSON structured with the same domain sections and keys across locales. The English source has 1,229 leaf strings across app, common, onboarding, authentication, garage, fuel, entries, records, reminders, members, reports, account, currency, help, banners and validation. Runtime lookup supports typed `section.key` paths and existing flat key call sites. Empty or missing locale values always resolve to the matching English value. Untranslated locales stay out of runtime selection.
+
+## Locale registry and incomplete-catalog behavior — 2026-11-28
+
+`src/lib/i18n/locales/registry.json` is the sole registry for app-enabled locale codes and catalog metadata. English remains the canonical catalog and runtime fallback. A partial locale may remain selectable only when its Settings copy explicitly explains English fallback and the registry records `partial`; it must not be represented as complete or reviewed. Unregistered locale JSON files remain drafts and do not enter profile validation, the Settings picker, or Expo's native localization allowlist. UI date, number, and money formatters follow the selected locale; persisted timestamps and integer minor-unit amounts remain unchanged. RTL locales require native/web direction wiring and device verification before registration.

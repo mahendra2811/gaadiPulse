@@ -1,3 +1,5 @@
+import { formatDate } from "@/src/lib/i18n";
+
 /** UI formatting only. Persisted and exported timestamps remain ISO instants. */
 export function displayDateTime(
   value: string | undefined | null,
@@ -11,38 +13,50 @@ export function displayDateTime(
   const zone = dateOnly ? "UTC" : timezone;
   try {
     return {
-      date: date.toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        timeZone: zone,
-      }),
+      date: formatDate(
+        date,
+        {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        },
+        zone,
+      ),
       time: dateOnly
         ? ""
-        : date.toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true,
-            timeZone: zone,
-          }),
+        : formatDate(
+            date,
+            {
+              hour: "numeric",
+              minute: "2-digit",
+              hour12: true,
+            },
+            zone,
+          ),
       zone,
     };
   } catch {
     return {
-      date: date.toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        timeZone: "UTC",
-      }),
+      date: formatDate(
+        date,
+        {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        },
+        "UTC",
+      ),
       time: dateOnly
         ? ""
-        : date.toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true,
-            timeZone: "UTC",
-          }),
+        : formatDate(
+            date,
+            {
+              hour: "numeric",
+              minute: "2-digit",
+              hour12: true,
+            },
+            "UTC",
+          ),
       zone: "UTC",
     };
   }

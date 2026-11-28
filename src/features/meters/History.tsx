@@ -5,7 +5,7 @@ import { HistoryRow } from "@/src/components/ui/HistoryRow";
 import { readableDateTime } from "@/src/utils/dateDisplay";
 import { Timestamp } from "@/src/components/ui/Timestamp";
 import { FilterChips } from "@/src/components/ui/FilterChips";
-import { t } from "@/src/lib/i18n";
+import { formatNumber, t } from "@/src/lib/i18n";
 import { SectionHeading, TextAction } from "@/src/components/ui/premium";
 import { observations as loadObservations } from "./api";
 import { useState } from "react";
@@ -31,7 +31,10 @@ import { useSession, useAccountId } from "@/src/features/auth/session";
 import { VehicleHeader } from "@/src/components/navigation/VehicleHeader";
 import { client } from "@/src/lib/supabase";
 import { usePermissions } from "@/src/features/records/hooks";
-import { readDevelopment, writeDevelopment } from "@/src/features/development/repository";
+import {
+  readDevelopment,
+  writeDevelopment,
+} from "@/src/features/development/repository";
 import { r } from "@/src/features/records/copy";
 type Reading = Awaited<ReturnType<typeof loadObservations>>[number];
 export default function MeterHistory() {
@@ -66,7 +69,8 @@ function MeterHistoryContent() {
     setBusy(true);
     try {
       const replacement = retract ? null : Number(value);
-      if ((!retract && !isReading(value)) || !reason.trim()) throw new Error(r("correctionReason"));
+      if ((!retract && !isReading(value)) || !reason.trim())
+        throw new Error(r("correctionReason"));
       if (development) {
         const corrections =
           ((await readDevelopment(`meterCorrections.${vehicle.id}`)) as Record<
@@ -101,22 +105,29 @@ function MeterHistoryContent() {
   };
   const visibleReadings = (query.data ?? []).filter(
     (row) =>
-      vehicle?.role !== "PILOT" || isPilotHistoryVisible(row.observed_at, vehicle.timezone, now)
+      vehicle?.role !== "PILOT" ||
+      isPilotHistoryVisible(row.observed_at, vehicle.timezone, now),
   );
   const hasBothTypes =
     vehicle?.meter_mode === "BOTH" ||
     new Set(visibleReadings.map((row) => row.reading_type)).size > 1;
   const filteredReadings = visibleReadings.filter(
-    (row) => type === "ALL" || row.reading_type === type
+    (row) => type === "ALL" || row.reading_type === type,
   );
   return (
     <Screen compact title={r("meters")} loading={query.isPending || busy}>
       <VehicleHeader />
       {active.error && (
-        <ErrorState message={active.error.message} retry={() => void active.refetch()} />
+        <ErrorState
+          message={active.error.message}
+          retry={() => void active.refetch()}
+        />
       )}
       {permissions.error && (
-        <ErrorState message={permissions.error.message} retry={() => void permissions.refetch()} />
+        <ErrorState
+          message={permissions.error.message}
+          retry={() => void permissions.refetch()}
+        />
       )}
       <SectionHeading
         title={t("meterHistory")}
@@ -128,7 +139,9 @@ function MeterHistoryContent() {
           })
         }
       />
-      {permissions.data?.owner === false && <AppText muted>{t("pilotHistoryHint")}</AppText>}
+      {permissions.data?.owner === false && (
+        <AppText muted>{t("pilotHistoryHint")}</AppText>
+      )}
       {hasBothTypes && (
         <FilterChips
           items={[
@@ -144,13 +157,16 @@ function MeterHistoryContent() {
         />
       )}
       {query.error ? (
-        <ErrorState message={query.error.message} retry={() => void query.refetch()} />
+        <ErrorState
+          message={query.error.message}
+          retry={() => void query.refetch()}
+        />
       ) : filteredReadings.length ? (
         <Card style={{ padding: 0, gap: 0, overflow: "hidden" }}>
           {filteredReadings.slice(0, limit).map((row, index) => (
             <HistoryRow
               key={row.id}
-              primary={`${row.value.toLocaleString("en-IN", { maximumFractionDigits: 3 })} ${row.reading_type === "KM" ? "km" : "hrs"}`}
+              primary={`${formatNumber(row.value, { maximumFractionDigits: 3 })} ${row.reading_type === "KM" ? "km" : "hrs"}`}
               secondary={row.reading_type === "KM" ? r("distance") : r("hours")}
               status={
                 row.status === "CORRECTED"
@@ -171,12 +187,26 @@ function MeterHistoryContent() {
         </Card>
       ) : null}
       {!query.isPending && !query.error && !visibleReadings.length && (
-        <EmptyState kind="meters" title={t("emptyMetersTitle")} body={t(permissions.data?.["meters.create"] ? "emptyMetersBody" : "emptyMeterReadOnlyBody")} />
+        <EmptyState
+          kind="meters"
+          title={t("emptyMetersTitle")}
+          body={t(
+            permissions.data?.["meters.create"]
+              ? "emptyMetersBody"
+              : "emptyMeterReadOnlyBody",
+          )}
+        />
       )}
       {!query.isPending &&
         !query.error &&
         visibleReadings.length > 0 &&
-        filteredReadings.length === 0 && <EmptyState kind="meters" title={t("emptyMeterFilterTitle")} body={t("emptyMeterFilterBody")} />}
+        filteredReadings.length === 0 && (
+          <EmptyState
+            kind="meters"
+            title={t("emptyMeterFilterTitle")}
+            body={t("emptyMeterFilterBody")}
+          />
+        )}
       {filteredReadings.length > limit && (
         <TextAction
           label={r("more")}
@@ -196,8 +226,11 @@ function MeterHistoryContent() {
           <View style={{ gap: 12 }}>
             <AppText
               large
-            >{`${selected.value.toLocaleString("en-IN", { maximumFractionDigits: 3 })} ${selected.reading_type === "KM" ? "km" : "hrs"}`}</AppText>
-            <Timestamp value={selected.observed_at} timezone={vehicle?.timezone} />
+            >{`${formatNumber(selected.value, { maximumFractionDigits: 3 })} ${selected.reading_type === "KM" ? "km" : "hrs"}`}</AppText>
+            <Timestamp
+              value={selected.observed_at}
+              timezone={vehicle?.timezone}
+            />
             <AppText muted>
               {selected.source === "MANUAL"
                 ? t("meterManual")
@@ -241,7 +274,9 @@ function MeterHistoryContent() {
           <>
             <AppText>{r("correctionHelp")}</AppText>
             <InputField
-              label={selected?.reading_type === "HOURS" ? r("hours") : r("distance")}
+              label={
+                selected?.reading_type === "HOURS" ? r("hours") : r("distance")
+              }
               required
               numeric={{ scale: 3 }}
               value={value}
@@ -255,13 +290,21 @@ function MeterHistoryContent() {
               value={reason}
               onChangeText={setReason}
             />
-            <AppButton label={r("save")} disabled={busy} onPress={() => void correct()} />
+            <AppButton
+              label={r("save")}
+              disabled={busy}
+              onPress={() => void correct()}
+            />
             <AppButton
               secondary
               label={r("retract")}
               disabled={busy}
               onPress={() =>
-                ConfirmDialog(r("retract"), r("correctionHelp"), () => void correct(true))
+                ConfirmDialog(
+                  r("retract"),
+                  r("correctionHelp"),
+                  () => void correct(true),
+                )
               }
             />
           </>

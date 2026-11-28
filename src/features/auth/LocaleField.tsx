@@ -1,12 +1,7 @@
 import { Pressable, Text, View } from "react-native";
 import { AppText } from "@/src/components/ui";
 import { useTheme } from "@/src/lib/theme";
-import { t, type SupportedLocale } from "@/src/lib/i18n";
-
-const options: readonly [SupportedLocale, string][] = [
-  ["en-IN", "localeEnglish"],
-  ["hi-IN", "localeHindi"],
-];
+import { localeOptions, t, type SupportedLocale } from "@/src/lib/i18n";
 
 export function LocaleField({
   value,
@@ -22,11 +17,11 @@ export function LocaleField({
     <View style={{ gap: 6 }}>
       <AppText>{t("language")}</AppText>
       <View accessibilityRole="radiogroup" style={{ gap: 6 }}>
-        {options.map(([locale, labelKey]) => (
+        {localeOptions.map(({ code: locale, labelKey }) => (
           <Pressable
             key={locale}
             accessibilityRole="radio"
-            accessibilityLabel={t(labelKey as "localeEnglish" | "localeHindi")}
+            accessibilityLabel={t(labelKey)}
             accessibilityState={{ checked: value === locale, disabled }}
             disabled={disabled}
             onPress={() => onChange(locale)}
@@ -42,9 +37,7 @@ export function LocaleField({
               opacity: disabled ? 0.45 : 1,
             }}
           >
-            <Text style={{ color: colors.ink, flex: 1 }}>
-              {t(labelKey as "localeEnglish" | "localeHindi")}
-            </Text>
+            <Text style={{ color: colors.ink, flex: 1 }}>{t(labelKey)}</Text>
             <Text
               style={{
                 color: value === locale ? colors.primary : colors.muted,

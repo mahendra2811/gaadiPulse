@@ -28,7 +28,7 @@ import {
   GradientButton,
   MotionPress,
 } from "@/src/components/ui/premium";
-import { t } from "@/src/lib/i18n";
+import { formatNumber, t } from "@/src/lib/i18n";
 import { DateTimeInput } from "@/src/components/ui/fields";
 import { observations as loadObservations } from "@/src/features/meters/api";
 import { type ReactNode, useEffect, useState } from "react";
@@ -1355,7 +1355,7 @@ export function RecordForm() {
               {t("latestMeterEntry")
                 .replace(
                   "{value}",
-                  `${latestReading("KM")!.value.toLocaleString("en-IN", { maximumFractionDigits: 3 })} km`,
+                  `${formatNumber(latestReading("KM")!.value, { maximumFractionDigits: 3 })} km`,
                 )
                 .replace(
                   "{date}",
@@ -1372,7 +1372,7 @@ export function RecordForm() {
               {t("latestMeterEntry")
                 .replace(
                   "{value}",
-                  `${latestReading("HOURS")!.value.toLocaleString("en-IN", { maximumFractionDigits: 3 })} hrs`,
+                  `${formatNumber(latestReading("HOURS")!.value, { maximumFractionDigits: 3 })} hrs`,
                 )
                 .replace(
                   "{date}",

@@ -1,5 +1,6 @@
 import { dateInZone, shiftDay } from "@/src/features/progress/schema";
 import type { FuelInterval } from "@/src/utils/fuelEconomy";
+import { formatDate } from "@/src/lib/i18n";
 
 export type InsightPeriod = "week" | "month" | "year" | "all";
 export type Bucket = { key: string; label: string; description: string };
@@ -19,17 +20,23 @@ export function insightBuckets(
       const date = new Date(`${key}T12:00:00Z`);
       return {
         key,
-        label: date.toLocaleDateString("en-GB", {
-          weekday: "short",
-          timeZone: "UTC",
-        }),
-        description: date.toLocaleDateString("en-GB", {
-          weekday: "long",
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-          timeZone: "UTC",
-        }),
+        label: formatDate(
+          date,
+          {
+            weekday: "short",
+          },
+          "UTC",
+        ),
+        description: formatDate(
+          date,
+          {
+            weekday: "long",
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          },
+          "UTC",
+        ),
       };
     });
   }
@@ -43,24 +50,30 @@ export function insightBuckets(
       return {
         key,
         label: String(i + 1),
-        description: new Date(`${key}T12:00:00Z`).toLocaleDateString("en-GB", {
-          weekday: "short",
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-          timeZone: "UTC",
-        }),
+        description: formatDate(
+          new Date(`${key}T12:00:00Z`),
+          {
+            weekday: "short",
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          },
+          "UTC",
+        ),
       };
     });
   }
   if (period === "year")
     return Array.from({ length: 12 }, (_, i) => {
       const key = `${today.slice(0, 4)}-${String(i + 1).padStart(2, "0")}`;
-      const description = new Date(`${key}-01T12:00:00Z`).toLocaleDateString(
-        "en-GB",
-        { month: "long", year: "numeric", timeZone: "UTC" },
+      const month = new Date(`${key}-01T12:00:00Z`);
+      const description = formatDate(
+        month,
+        { month: "long", year: "numeric" },
+        "UTC",
       );
-      return { key, label: description.slice(0, 3), description };
+      const label = formatDate(month, { month: "short" }, "UTC");
+      return { key, label, description };
     });
   const years = [
     ...new Set(

@@ -1,4 +1,5 @@
 import { domainCopy as c } from "@/src/lib/domainCopy";
+import { getLocale } from "@/src/lib/i18n";
 import {
   parseMinorUnits,
   type CurrencyCode,
@@ -15,7 +16,7 @@ export function paise(value: string): number {
   return Number(result);
 }
 export function money(value: number) {
-  return new Intl.NumberFormat("en-IN", {
+  return new Intl.NumberFormat(getLocale(), {
     style: "currency",
     currency: "INR",
   }).format(value / 100);
@@ -24,7 +25,7 @@ export function money(value: number) {
 export function moneyIn(
   value: number,
   currency: CurrencyCode = "INR",
-  locale = "en-IN",
+  locale: string = getLocale(),
 ) {
   return formatMinorUnits(value, currency, locale);
 }

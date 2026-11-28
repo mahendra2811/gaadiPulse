@@ -4,7 +4,7 @@ import { Platform, Pressable, Text, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import type { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { useTheme } from "@/src/lib/theme";
-import { t } from "@/src/lib/i18n";
+import { formatDate, t } from "@/src/lib/i18n";
 import { fieldDate, formatDateValue, type DateFieldProps } from "./dateValues";
 export function DatePickerField({
   value,
@@ -100,12 +100,12 @@ export function DatePickerField({
               <Text style={{ color: c.ink, fontSize: 14, flex: 1 }}>
                 {value
                   ? part === "date"
-                    ? current.toLocaleDateString("en-GB", {
+                    ? formatDate(current, {
                         day: "numeric",
                         month: "short",
                         year: "numeric",
                       })
-                    : current.toLocaleTimeString("en-US", {
+                    : formatDate(current, {
                         hour12: true,
                         hour: "2-digit",
                         minute: "2-digit",

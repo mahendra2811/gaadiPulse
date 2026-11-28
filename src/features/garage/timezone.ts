@@ -1,13 +1,14 @@
 import zones from "./timezones.json";
+import { t } from "@/src/lib/i18n";
 
 export const defaultVehicleTimezone = "Asia/Kolkata";
 
 export function timezoneLabel(zone: string, at: Date = new Date()): string {
   const place =
     zone === defaultVehicleTimezone
-      ? "India (IST)"
+      ? t("timezoneIndiaIst")
       : zone === "UTC"
-        ? "Coordinated Universal Time"
+        ? t("timezoneUtc")
         : zone.replaceAll("_", " ").replaceAll("/", " / ");
   if (zone === defaultVehicleTimezone) return `${place} · UTC+05:30`;
   if (zone === "UTC") return `${place} · UTC+00:00`;

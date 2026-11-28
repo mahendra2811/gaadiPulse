@@ -20,20 +20,20 @@ export default function SecurityScreen() {
     setError("");
     if (Platform.OS === "web") {
       if (typeof Notification === "undefined") {
-        setError("This browser does not support notifications.");
+        setError(t("notificationBrowserUnsupported"));
         return;
       }
       const permission = await Notification.requestPermission();
       if (permission === "granted")
-        toast("Browser notifications are enabled.", "success");
+        toast(t("notificationBrowserEnabled"), "success");
       else if (permission === "denied")
         setError(
-          "Notifications are blocked for this site. Allow them in your browser’s site settings.",
+          t("notificationBrowserBlocked"),
         );
       return;
     }
     if (typeof Linking.openSettings !== "function") {
-      setError("Notification settings are unavailable on this device.");
+      setError(t("notificationSettingsUnavailable"));
       return;
     }
     await Linking.openSettings();
@@ -41,13 +41,12 @@ export default function SecurityScreen() {
   return (
     <Screen title={r("security")} compact>
       <AppText muted>
-        Manage your sign-in and learn how vehicle information is handled.
+        {t("securityDescription")}
       </AppText>
       <Card style={{ padding: 16 }}>
-        <SectionHeading title="Account security" />
+        <SectionHeading title={t("securityAccountTitle")} />
         <AppText muted>
-          Keep your password and verification codes private. Access to each
-          vehicle is controlled by its Owner and your verified account.
+          {t("securityAccountBody")}
         </AppText>
         {!auth.development && !!auth.session?.user.email && (
           <MenuRow
@@ -58,7 +57,7 @@ export default function SecurityScreen() {
           />
         )}
         <MenuRow
-          label="Notification settings"
+          label={t("securityNotificationSettings")}
           icon="notifications"
           tone="amber"
           onPress={() => {
@@ -67,11 +66,9 @@ export default function SecurityScreen() {
         />
       </Card>
       <Card style={{ padding: 16 }}>
-        <SectionHeading title="Your data" />
+        <SectionHeading title={t("securityDataTitle")} />
         <AppText muted>
-          Records are stored online. Vehicle access may be revoked by an Owner.
-          Exports create copies that recipients can keep. Signing out clears
-          this device’s session and scheduled local notifications.
+          {t("securityDataBody")}
         </AppText>
         <MenuRow
           label={t("legal")}

@@ -1,3 +1,4 @@
+import { t } from "@/src/lib/i18n";
 import { memo } from "react";
 import { Pressable, Switch, Text, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -23,12 +24,8 @@ export const RolePicker = memo(function RolePicker({
     <View style={{ gap: 8 }} accessibilityRole="radiogroup">
       {(
         [
-          [
-            "OWNER",
-            "Owner",
-            "Manage this vehicle, its records and member access.",
-          ],
-          ["PILOT", "Pilot", "Use permitted fuel, expense and meter actions."],
+          ["OWNER", t("roleOwnerTitle"), t("memberOwnerDescription")],
+          ["PILOT", t("rolePilotTitle"), t("memberPilotDescription")],
         ] as const
       ).map(([role, title, description]) => (
         <Pressable
@@ -80,14 +77,10 @@ export const PermissionEditor = memo(function PermissionEditor({
   const c = useTheme();
   return (
     <View style={{ gap: 12 }}>
-      <AppText muted>
-        Viewing and adding are separate. Pilots can view only today and
-        yesterday in this vehicle’s time zone, and cannot edit or delete
-        records.
-      </AppText>
+      <AppText muted>{t("memberPermissionHelp")}</AppText>
       {pilotPermissionGroups.map((group) => (
         <View
-          key={group.title}
+          key={group.titleKey}
           style={{
             borderWidth: 1,
             borderColor: c.line,
@@ -96,12 +89,12 @@ export const PermissionEditor = memo(function PermissionEditor({
           }}
         >
           <Text style={{ color: c.ink, fontWeight: "700", paddingTop: 12 }}>
-            {group.title}
+            {t(group.titleKey)}
           </Text>
           {(
             [
-              [group.read, "View records"],
-              [group.create, "Add records"],
+              [group.read, t("memberViewRecords")],
+              [group.create, t("memberAddRecords")],
             ] as const
           ).map(([key, label]) => (
             <View
@@ -118,13 +111,13 @@ export const PermissionEditor = memo(function PermissionEditor({
                 {inherited && (
                   <Text style={{ color: c.muted, fontSize: 12 }}>
                     {key in value
-                      ? "Custom for this person"
-                      : "Uses vehicle default"}
+                      ? t("memberCustomOverride")
+                      : t("memberInheritedDefault")}
                   </Text>
                 )}
               </View>
               <Switch
-                accessibilityLabel={`${group.title}: ${label}`}
+                accessibilityLabel={`${t(group.titleKey)}: ${label}`}
                 disabled={disabled}
                 value={effectivePilotPermission(key, value, defaults)}
                 onValueChange={(enabled) =>
@@ -144,7 +137,7 @@ export const PermissionEditor = memo(function PermissionEditor({
           style={{ minHeight: 44, justifyContent: "center" }}
         >
           <Text style={{ color: c.primary, fontWeight: "700" }}>
-            Use vehicle defaults for these permissions
+            {t("memberUseDefaults")}
           </Text>
         </Pressable>
       )}
@@ -166,20 +159,17 @@ export const BackdateEditor = memo(function BackdateEditor({
   const c = useTheme();
   return (
     <View style={{ gap: 8 }}>
-      <AppText>Fuel and expense entry date range</AppText>
-      <AppText muted>
-        Choose how far back this Pilot may date new Fuel and Expense records.
-        Days use this vehicle’s timezone.
-      </AppText>
+      <AppText>{t("backdateRangeLabel")}</AppText>
+      <AppText muted>{t("memberBackdateHelp")}</AppText>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
         {BACKDATE_OPTIONS.map((days) => {
           const selected = value === days;
           const label =
             days === -1
-              ? "Unlimited"
+              ? t("memberUnlimited")
               : days === 0
-                ? "Today only"
-                : `${days} ${days === 1 ? "day" : "days"}`;
+                ? t("memberTodayOnly")
+                : t("memberDay").replace("{days}", String(days));
           return (
             <Pressable
               key={days}
@@ -224,7 +214,7 @@ export const BackdateEditor = memo(function BackdateEditor({
             }}
           >
             <Text style={{ color: c.primary, fontWeight: "600" }}>
-              Use vehicle default
+              {t("memberUseVehicleDefault")}
             </Text>
           </Pressable>
         )}

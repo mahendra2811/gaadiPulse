@@ -1108,7 +1108,13 @@ export function RecordForm() {
             : shiftDay(dateInZone(new Date(), v.timezone), -allowedDays);
         const eventDate = dateInZone(new Date(values.event_at), v.timezone);
         if (eventDate < minimum) {
-          const message = `This vehicle allows entries up to ${allowedDays === -1 ? "any date" : `${allowedDays} ${allowedDays === 1 ? "day" : "days"} back`}. Choose a more recent date or ask the Owner to change your access.`;
+          const limit =
+            allowedDays === -1
+              ? t("backdateLimitAnyDate")
+              : t(
+                  allowedDays === 1 ? "backdateLimitDay" : "backdateLimitDays",
+                ).replace("{count}", String(allowedDays));
+          const message = t("backdateLimitError").replace("{limit}", limit);
           form.setError("event_at", { message });
           throw new Error(message);
         }

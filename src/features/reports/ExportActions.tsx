@@ -1,6 +1,7 @@
 import { Pressable, Text, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useTheme } from "@/src/lib/theme";
+import { t } from "@/src/lib/i18n";
 
 type Format = "json" | "csv" | "pdf";
 const formats = [
@@ -34,7 +35,10 @@ export function ExportActions({
         <Pressable
           key={format.id}
           accessibilityRole="button"
-          accessibilityLabel={`Export ${format.label}`}
+          accessibilityLabel={t("exportFormatAccessibility").replace(
+            "{format}",
+            format.label,
+          )}
           accessibilityState={{ disabled }}
           disabled={disabled}
           onPress={() => onExport(format.id)}
@@ -60,7 +64,9 @@ export function ExportActions({
             }}
           >
             <Ionicons name={format.icon} color={colors.primary} size={25} />
-            <Text style={{ color: colors.ink, fontWeight: "700", fontSize: 14 }}>
+            <Text
+              style={{ color: colors.ink, fontWeight: "700", fontSize: 14 }}
+            >
               {format.label}
             </Text>
           </View>

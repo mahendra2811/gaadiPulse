@@ -6,10 +6,10 @@ import {
   type Vehicle,
 } from "@/src/features/garage/schema";
 import type { Profile } from "@/src/features/auth/profile";
+import { t } from "@/src/lib/i18n";
 export const DEVELOPMENT_USER = "local-development";
 export function requireDevelopment() {
-  if (!__DEV__)
-    throw new Error("Development mode is unavailable in release builds.");
+  if (!__DEV__) throw new Error(t("developmentUnavailable"));
 }
 const previewData = new Map<string, unknown>();
 export function clearDevelopment() {
@@ -49,7 +49,7 @@ export function saveDevelopmentVehicle(
     const old = vehicles.find((v) => v.id === id);
     if (old?.archived_at) throw new Error("VEHICLE_ARCHIVED");
     if (id && (!old || old.updated_at !== expected))
-      throw new Error("CONFLICT: Refresh the vehicle before editing again.");
+      throw new Error(t("recordConflict"));
     const vehicle: Vehicle = {
       id: id ?? operation,
       nickname: value.nickname,
@@ -95,7 +95,8 @@ export function saveDevelopmentVehicle(
 export function archiveDevelopmentVehicle(id: string, archived: boolean) {
   return serialize(async () => {
     const records = await listDevelopmentVehicles();
-    if (!records.some((v) => v.id === id)) throw new Error("Vehicle not found");
+    if (!records.some((v) => v.id === id))
+      throw new Error(t("vehicleNotFound"));
     await writeDevelopment(
       "vehicles",
       records.map((v) =>

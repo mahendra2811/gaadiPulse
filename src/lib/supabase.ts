@@ -4,6 +4,7 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import { onlineFetch } from "./onlineFetch";
 import { env } from "./env";
+import { t } from "./i18n";
 // Chunk tokens because SecureStore values have platform-dependent size limits.
 export const secureStorage = {
   async getItem(key: string) {
@@ -59,9 +60,6 @@ export const supabase = env
     })
   : null;
 export function client() {
-  if (!supabase)
-    throw new Error(
-      "Configure Supabase using .env.example, then restart Expo.",
-    );
+  if (!supabase) throw new Error(t("backdateSupabaseSetup"));
   return supabase;
 }

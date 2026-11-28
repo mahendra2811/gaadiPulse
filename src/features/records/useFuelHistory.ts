@@ -37,7 +37,7 @@ export function useFuelHistory(
     queryFn: async ({ pageParam }) => {
       if (!allowed) throw new Error("PERMISSION_DENIED");
       if (!development && !onlineManager.isOnline())
-        throw new Error("Network unavailable");
+        throw new Error(t("networkError"));
       if (development) {
         const all = (await listRecords(user!, vehicle!, "fuel", true))
           .filter((row) => {

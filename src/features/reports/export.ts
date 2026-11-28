@@ -1,5 +1,6 @@
 import { Platform, Share } from "react-native";
 import { File, Paths } from "expo-file-system";
+import { t } from "@/src/lib/i18n";
 
 export { csvCell, recordsCsv } from "./csv";
 
@@ -33,7 +34,7 @@ export async function exportPdf(html: string) {
   const Sharing = await import("expo-sharing");
   if (!(await Sharing.isAvailableAsync()))
     throw new Error(
-      "Sharing is unavailable on this device. Try JSON or CSV export.",
+      t("exportSharingUnavailable"),
     );
   const file = await Print.printToFileAsync({ html });
   await Sharing.shareAsync(file.uri, {

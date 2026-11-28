@@ -276,3 +276,11 @@ Fuel and expense forms do not offer a currency override. They use the selected v
 The add vehicle wizard now selects a broad vehicle category first, combines nickname, make, model, registration and fuel on one details step, and puts subtype in collapsed Additional options. Baseline KM/HOURS fields appear directly in meter setup and remain optional. The primary fuel choices are Diesel, Petrol, Petrol + CNG, Electric and Other; Other reveals the extended fuel list. Added a Three wheeler category using the existing bundled auto-rickshaw illustration pending supplied artwork. Three-wheelers default to KM. The SQL category constraint is extended by an additive migration; no existing data is rewritten.
 
 The details step labels nickname as “Nickname of your vehicle,” uses one full vehicle name field, collects model year separately through the existing `model_year` column, and labels registration as no-spaces. Registration input strips spaces while typing. Optional make, subtype, time zone and currency are grouped in one Additional options panel. Migration `202611280002_vehicle_model_year.sql` extends the guarded save/read RPCs to persist and return model year.
+
+## English locale catalog file — 2026-11-28
+
+Keep all app-authored English copy in `src/lib/i18n/locales/en.json`. `src/lib/i18n.ts` owns locale selection and lookup only. The selected locale may provide a translation; a missing or blank translation falls back to the English catalog. Unsupported locale identifiers resolve to English. English is the default locale.
+
+## Group locale catalogs by app domain — 2026-11-28
+
+Keep translation JSON structured with the same domain sections and keys across locales. The English source has 1,229 leaf strings across app, common, onboarding, authentication, garage, fuel, entries, records, reminders, members, reports, account, currency, help, banners and validation. Runtime lookup supports typed `section.key` paths and existing flat key call sites. Empty or missing locale values always resolve to the matching English value. Untranslated locales stay out of runtime selection.

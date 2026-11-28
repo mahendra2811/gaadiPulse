@@ -94,9 +94,9 @@ export function Settings() {
           >
             {(
               [
-                ["system", "System", "phone-portrait-outline"],
-                ["light", "Light", "sunny-outline"],
-                ["dark", "Dark", "moon-outline"],
+                ["system", t("themeSystem"), "phone-portrait-outline"],
+                ["light", t("themeLight"), "sunny-outline"],
+                ["dark", t("themeDark"), "moon-outline"],
               ] as const
             ).map(([mode, label, icon]) => (
               <Pressable

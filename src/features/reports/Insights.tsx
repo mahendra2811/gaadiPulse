@@ -254,20 +254,21 @@ export function Insights() {
     ),
   ];
   return (
-    <Screen title="Insights" compact loading={loading}>
+    <Screen title={t("insightsTitle")} compact loading={loading}>
       {!!vehicle && <VehicleHeader />}
       {!!vehicle && (
         <AppText muted>
-          {vehicle.nickname ?? "Selected vehicle"} · Explore real recorded data
+          {vehicle.nickname ?? t("reportSelectedVehicle")} ·{" "}
+          {t("reportExploreData")}
         </AppText>
       )}
       {!!vehicle && (
         <FilterChips
           items={[
-            { id: "week", label: "This week" },
-            { id: "month", label: "This month" },
-            { id: "year", label: "This year" },
-            { id: "all", label: "All time" },
+            { id: "week", label: t("reportThisWeek") },
+            { id: "month", label: t("reportThisMonth") },
+            { id: "year", label: t("reportThisYear") },
+            { id: "all", label: t("reportAllTime") },
           ]}
           value={period}
           onChange={(value) => setPeriod(value as InsightPeriod)}
@@ -275,7 +276,7 @@ export function Insights() {
       )}
       {errors ? (
         <ErrorState
-          message="Some insight data could not be loaded."
+          message={t("insightsLoadError")}
           retry={() => {
             if (active.error) void active.refetch();
             if (vehicle) void perms.refetch();
@@ -303,13 +304,13 @@ export function Insights() {
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
               {hasSpendAccess && (
                 <Card style={{ flexBasis: "45%", flexGrow: 1, padding: 14 }}>
-                  <AppText muted>Total recorded spend</AppText>
+                  <AppText muted>{t("reportTotalSpend")}</AppText>
                   <AppText large>{moneyIn(total, currency)}</AppText>
                 </Card>
               )}
               {canCalculateEfficiency && (
                 <Card style={{ flexBasis: "45%", flexGrow: 1, padding: 14 }}>
-                  <AppText muted>Completed fuel intervals</AppText>
+                  <AppText muted>{t("reportCompletedFuelIntervals")}</AppText>
                   <AppText large>
                     {String(
                       selectedIntervals.filter(
@@ -322,7 +323,7 @@ export function Insights() {
             </View>
           )}
           <Card>
-            <AppText large>Recorded spend</AppText>
+            <AppText large>{t("reportRecordedSpend")}</AppText>
             {!hasSpendAccess ? (
               <AppText muted>{t("insightsNoRecordsAccess")}</AppText>
             ) : selected.length && spendBars.length ? (
@@ -332,11 +333,11 @@ export function Insights() {
                 unit={`${[canRead("fuel") ? r("fuel") : null, canRead("expenses") ? r("expenses") : null].filter(Boolean).join(" + ")} · ${currency}`}
               />
             ) : (
-              <AppText muted>No records for this period.</AppText>
+              <AppText muted>{t("reportNoRecords")}</AppText>
             )}
           </Card>
           <Card>
-            <AppText large>Expense categories</AppText>
+            <AppText large>{t("reportExpenseCategories")}</AppText>
             {!canRead("expenses") ? (
               <AppText muted>{t("insightsNoExpenseAccess")}</AppText>
             ) : categories.length ? (
@@ -348,20 +349,15 @@ export function Insights() {
                   display: moneyIn(x.value, currency),
                 }))}
                 color="#F0A648"
-                unit={`Expenses · ${currency}`}
+                unit={t("insightsExpensesUnit").replace("{currency}", currency)}
               />
             ) : (
-              <AppText muted>No expense records in this period.</AppText>
+              <AppText muted>{t("reportNoExpenses")}</AppText>
             )}
           </Card>
           <Card>
-            <AppText large>Fuel efficiency</AppText>
-            <AppText muted>
-              Full-to-full intervals are grouped by their closing fill date. An
-              interval can cover several days; it does not measure each day
-              separately. Averages use total distance or hours and total fuel
-              for qualifying intervals.
-            </AppText>
+            <AppText large>{t("reportFuelEfficiency")}</AppText>
+            <AppText muted>{t("insightsFullToFullHelp")}</AppText>
             {!canRead("fuel") ? (
               <AppText muted>{t("insightsNoFuelAccess")}</AppText>
             ) : !canMeasure ? (
@@ -373,11 +369,15 @@ export function Insights() {
                 const rows = selectedIntervals.filter((x) => x.unit === unit);
                 const average = efficiencyAverage(rows, mode);
                 const unitLabel =
-                  mode === "distance" ? `KM / ${unit}` : `${unit} / hour`;
+                  mode === "distance"
+                    ? t("insightsDistancePerUnit").replace("{unit}", unit)
+                    : t("insightsUnitsPerHour").replace("{unit}", unit);
                 return (
                   <View key={metric} style={{ gap: 12 }}>
                     <AppText large>
-                      Average: {average?.toFixed(2)} {unitLabel}
+                      {t("insightsAverage")
+                        .replace("{value}", average?.toFixed(2) ?? "—")
+                        .replace("{unit}", unitLabel)}
                     </AppText>
                     <Chart
                       color="#22A783"
@@ -394,7 +394,7 @@ export function Insights() {
                           value,
                           display:
                             value === null
-                              ? "No interval"
+                              ? t("reportNoInterval")
                               : `${value.toFixed(2)} ${unitLabel}`,
                         };
                       })}
@@ -403,18 +403,12 @@ export function Insights() {
                 );
               })
             ) : (
-              <AppText muted>
-                No qualifying full-to-full intervals completed in this period.
-                Fuel and matching meter readings are required.
-              </AppText>
+              <AppText muted>{t("insightsNoQualifyingIntervals")}</AppText>
             )}
           </Card>
           <Card>
-            <AppText large>Measured distance and use</AppText>
-            <AppText muted>
-              Each bar represents the change between two actual readings,
-              grouped by the later reading date.
-            </AppText>
+            <AppText large>{t("reportMeasuredDistance")}</AppText>
+            <AppText muted>{t("insightsMeasuredHelp")}</AppText>
             {!canMeasure ? (
               <AppText muted>{t("insightsNoMeterAccess")}</AppText>
             ) : selectedMeasured.length ? (
@@ -424,7 +418,7 @@ export function Insights() {
                   <Chart
                     key={type}
                     color="#7774D6"
-                    unit={`Measured ${type}`}
+                    unit={t("insightsMeasuredUnit").replace("{type}", type)}
                     bars={rows.map((x, i) => ({
                       label: String(i + 1),
                       description: `${dateInZone(new Date(x.from), zone)} to ${dateInZone(new Date(x.to), zone)}`,

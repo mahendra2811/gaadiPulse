@@ -10,6 +10,7 @@ import {
   recordMinorAmount,
 } from "@/src/features/records/currency";
 import type { CurrencyCode } from "@/src/utils/currency";
+import { t } from "@/src/lib/i18n";
 
 export type ReportKind =
   "fuel" | "expenses" | "meters" | "reminders" | "documents";
@@ -193,9 +194,9 @@ export function buildReport({
     fuel_intervals: fuelIntervalsInPeriod,
     measured_intervals: measured,
     notes: [
-      "Dates use the vehicle time zone. Reminders and documents without an event date are grouped by creation date.",
-      "Fuel and measured intervals are included by their closing timestamp and may start before the selected period.",
-      "Financial amounts are integer minor units grouped by currency. No exchange-rate conversion is applied. Only records available to this account are included.",
+      t("reportNoteTimezone"),
+      t("reportNoteIntervals"),
+      t("reportNoteCurrency"),
     ],
   };
 }

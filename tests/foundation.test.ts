@@ -62,9 +62,12 @@ describe("vehicle foundation", () => {
     );
   });
   it("has an English-only future locale label", () => {
-    expect(en.hindi).toContain("coming later");
+    expect(en.account.hindi).toContain("coming later");
+    const strings = Object.values(en).flatMap((section) =>
+      Object.values(section),
+    );
     expect(
-      Object.values(en).every((v) => typeof v === "string" && v.length > 0),
+      strings.every((value) => typeof value === "string" && value.length > 0),
     ).toBe(true);
   });
 });

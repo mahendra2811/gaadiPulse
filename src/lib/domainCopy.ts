@@ -1,29 +1,10 @@
-// English validation catalog. Keep validation wording out of domain algorithms.
-export const domainCopy = {
-  amount: "Enter an amount with at most two decimal places.",
-  positiveAmount: "Amount must be positive and within the supported range.",
-  quantity:
-    "Quantity must be positive, at most 1,000,000 units, with at most three decimal places.",
-  twoValues: "Enter any two: amount, quantity and unit price.",
-  inconsistentFuel: "Amount, quantity and price do not agree.",
-  rounding: "These values round to zero or exceed the supported range.",
-  emi: "EMI breakdown exceeds the payment.",
-  payload: "Check details and line items.",
-  observation: "Choose the actual past observation time.",
-  expenseTitle: "Enter an expense title.",
-  items: "Line items must equal the transaction amount.",
-  reading: "Enter at least one reading.",
-  title: "Enter a title.",
-  due: "Enter a valid due date and time.",
-  threshold: "Threshold must be positive.",
-  required: "Required",
-  number: "Invalid number",
-  boolean: "Choose yes or no",
-  choice: "Invalid choice",
-  choices: "Invalid choices",
-  text: "Invalid text",
-  date: "Use YYYY-MM-DD",
-  time: "Use HH:MM",
-  minimum: "Minimum exceeds maximum.",
-  options: "Add at least one choice.",
-} as const;
+import { en, t } from "./i18n";
+
+export const domainCopy = new Proxy(en.validation, {
+  get: (_target, key) =>
+    typeof key === "string" ? t(`validation.${key}` as TranslationKeyPath) : undefined,
+});
+export function validationText(key: keyof typeof domainCopy) {
+  return t(`validation.${String(key)}` as TranslationKeyPath);
+}
+type TranslationKeyPath = `validation.${keyof typeof en.validation & string}`;

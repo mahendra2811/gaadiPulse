@@ -1,255 +1,256 @@
+import { t } from "@/src/lib/i18n";
 export type HelpSection = {
   title: string;
   questions: { question: string; answer: string }[];
 };
 export const helpSections: HelpSection[] = [
   {
-    title: "Getting started",
+    title: t("helpContent001"),
     questions: [
       {
-        question: "How do I sign in?",
+        question: t("helpContent002"),
         answer:
-          "Use the available Google, email and password, or email-code option on the sign-in screen. Verify your email when asked, then complete your profile.",
+          t("helpContent003"),
       },
       {
-        question: "Can I use the app without a vehicle?",
+        question: t("helpContent004"),
         answer:
-          "Yes. Add one later from Garage, or sign in with the verified email an Owner used to grant you access.",
+          t("helpContent005"),
       },
       {
-        question: "How do I add a vehicle?",
+        question: t("helpContent006"),
         answer:
-          "Open More → Garage → Add vehicle. Choose its category and details, energy type, meter mode and time zone, then save.",
+          t("helpContent007"),
       },
       {
-        question: "What if my vehicle has no registration yet?",
+        question: t("helpContent008"),
         answer:
-          "Provide a vehicle name or model instead. Registration is optional when another identifying detail is supplied.",
+          t("helpContent009"),
       },
       {
-        question: "How do I switch vehicles?",
+        question: t("helpContent010"),
         answer:
-          "Use the vehicle switcher when more than one active vehicle is available. Entries and reports apply to the selected vehicle.",
+          t("helpContent011"),
       },
       {
-        question: "What do KM, HOURS and BOTH mean?",
+        question: t("helpContent012"),
         answer:
-          "Choose KM for distance, HOURS for engine use, or BOTH if you record both. Readings are optional on fuel and expense entries.",
+          t("helpContent013"),
       },
     ],
   },
   {
-    title: "Fuel and efficiency",
+    title: t("helpContent014"),
     questions: [
       {
-        question: "How do I add fuel or charging?",
+        question: t("helpContent015"),
         answer:
-          "Open Fuel and add an entry. Check the vehicle, date, energy type and unit; enter any two of quantity, unit price and amount, then review and save.",
+          t("helpContent016"),
       },
       {
-        question: "What is a full or partial fill?",
+        question: t("helpContent017"),
         answer:
-          "Mark a fill as full only when the tank was actually filled. Partial quantities between two qualifying full fills contribute to the full-to-full calculation.",
+          t("helpContent018"),
       },
       {
-        question: "Can I save fuel without a meter reading?",
+        question: t("helpContent019"),
         answer:
-          "Yes. Save the entry without KM or HOURS. A missing or incorrectly timed reading can prevent an efficiency interval from qualifying.",
+          t("helpContent020"),
       },
       {
-        question: "Can I add a reading later?",
+        question: t("helpContent021"),
         answer:
-          "Yes. Record the actual observed time. Only associate a reading with the original fill time if you truly observed it then; do not guess or backdate it.",
+          t("helpContent022"),
       },
       {
-        question: "Why is fuel efficiency unavailable?",
+        question: t("helpContent023"),
         answer:
-          "It needs qualifying full-to-full fills with compatible fuel units and matching, truthful meter readings. Missing readings, resets or inconsistent history can make an interval unavailable.",
+          t("helpContent024"),
       },
       {
-        question: "What does the efficiency average mean?",
+        question: t("helpContent025"),
         answer:
-          "Insights uses total distance divided by fuel, or fuel divided by engine hours, across qualifying intervals. An interval is shown under its closing fill date; it is not a measurement for each intervening day.",
+          t("helpContent026"),
       },
     ],
   },
   {
-    title: "Expenses and readings",
+    title: t("helpContent027"),
     questions: [
       {
-        question: "How do I add an expense?",
+        question: t("helpContent028"),
         answer:
-          "Open Expenses → Add, check the vehicle, choose a category, enter the amount and date, and save. Add a title, vendor, payment method or notes as needed.",
+          t("helpContent029"),
       },
       {
-        question: "Should fuel also be entered as an expense?",
+        question: t("helpContent030"),
         answer:
-          "Record fuel in Fuel. Entering the same purchase as an expense too would count it twice in reports.",
+          t("helpContent031"),
       },
       {
-        question: "How are EMI amounts handled?",
+        question: t("helpContent032"),
         answer:
-          "Enter available principal and interest details. Reports distinguish operating cost, financing and unclassified amounts from cash outflow.",
+          t("helpContent033"),
       },
       {
-        question: "Can I save an expense without KM or HOURS?",
+        question: t("helpContent034"),
         answer:
-          "Yes. Both are optional. Record a reading only when it was actually observed and give its correct observation time.",
+          t("helpContent035"),
       },
       {
-        question: "How do I add a separate meter reading?",
+        question: t("helpContent036"),
         answer:
-          "Open More → Add meter reading, choose the vehicle and meter type, enter the observed value and time, then save.",
+          t("helpContent037"),
       },
       {
-        question: "Why was a reading rejected?",
+        question: t("helpContent038"),
         answer:
-          "A reading must fit the surrounding active readings for that meter and vehicle. Check its value and observed time; use the correction or reset workflow when appropriate.",
+          t("helpContent039"),
       },
     ],
   },
   {
-    title: "Sharing and roles",
+    title: t("helpContent040"),
     questions: [
       {
-        question: "How do I share a vehicle?",
+        question: t("helpContent041"),
         answer:
-          "An Owner opens the vehicle’s members screen, enters the person’s email, selects Owner or Pilot, reviews permissions and grants access.",
+          t("helpContent042"),
       },
       {
-        question: "Does the recipient accept an invitation?",
+        question: t("helpContent043"),
         answer:
-          "No acceptance step is needed. Access resolves after the person signs in with the granted verified email; an existing verified account can receive access immediately.",
+          t("helpContent044"),
       },
       {
-        question: "What can an Owner do?",
+        question: t("helpContent045"),
         answer:
-          "Owners manage the vehicle, members and available permissions, and can work with its records and reports. The protected primary administrator has additional safeguards.",
+          t("helpContent046"),
       },
       {
-        question: "What can a Pilot do?",
+        question: t("helpContent047"),
         answer:
-          "A Pilot can view or add fuel, expenses and meter readings when permitted. Access is per vehicle and may be restricted by the Owner; Pilot history is limited to today and yesterday in the vehicle time zone.",
+          t("helpContent048"),
       },
       {
-        question: "Can a Pilot edit or delete entries?",
+        question: t("helpContent049"),
         answer:
-          "The current Pilot policy does not allow editing or deleting Pilot records. Ask an Owner to review a correction or deletion.",
+          t("helpContent050"),
       },
       {
-        question: "Can the same person have different roles?",
+        question: t("helpContent051"),
         answer:
-          "Yes. A person can be an Owner on one vehicle and a Pilot on another. Each vehicle has its own access settings.",
+          t("helpContent052"),
       },
       {
-        question: "How do I change or remove access?",
+        question: t("helpContent053"),
         answer:
-          "An Owner opens Members for that vehicle and edits or revokes the member or outstanding grant. Protected administrator rules may prevent certain changes.",
+          t("helpContent054"),
       },
       {
-        question: "Why can’t a shared vehicle be seen?",
+        question: t("helpContent055"),
         answer:
-          "Confirm the email was verified, the grant is active, and the right account is signed in. Ask the Owner to check the member and permission settings.",
+          t("helpContent056"),
       },
     ],
   },
   {
-    title: "Documents and reminders",
+    title: t("helpContent057"),
     questions: [
       {
-        question: "How do I record a document?",
+        question: t("helpContent058"),
         answer:
-          "Open More → Document details, add its title and available information and expiry date, then save. This records metadata; file upload is not available.",
+          t("helpContent059"),
       },
       {
-        question: "Are document details official proof?",
+        question: t("helpContent060"),
         answer:
-          "No. Entries are reminders and personal records, not legal RC or licence documents. Use the relevant official source for proof.",
+          t("helpContent061"),
       },
       {
-        question: "How do I create a reminder?",
+        question: t("helpContent062"),
         answer:
-          "Open More → Reminders and add one. Enter a title and at least a due date, KM threshold or HOURS threshold, choose recurrence if needed, and save.",
+          t("helpContent063"),
       },
       {
-        question: "What can reminders be used for?",
+        question: t("helpContent064"),
         answer:
-          "Use them for service, insurance, EMI, permits or other vehicle tasks. Set a date or a real meter threshold that suits the task.",
+          t("helpContent065"),
       },
       {
-        question: "Can a document or expense create a reminder?",
+        question: t("helpContent066"),
         answer:
-          "Eligible document expiry and EMI expense forms offer linked reminders. Maintenance details can also carry a next service date or meter threshold.",
+          t("helpContent067"),
       },
       {
-        question: "How do recurring reminders work?",
+        question: t("helpContent068"),
         answer:
-          "For a dated reminder choose monthly or yearly recurrence. Completing it advances its date; check the next date and meter thresholds after completion.",
+          t("helpContent069"),
       },
       {
-        question: "Why didn’t a notification arrive?",
+        question: t("helpContent070"),
         answer:
-          "Enable notifications in Settings and Android settings. Date alerts are local to the device and subject to system limits. Meter alerts depend on recorded readings and app reconciliation; GPS is not used.",
+          t("helpContent071"),
       },
       {
-        question: "Can I complete or snooze a reminder?",
+        question: t("helpContent072"),
         answer:
-          "Open the reminder details and use Complete or Snooze when you have permission. A recurring dated reminder advances when completed.",
+          t("helpContent073"),
       },
     ],
   },
   {
-    title: "Reports, privacy and account",
+    title: t("helpContent074"),
     questions: [
       {
-        question: "What is the difference between Insights and Reports?",
+        question: t("helpContent075"),
         answer:
-          "Insights visualizes accessible spending, efficiency and measured intervals. Reports provides a period summary and JSON, CSV and PDF export.",
+          t("helpContent076"),
       },
       {
-        question: "What is included in an export?",
+        question: t("helpContent077"),
         answer:
-          "The selected period’s accessible records, meter observations, completed intervals and summary. Intervals may start before the selected period. CSV has filterable fields; JSON retains structured data.",
+          t("helpContent078"),
       },
       {
-        question: "Who can see my vehicle data?",
+        question: t("helpContent079"),
         answer:
-          "Access is per vehicle and controlled by roles, permissions and server policies. Share only with trusted people; someone who exports data can keep a copy.",
+          t("helpContent080"),
       },
       {
-        question: "Does the app need an internet connection?",
+        question: t("helpContent081"),
         answer:
-          "Yes. Loading and saving records requires a connection. Unsaved form changes remain only while the form stays open; they are not a durable offline draft.",
+          t("helpContent082"),
       },
       {
-        question: "How do I change the appearance?",
+        question: t("helpContent083"),
         answer:
-          "Open Settings → Appearance and choose System default, Light or Dark. System default follows your device appearance.",
+          t("helpContent084"),
       },
       {
-        question: "How do I change my password?",
+        question: t("helpContent085"),
         answer:
-          "Open Settings → Security and data and use Reset password. Follow the email flow for your account.",
+          t("helpContent086"),
       },
       {
-        question: "What happens when I sign out?",
+        question: t("helpContent087"),
         answer:
-          "Your session and current unsaved changes are cleared on this device, and scheduled local notifications are cleared. Signing out does not delete your server records.",
+          t("helpContent088"),
       },
       {
-        question: "How do I request account deletion?",
+        question: t("helpContent089"),
         answer:
-          "Open Settings → Request account deletion. Review the consequences and archive vehicles you administer as primary administrator first. The request revokes access; completion requires operator review.",
+          t("helpContent090"),
       },
       {
-        question: "What if saving or loading fails?",
+        question: t("helpContent091"),
         answer:
-          "Check your connection and permissions. Keep an unsaved form open and retry. For access problems, ask the vehicle Owner to check your grant.",
+          t("helpContent092"),
       },
       {
-        question: "Where can I ask for privacy or deletion help?",
+        question: t("helpContent093"),
         answer:
-          "Open Privacy and terms or Security and data for the operator contact. Include enough detail for the operator to identify the issue, but never send passwords or verification codes.",
+          t("helpContent094"),
       },
     ],
   },

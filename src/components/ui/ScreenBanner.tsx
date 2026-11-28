@@ -1,38 +1,40 @@
 import { Image } from "expo-image";
 import { View } from "react-native";
+import { t } from "@/src/lib/i18n";
 
 const banners = {
   garage: {
     source: require("../../../assets/media/banner-garage.webp"),
-    label: "All vehicles, one garage: vehicle profiles and meter tracking.",
+    labelKey: "bannerGarage",
   },
   fuel: {
     source: require("../../../assets/media/banner-fuel.webp"),
-    label: "Fuel and charging: track fills and energy use.",
+    labelKey: "bannerFuel",
   },
   expenses: {
     source: require("../../../assets/media/banner-expenses.webp"),
-    label: "Expenses and service: keep track of vehicle costs.",
+    labelKey: "bannerExpenses",
   },
   progress: {
     source: require("../../../assets/media/banner-progress.webp"),
-    label: "Daily progress: record trips, meter readings, and custom fields.",
+    labelKey: "bannerProgress",
   },
   reports: {
     source: require("../../../assets/media/banner-reports.webp"),
-    label: "Owners and pilots: access, approvals, and reports.",
+    labelKey: "bannerReports",
   },
-};
+} as const;
 
 export type ScreenBannerName = keyof typeof banners;
 
 export function ScreenBanner({ name }: { name: ScreenBannerName }) {
   const banner = banners[name];
+  const label = t(banner.labelKey);
   return (
     <View style={{ width: "100%", maxWidth: 900, alignSelf: "center" }}>
       <Image
         source={banner.source}
-        accessibilityLabel={banner.label}
+        accessibilityLabel={label}
         contentFit="contain"
         style={{ width: "100%", aspectRatio: 3, borderRadius: 16 }}
       />

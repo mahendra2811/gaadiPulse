@@ -1,7 +1,8 @@
+import { t } from "@/src/lib/i18n";
 export const pilotPermissionGroups = [
-  { title: "Fuel", read: "fuel.read", create: "fuel.create" },
-  { title: "Expenses", read: "expenses.read", create: "expenses.create" },
-  { title: "Meter readings", read: "meters.read", create: "meters.create" },
+  { titleKey: "memberPermissionFuel", read: "fuel.read", create: "fuel.create" },
+  { titleKey: "memberPermissionExpenses", read: "expenses.read", create: "expenses.create" },
+  { titleKey: "memberPermissionMeters", read: "meters.read", create: "meters.create" },
 ] as const;
 export function effectivePilotPermission(
   key: string,
@@ -26,7 +27,15 @@ export function pilotPermissionSummary(
     .map((group) => {
       const read = effectivePilotPermission(group.read, overrides, defaults);
       const create = effectivePilotPermission(group.create, overrides, defaults);
-      return `${group.title}: ${read && create ? "view & add" : read ? "view" : create ? "add" : "no access"}`;
+      const access =
+        read && create
+          ? t("permissionViewAdd")
+          : read
+            ? t("permissionViewOnly")
+            : create
+              ? t("permissionAddOnly")
+              : t("permissionNoAccess");
+      return `${t(group.titleKey)}: ${access}`;
     })
     .join(" · ");
 }

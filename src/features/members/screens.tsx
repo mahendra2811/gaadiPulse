@@ -25,6 +25,7 @@ import { useActiveVehicle } from "@/src/features/garage/hooks";
 import { useSession, useAccountId } from "@/src/features/auth/session";
 import { usePermissions } from "@/src/features/records/hooks";
 import { r } from "@/src/features/records/copy";
+import { t } from "@/src/lib/i18n";
 import { requirePilotPolicy } from "./pilotPolicy";
 import { resolveMemberVehicle } from "./vehicleContext";
 import type { Vehicle } from "@/src/features/garage/schema";
@@ -70,13 +71,11 @@ export default function Members() {
       {!active.isPending && (
         <>
           <AppText>
-            {vehicleId
-              ? "This vehicle is unavailable or your access has changed."
-              : r("noVehicle")}
+            {vehicleId ? t("memberVehicleUnavailable") : r("noVehicle")}
           </AppText>
           <AppButton
             secondary
-            label="Open Garage"
+            label={t("openGarage")}
             onPress={() => router.push("/garage")}
           />
         </>
@@ -163,7 +162,7 @@ export function VehicleMembersSection({
   if (access.error)
     return (
       <>
-        <SectionHeading title="Vehicle member access" />
+        <SectionHeading title={t("memberAccessTitle")} />
         <ErrorState
           message={access.error.message}
           retry={() => void access.refetch()}
@@ -177,18 +176,31 @@ export function VehicleMembersSection({
   const pending =
     query.data?.grants.filter((g) => g.status === "UNRESOLVED") ?? [];
   const memberRow = (member: Member) => {
-    const name = member.display_name || "Vehicle member";
-    const status = `${r(member.role)} · ${member.status === "ACTIVE" ? "Active" : "Access revoked"}${member.is_primary_admin ? " · Primary administrator" : ""}`;
+    const name = member.display_name || t("memberPlaceholder");
+    const status = t("memberRoleStatus")
+      .replace("{role}", r(member.role))
+      .replace(
+        "{status}",
+        t(
+          member.status === "ACTIVE"
+            ? "memberActiveStatus"
+            : "memberRevokedStatus",
+        ),
+      )
+      .replace(
+        "{primary}",
+        member.is_primary_admin ? t("memberPrimaryStatusSuffix") : "",
+      );
     const details =
       member.status === "ACTIVE"
         ? member.role === "OWNER"
-          ? "Full Owner access"
+          ? t("memberFullOwner")
           : pilotPolicy.data
             ? `${pilotPermissionSummary(
                 member.permission_overrides,
                 query.data?.defaults ?? {},
-              )} · ${effectiveBackdateDays(member.backdate_days, query.data?.defaults ?? {}) === -1 ? "Unlimited backdating" : `${effectiveBackdateDays(member.backdate_days, query.data?.defaults ?? {})} day(s) back`}`
-            : "Pilot permissions unavailable until the access policy is verified"
+              )} · ${effectiveBackdateDays(member.backdate_days, query.data?.defaults ?? {}) === -1 ? t("memberUnlimitedBackdating") : t("memberBackdateDaysSummary").replace("{days}", String(effectiveBackdateDays(member.backdate_days, query.data?.defaults ?? {})))}`
+            : t("memberPolicyUnavailable")
         : "";
     const subtitle = details ? `${status}\n${details}` : status;
     return (
@@ -211,21 +223,14 @@ export function VehicleMembersSection({
   };
   return (
     <>
-      <SectionHeading title="Vehicle member access" />
-      {access.isPending && <AppText muted>Loading vehicle access…</AppText>}
+      <SectionHeading title={t("memberAccessTitle")} />
+      {access.isPending && <AppText muted>{t("memberLoadingAccess")}</AppText>}
       {access.data && !access.data.owner ? (
         <AppText>{r("permission")}</AppText>
       ) : access.data?.owner && v ? (
         <>
-          <AppText muted>
-            Manage access for this vehicle. Roles and permissions are different
-            for each vehicle.
-          </AppText>
-          {locked && (
-            <AppText muted>
-              This vehicle is archived. Restore it before changing access.
-            </AppText>
-          )}
+          <AppText muted>{t("memberManagementHelp")}</AppText>
+          {locked && <AppText muted>{t("memberRestoreArchived")}</AppText>}
           {pilotPolicy.error && (
             <ErrorState
               message={pilotPolicy.error.message}
@@ -238,9 +243,9 @@ export function VehicleMembersSection({
               retry={() => void query.refetch()}
             />
           )}
-          {query.isPending && <AppText muted>Loading members…</AppText>}
+          {query.isPending && <AppText muted>{t("memberLoading")}</AppText>}
           <AppButton
-            label="Add vehicle member"
+            label={t("memberAddTitle")}
             disabled={locked || busy || !query.data || !pilotPolicy.data}
             onPress={() => {
               setError("");
@@ -251,20 +256,25 @@ export function VehicleMembersSection({
             <>
               <Card style={{ padding: 16 }}>
                 <SectionHeading
-                  title={`Active members (${activeMembers.length})`}
+                  title={t("memberActiveCount").replace(
+                    "{count}",
+                    String(activeMembers.length),
+                  )}
                 />
                 {activeMembers.length ? (
                   activeMembers.map(memberRow)
                 ) : (
-                  <AppText muted>No active members to display.</AppText>
+                  <AppText muted>{t("memberNoneActive")}</AppText>
                 )}
               </Card>
               <Card style={{ padding: 16 }}>
-                <SectionHeading title={`Pending access (${pending.length})`} />
-                <AppText muted>
-                  Access starts automatically when this email signs in with a
-                  verified account. No invitation acceptance is needed.
-                </AppText>
+                <SectionHeading
+                  title={t("memberPendingCount").replace(
+                    "{count}",
+                    String(pending.length),
+                  )}
+                />
+                <AppText muted>{t("memberPendingVerifiedHint")}</AppText>
                 {pending.length ? (
                   pending.map((grant) => (
                     <View key={grant.id} style={{ gap: 8, paddingVertical: 8 }}>
@@ -278,35 +288,39 @@ export function VehicleMembersSection({
                       />
                       <AppButton
                         secondary
-                        label="Cancel pending access"
+                        label={t("memberCancelPending")}
                         disabled={busy || locked}
                         onPress={() =>
                           ConfirmDialog(
-                            "Cancel pending access?",
-                            `The grant for ${grant.normalized_email} will no longer take effect after sign-in.`,
+                            t("memberCancelGrantTitle"),
+                            t("memberCancelGrantBodyWithEmail").replace(
+                              "{email}",
+                              grant.normalized_email,
+                            ),
                             () =>
                               void run(
                                 () => revokeGrant(v.id, grant.id, development),
-                                "Pending access cancelled.",
+                                t("memberPendingCancelledToast"),
                               ),
-                            { confirmLabel: "Cancel access" },
+                            { confirmLabel: t("memberCancelAccessConfirm") },
                           )
                         }
                       />
                     </View>
                   ))
                 ) : (
-                  <AppText muted>No pending access grants.</AppText>
+                  <AppText muted>{t("memberNonePending")}</AppText>
                 )}
               </Card>
               {revokedMembers.length > 0 && (
                 <Card style={{ padding: 16 }}>
                   <SectionHeading
-                    title={`Revoked members (${revokedMembers.length})`}
+                    title={t("memberRevokedCount").replace(
+                      "{count}",
+                      String(revokedMembers.length),
+                    )}
                   />
-                  <AppText muted>
-                    Open a member to review or restore their access.
-                  </AppText>
+                  <AppText muted>{t("memberRevokedReviewHint")}</AppText>
                   {revokedMembers.map(memberRow)}
                 </Card>
               )}
@@ -314,16 +328,14 @@ export function VehicleMembersSection({
           )}
           {query.data && (
             <Card style={{ padding: 16 }}>
-              <SectionHeading title="Pilot access defaults" />
-              <AppText muted>
-                Defaults apply to Pilots who have no personal override.
-              </AppText>
+              <SectionHeading title={t("memberDefaults")} />
+              <AppText muted>{t("memberDefaultsHint")}</AppText>
               <TextAction
-                label={
+                label={t(
                   showDefaults
-                    ? "Hide default permissions"
-                    : "Edit default permissions"
-                }
+                    ? "memberManageDefaultsHide"
+                    : "memberManageDefaultsEdit",
+                )}
                 icon="options-outline"
                 onPress={() => {
                   setDefaults(
@@ -363,7 +375,7 @@ export function VehicleMembersSection({
                     disabled={locked || busy}
                   />
                   <AppButton
-                    label="Save vehicle defaults"
+                    label={t("memberSaveDefaults")}
                     disabled={
                       locked ||
                       busy ||
@@ -406,11 +418,12 @@ export function VehicleMembersSection({
         visible={!!v && !!access.data?.owner && showGrant}
         onClose={closeGrant}
       >
-        <AppText large>Add vehicle member</AppText>
+        <AppText large>{t("memberAddTitle")}</AppText>
         <AppText muted>
-          For {v?.nickname || v?.registration_number || "this vehicle"}. Choose
-          an email and role. Existing verified accounts receive access
-          automatically.
+          {t("memberGrantVehicleHint").replace(
+            "{vehicle}",
+            v?.nickname || v?.registration_number || t("memberVehicleFallback"),
+          )}
         </AppText>
         {development && <AppText muted>{r("development")}</AppText>}
         <InputField
@@ -422,11 +435,11 @@ export function VehicleMembersSection({
           keyboardType="email-address"
           autoCapitalize="none"
         />
-        <AppText>Choose a role</AppText>
+        <AppText>{t("memberChooseRole")}</AppText>
         <RolePicker value={role} onChange={setRole} disabled={busy || locked} />
         {role === "PILOT" && (
           <>
-            <AppText large>Pilot permissions</AppText>
+            <AppText large>{t("memberPilotPermissions")}</AppText>
             <PermissionEditor
               value={overrides}
               defaults={query.data?.defaults}
@@ -444,7 +457,7 @@ export function VehicleMembersSection({
         )}
         {!!error && <ErrorState message={error} retry={() => setError("")} />}
         <AppButton
-          label="Grant access"
+          label={t("memberGrant")}
           disabled={
             busy ||
             locked ||
@@ -474,7 +487,7 @@ export function VehicleMembersSection({
         />
         <AppButton
           secondary
-          label="Cancel"
+          label={t("memberCancel")}
           disabled={busy}
           onPress={closeGrant}
         />
@@ -482,25 +495,25 @@ export function VehicleMembersSection({
       <Sheet visible={!!selected} onClose={closeMember}>
         {selected && (
           <>
-            <AppText large>{selected.display_name || "Vehicle member"}</AppText>
+            <AppText large>
+              {selected.display_name || t("memberPlaceholder")}
+            </AppText>
             <AppText muted>
-              {selected.status === "ACTIVE"
-                ? "Active access"
-                : "Access revoked"}{" "}
-              · {v?.nickname || v?.registration_number || "this vehicle"}
+              {t(
+                selected.status === "ACTIVE"
+                  ? "memberActiveAccess"
+                  : "memberRevokedStatus",
+              )}{" "}
+              ·{" "}
+              {v?.nickname ||
+                v?.registration_number ||
+                t("memberVehicleFallback")}
             </AppText>
             {selected.is_primary_admin && (
-              <AppText muted>
-                The primary administrator is protected and cannot be demoted or
-                removed here.
-              </AppText>
+              <AppText muted>{t("memberPrimaryAdminHelp")}</AppText>
             )}
-            {locked && (
-              <AppText muted>
-                Restore this vehicle before changing access.
-              </AppText>
-            )}
-            <AppText>Role</AppText>
+            {locked && <AppText muted>{t("memberRestoreVehicleHelp")}</AppText>}
+            <AppText>{t("memberRole")}</AppText>
             <RolePicker
               value={selected.role}
               disabled={busy || locked || selected.is_primary_admin}
@@ -508,7 +521,7 @@ export function VehicleMembersSection({
             />
             {selected.role === "PILOT" && (
               <>
-                <AppText large>Pilot permissions</AppText>
+                <AppText large>{t("memberPilotPermissions")}</AppText>
                 <PermissionEditor
                   value={selected.permission_overrides}
                   defaults={query.data?.defaults}
@@ -538,7 +551,7 @@ export function VehicleMembersSection({
             {selected.status === "ACTIVE" ? (
               <>
                 <AppButton
-                  label="Save changes"
+                  label={t("memberSaveChanges")}
                   disabled={
                     busy ||
                     locked ||
@@ -564,22 +577,22 @@ export function VehicleMembersSection({
                     );
                     if (selected.role === "OWNER" && original?.role !== "OWNER")
                       ConfirmDialog(
-                        "Make this member an Owner?",
-                        "Owners can manage vehicle records, members and access. Confirm this broader role for this vehicle.",
+                        t("memberDialogRoleOwner"),
+                        t("memberDialogRoleOwnerBody"),
                         save,
-                        { confirmLabel: "Make Owner" },
+                        { confirmLabel: t("memberDialogRoleOwnerConfirm") },
                       );
                     else save();
                   }}
                 />
                 <AppButton
                   secondary
-                  label="Revoke access"
+                  label={t("memberRevoke")}
                   disabled={busy || locked || selected.is_primary_admin}
                   onPress={() =>
                     ConfirmDialog(
-                      "Revoke vehicle access?",
-                      "This member will lose access to this vehicle. Existing copies they exported may remain outside the app.",
+                      t("memberDialogRevokeTitle"),
+                      t("memberDialogRevokeBody"),
                       () =>
                         void run(async () => {
                           await changeMember(
@@ -592,20 +605,20 @@ export function VehicleMembersSection({
                             development,
                           );
                           setSelected(null);
-                        }, "Vehicle access revoked."),
-                      { confirmLabel: "Revoke access" },
+                        }, t("memberAccessRevokedToast")),
+                      { confirmLabel: t("memberDialogRevokeConfirm") },
                     )
                   }
                 />
               </>
             ) : (
               <AppButton
-                label="Restore access"
+                label={t("memberRestore")}
                 disabled={busy || locked || !pilotPolicy.data}
                 onPress={() =>
                   ConfirmDialog(
-                    "Restore vehicle access?",
-                    "This will give this member access with the role and permissions shown above.",
+                    t("memberDialogRestoreTitle"),
+                    t("memberDialogRestoreBody"),
                     () =>
                       void run(async () => {
                         await changeMember(
@@ -618,15 +631,15 @@ export function VehicleMembersSection({
                           development,
                         );
                         setSelected(null);
-                      }, "Vehicle access restored."),
-                    { confirmLabel: "Restore access" },
+                      }, t("memberAccessRestoredToast")),
+                    { confirmLabel: t("memberDialogRestoreConfirm") },
                   )
                 }
               />
             )}
             <AppButton
               secondary
-              label="Cancel"
+              label={t("memberCancel")}
               disabled={busy}
               onPress={closeMember}
             />

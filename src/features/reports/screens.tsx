@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQueries } from "@tanstack/react-query";
 import { FilterChips } from "@/src/components/ui/FilterChips";
 import { InfoRows, SectionHeading } from "@/src/components/ui/premium";
+import { t } from "@/src/lib/i18n";
 import { Screen, Card, AppText, ErrorState } from "@/src/components/ui";
 import { VehicleHeader } from "@/src/components/navigation/VehicleHeader";
 import { useActiveVehicle } from "@/src/features/garage/hooks";
@@ -131,9 +132,7 @@ export function Reports() {
         allowed.some((kind) => !currentPermissions[readPermission(kind)]) ||
         (meterAllowed && !currentPermissions["meters.read"])
       )
-        throw new Error(
-          "Your access changed while preparing the report. Refresh and try again.",
-        );
+        throw new Error(t("reportAccessChanged"));
       const name = `GaadiPulse-${v.id}-${period}-${snapshot.generated_at.slice(0, 10)}`;
       if (format === "json")
         await exportText(
@@ -200,7 +199,7 @@ export function Reports() {
           ) : (
             <>
               <Card style={{ padding: 16 }}>
-                <SectionHeading title="Export report" />
+                <SectionHeading title={t("reportExportTitle")} />
                 <AppText muted>
                   Includes the selected period’s authorized records, meter
                   readings and completed intervals. JSON keeps full detail; CSV
@@ -214,11 +213,16 @@ export function Reports() {
               </Card>
               {report && (
                 <Card style={{ padding: 16 }}>
-                  <SectionHeading title="Report summary" />
+                  <SectionHeading title={t("reportSummaryTitle")} />
                   <AppText muted>
                     {report.period.start_date
-                      ? `${report.period.start_date} to ${report.period.end_date}`
-                      : "All time"}{" "}
+                      ? t("reportDateRange")
+                          .replace("{start}", report.period.start_date)
+                          .replace(
+                            "{end}",
+                            report.period.end_date ?? report.period.start_date,
+                          )
+                      : t("reportAllTime")}{" "}
                     · {report.period.timezone}
                   </AppText>
                   <InfoRows
@@ -249,24 +253,25 @@ export function Reports() {
                         value: String(report.summary.record_count),
                       },
                       {
-                        label: "Meter observations",
+                        label: t("reportMeterObservations"),
                         value: String(report.meter_observations.length),
                       },
                       {
-                        label: "Fuel intervals",
+                        label: t("reportFuelIntervals"),
                         value: String(report.fuel_intervals.length),
                       },
                       {
-                        label: "Measured intervals",
+                        label: t("reportMeasuredIntervals"),
                         value: String(report.measured_intervals.length),
                       },
                     ]}
                   />
                   <AppText muted>
-                    Included record types:{" "}
-                    {report.included_record_types.join(", ") || "none"}. Totals
-                    reflect only accessible data. Intervals are included by
-                    their closing date and may start before this period.
+                    {t("reportIncludedTypes")}{" "}
+                    {report.included_record_types.join(", ") || t("reportNone")}
+                    . Totals reflect only accessible data. Intervals are
+                    included by their closing date and may start before this
+                    period.
                   </AppText>
                 </Card>
               )}

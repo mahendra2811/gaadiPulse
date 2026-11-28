@@ -114,7 +114,7 @@ export function useExpenseHistory(
     queryFn: async ({ pageParam }) => {
       if (!allowed) throw new Error("PERMISSION_DENIED");
       if (!development && !onlineManager.isOnline())
-        throw new Error("Network unavailable");
+        throw new Error(t("networkError"));
       if (development) {
         return pageFromLegacy(
           await listRecords(user!, vehicle!.id, "expenses", true),

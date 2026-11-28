@@ -4,14 +4,14 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { Screen, AppText, Card } from "@/src/components/ui";
 import { useTheme } from "@/src/lib/theme";
 import { helpSections } from "./content";
+import { t } from "@/src/lib/i18n";
 export default function HelpScreen() {
   const theme = useTheme();
   const [open, setOpen] = useState<string | null>(null);
   return (
-    <Screen title="Help" compact>
+    <Screen title={t("helpTitle")} compact>
       <AppText muted>
-        Practical answers for recording and sharing vehicle information.
-        Available actions depend on your vehicle role and permissions.
+        {t("helpDescription")}
       </AppText>
       {helpSections.map((section) => (
         <Card key={section.title} style={{ padding: 16 }}>

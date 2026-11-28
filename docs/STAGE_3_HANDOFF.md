@@ -747,3 +747,33 @@ Validation executed: `npm run typecheck` PASS; `npx expo config --type public` P
 Added a root-level Play update check once per day while the Android app is active. When Play reports an update, an in-app card offers Install update (Google Play immediate flow) or Remind me later (snoozes the card for one day). The About manual check remains. Review requests are attempted after five confirmed production fuel, expense or meter creates, then after each ten further creates; Play may suppress them. The app cannot inspect whether a review was submitted or its star rating, so there is no rating-based stop rule. No review gating or custom star survey was added.
 
 Validation: `npm run typecheck`, targeted ESLint for changed UI/auth/catalog files, and `git diff --check` PASS. Play track distribution, native build, Android prompt flow and review submission NOT TESTED. New native dependencies and the automatic update component require a new Android build and Play testing-track validation. The app should be downloaded from a Play test track to exercise real update/review APIs.
+
+## English catalog consolidation — 2026-11-28
+
+Centralized the existing English record UI catalog and domain validation messages as `records` and `validation` namespaces in `src/lib/i18n.ts`. The compatibility helpers in `src/features/records/copy.ts` and `src/lib/domainCopy.ts` now resolve their keys through `t()`, so existing feature call sites retain their API while using the same catalog. Permission labels, member-access copy and Insights labels use central translation keys. `t()` accepts typed namespaced keys and falls back to English when a locale catalog has no matching value.
+
+Validation: `npm run typecheck`, `npm run lint`, and `git diff --check` PASS. A source scan still finds hardcoded UI text in auth, account-security, deletion, help and report-export screens, among other flows; this is a consolidation step and not yet a zero-literal audit. No runtime language switching, device UI, or test suite was verified in this pass.
+
+## Vehicle member-access setup recovery — 2026-11-28
+
+Investigated the reported `/garage/[id]` member-access failure. The UI already renders the shared `ErrorState` Retry button and wires it to refetch member access. The linked Supabase project was missing pending migrations 001–004 from 2026-11-28; migration 003 adds the `vehicle_access_grants_for_owner` RPC called by the member screen, explaining the PostgREST missing-function error translated to “service setup is incomplete.” Ran `npx supabase db push` to apply the four pending additive migrations, then `npx supabase migration list --linked`; all local migration versions now match remote. Existing data was preserved; no reset performed.
+
+No code change was needed for Retry. `git diff --check` PASS. Browser page could not be verified because the browser automation binary was unavailable and Chrome opened at its profile chooser; user should refresh the requested vehicle page and use Retry if it has not refetched yet. Hosted UI/member data is not independently verified.
+
+## English catalog single-source completion — 2026-11-28
+
+Completed the English UI copy consolidation in `src/lib/i18n.ts`. The English catalog now owns the main app copy plus the `records` and `validation` namespaces. Record and validation compatibility helpers resolve through `t()`. Routed remaining static user-facing copy in member access, backdate validation, reports/PDF output, currency validation and names, timezone labels, settings, help, auth/security/deletion, and shared banners through typed catalog keys. Added placeholder-based strings for variable values. Hindi remains a separate partial locale catalog; missing Hindi keys fall back to English. Internal status/API identifiers, user-entered content, and server-provided messages are not catalog entries.
+
+Validation executed: `npm run typecheck` PASS; `npm run lint` PASS; Prettier on touched TypeScript files PASS; `git diff --check` PASS. A source scan found no remaining hardcoded English UI sentences in `app/` or `src/`; framework invariant errors and identifiers remain as code. Test suite and runtime/device language-switch verification NOT RUN. This centralizes source English copy, but does not mean every locale has been translated or that OS/system-generated text is controlled by the app.
+
+## Separate English locale JSON and fallback — 2026-11-28
+
+Moved the complete English catalog to `src/lib/i18n/locales/en.json` (including `records` and `validation`). `src/lib/i18n.ts` now contains locale selection, typed key paths and catalog lookup. English is the default. A present non-blank Hindi value is used; missing or blank Hindi keys fall back to English. Unsupported locale identifiers select English.
+
+Validation: `npm run typecheck`, `npm run lint`, Prettier for `i18n.ts` and `en.json`, and `git diff --check` PASS. Test suite and device language switching NOT RUN.
+
+## Domain-grouped locale catalog schema — 2026-11-28
+
+Reorganized `en.json` into 16 named app-domain groups while preserving all 1,229 source strings and existing call-site keys. Lookup accepts typed `section.key` paths and existing flat aliases; missing and blank translations resolve to English. Mirrored the exact 1,229-key section/key structure into every other locale JSON. Preserved Hindi translations; blank Hindi entries and all values in the other 43 non-English catalogs remain pending translation, so those catalogs remain unregistered.
+
+Validation: catalog parity scan across all 44 non-English JSON files PASS; all sections and 1,229 keys match English; translated Hindi placeholders match source keys; `npm run typecheck`, `npm run lint`, Prettier on locale JSON and touched TypeScript/Markdown, and `git diff --check` PASS. Test suite and device language switching NOT RUN.

@@ -1,5 +1,2 @@
-/**
- * Hindi locale is still being translated. Keep runtime on English until the
- * JSON catalog covers and has reviewed every key in the English source.
- */
-export { en as default, en } from "../../i18n";
+/** Partial Hindi overrides; the runtime falls back to en.json for missing keys. */
+export { default, default as hi } from "./hi.json";

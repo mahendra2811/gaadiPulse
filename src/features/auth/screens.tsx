@@ -108,7 +108,7 @@ export function Legal() {
         final policy and terms before distribution.
       </AppText>
       <Card>
-        <AppText large>Privacy</AppText>
+        <AppText large>{t("authPrivacyTitle")}</AppText>
         <AppText>
           GaadiPulse uses your account details and the vehicle information you
           enter, such as fuel, expenses, readings, members, reminders and
@@ -137,7 +137,7 @@ export function Legal() {
         </AppText>
       </Card>
       <Card>
-        <AppText large>Terms of use</AppText>
+        <AppText large>{t("authTermsTitle")}</AppText>
         <AppText>
           Enter accurate information, use truthful observation times, and grant
           access only to trusted people. App Owner or Pilot roles do not

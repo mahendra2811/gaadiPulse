@@ -88,7 +88,7 @@ export function MoreMenu({ navigate }: { navigate: (href: Href) => void }) {
           show: !!access.data?.["reminders.read"],
         },
         {
-          label: "Insights",
+          label: t("insightMenu"),
           icon: "analytics",
           tone: "violet",
           href: "/insights",

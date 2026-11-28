@@ -16,6 +16,7 @@ import { client } from "@/src/lib/supabase";
 import { errorMessage, readableError } from "@/src/lib/errors";
 import { useAccountId, useSession } from "./session";
 import { SignOutButton } from "./SignOutButton";
+import { t } from "@/src/lib/i18n";
 export default function DeletionScreen() {
   const auth = useSession();
   const user = useAccountId();
@@ -44,7 +45,7 @@ export default function DeletionScreen() {
       const { error: issue } = await client().rpc("request_account_deletion");
       if (issue) throw issue;
       setSubmitted(true);
-      toast("Deletion request recorded.", "success");
+      toast(t("deletionRecordedToast"), "success");
       await status.refetch();
     } catch (e) {
       setError(readableError(errorMessage(e)));
@@ -54,35 +55,24 @@ export default function DeletionScreen() {
   };
   return (
     <Screen
-      title="Request account deletion"
+      title={t("deletionRequestTitle")}
       compact
       loading={busy || (!auth.development && status.isPending)}
     >
       <Card style={{ padding: 16 }}>
-        <SectionHeading title="Before you request" />
-        <AppText>
-          Archive every active vehicle for which you are the primary
-          administrator before submitting. Review and export any records you
-          need first.
-        </AppText>
-        <AppText muted>
-          Submitting immediately revokes your vehicle memberships and resolved
-          grants. This cannot be undone here. It records a request; account
-          anonymization requires operator action and review, and some
-          operational records may be retained.
-        </AppText>
+        <SectionHeading title={t("deletionBeforeRequest")} />
+        <AppText>{t("deletionBeforeRequestBody")}</AppText>
+        <AppText muted>{t("deletionConsequences")}</AppText>
         <AppButton
           secondary
-          label="Review vehicles in Garage"
+          label={t("deletionReviewGarage")}
           onPress={() => router.push("/garage")}
         />
       </Card>
       <Card style={{ padding: 16 }}>
-        <SectionHeading title="Request status" />
+        <SectionHeading title={t("deletionStatus")} />
         {auth.development ? (
-          <AppText muted>
-            Deletion requests are unavailable in development preview.
-          </AppText>
+          <AppText muted>{t("deletionDevelopmentUnavailable")}</AppText>
         ) : status.error && !submitted ? (
           <ErrorState
             message={errorMessage(status.error)}
@@ -92,29 +82,24 @@ export default function DeletionScreen() {
           <>
             <AppText>
               {status.data?.completed_at
-                ? "The operator marked anonymization complete."
-                : "Request recorded; operator action is pending."}
+                ? t("deletionComplete")
+                : t("deletionPending")}
             </AppText>
-            <AppText muted>
-              Contact the operator for progress or questions. A recorded request
-              does not by itself confirm account deletion.
-            </AppText>
+            <AppText muted>{t("deletionContactProgress")}</AppText>
             <SignOutButton />
           </>
         ) : (
           <>
-            <AppText muted>
-              No request is currently recorded for this account.
-            </AppText>
+            <AppText muted>{t("deletionNoRequest")}</AppText>
             <AppButton
               disabled={busy || status.isPending}
-              label="Submit deletion request"
+              label={t("deletionSubmit")}
               onPress={() =>
                 ConfirmDialog(
-                  "Submit deletion request?",
-                  "Your vehicle access will be revoked immediately. Operator action is required to complete the request. Continue?",
+                  t("deletionConfirmTitle"),
+                  t("deletionConfirmBody"),
                   () => void request(),
-                  { confirmLabel: "Submit request" },
+                  { confirmLabel: t("deletionConfirmButton") },
                 )
               }
             />
@@ -122,14 +107,11 @@ export default function DeletionScreen() {
         )}
       </Card>
       <Card style={{ padding: 16 }}>
-        <SectionHeading title="Contact" />
-        <AppText muted>
-          For deletion or privacy questions, contact the app operator. Do not
-          send your password or verification code.
-        </AppText>
+        <SectionHeading title={t("contactTitle")} />
+        <AppText muted>{t("deletionContactBody")}</AppText>
         <AppButton
           secondary
-          label="Email the operator"
+          label={t("emailOperator")}
           onPress={() => {
             setError("");
             void Linking.openURL(

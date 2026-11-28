@@ -1,2 +1,2 @@
-/** English (India) catalog. Keep all product copy here when catalogs are split. */
-export { en as default, en } from "../../i18n";
+/** English (India) source catalog. */
+export { default, default as en } from "./en.json";

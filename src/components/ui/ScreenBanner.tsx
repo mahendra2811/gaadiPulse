@@ -36,6 +36,9 @@ export function ScreenBanner({ name }: { name: ScreenBannerName }) {
         source={banner.source}
         accessibilityLabel={label}
         contentFit="contain"
+        priority="low"
+        cachePolicy="memory-disk"
+        transition={0}
         style={{ width: "100%", aspectRatio: 3, borderRadius: 16 }}
       />
     </View>

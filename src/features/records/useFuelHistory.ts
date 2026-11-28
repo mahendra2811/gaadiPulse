@@ -1,11 +1,13 @@
 import { onlineManager, useInfiniteQuery } from "@tanstack/react-query";
 import { useAccountId, useSession } from "@/src/features/auth/session";
 import { dateInZone } from "@/src/features/progress/schema";
+import { client } from "@/src/lib/supabase";
 import { listRecords } from "./api";
 import { useSyncExternalStore } from "react";
 import { t } from "@/src/lib/i18n";
 import { recordCurrency, recordMinorAmount } from "./currency";
 import type { CurrencyCode } from "@/src/utils/currency";
+import { recordSchema } from "./schema";
 
 export type FuelFilters = {
   start: string;
@@ -17,6 +19,25 @@ export type FuelFilters = {
   currency?: CurrencyCode;
 };
 const pageSize = 30;
+type HistoryPage = {
+  rows: Awaited<ReturnType<typeof listRecords>>;
+  count: number;
+  total_paise: string;
+};
+function parsePage(value: unknown): HistoryPage {
+  if (!value || typeof value !== "object")
+    throw new Error("FUEL_HISTORY_RESPONSE_INVALID");
+  const page = value as Record<string, unknown>;
+  const rows = Array.isArray(page.rows) ? page.rows : [];
+  const count = Number(page.count);
+  if (!Number.isSafeInteger(count) || count < 0)
+    throw new Error("FUEL_HISTORY_COUNT_INVALID");
+  return {
+    rows: rows as HistoryPage["rows"],
+    count,
+    total_paise: String(page.total_paise ?? "0"),
+  };
+}
 export function useFuelHistory(
   vehicle: string | undefined,
   enabled: boolean,
@@ -84,34 +105,26 @@ export function useFuelHistory(
           ),
         };
       }
-      const all = (await listRecords(user!, vehicle!, "fuel", false)).filter(
-        (row) => {
-          const date = dateInZone(
-            new Date(String(row.payload.event_at)),
-            filters.timezone,
-          );
-          const amount = recordMinorAmount(row.payload);
-          return (
-            row.status !== "ARCHIVED" &&
-            (!filters.start || date >= filters.start) &&
-            (!filters.end || date <= filters.end) &&
-            (!filters.currency ||
-              recordCurrency(row.payload) === filters.currency) &&
-            (filters.min === null || amount >= filters.min) &&
-            (filters.max === null || amount <= filters.max) &&
-            `${row.payload.title ?? ""} ${row.payload.notes ?? ""} ${row.payload.station_name ?? ""}`
-              .toLowerCase()
-              .includes(filters.search.toLowerCase())
-          );
-        },
-      );
+      const { data, error } = await client().rpc("fuel_history_page", {
+        p_vehicle: vehicle!,
+        p_start: filters.start || null,
+        p_end: filters.end || null,
+        p_min: filters.min,
+        p_max: filters.max,
+        p_search: filters.search,
+        p_offset: pageParam,
+        p_limit: pageSize,
+      });
+      if (error) throw new Error(error.message);
+      const result = parsePage(data);
+      const rows = recordSchema.array().parse(result.rows);
+      const raw = BigInt(result.total_paise);
+      if (raw < 0n || raw > BigInt(Number.MAX_SAFE_INTEGER))
+        throw new Error("FUEL_TOTAL_OUT_OF_RANGE");
       return {
-        rows: all.slice(pageParam, pageParam + pageSize),
-        count: all.length,
-        total: all.reduce(
-          (sum, row) => sum + recordMinorAmount(row.payload),
-          0,
-        ),
+        rows,
+        count: result.count,
+        total: Number(raw),
       };
     },
     getNextPageParam: (last, pages) => {

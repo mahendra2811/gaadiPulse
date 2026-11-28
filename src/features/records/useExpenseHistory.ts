@@ -3,7 +3,8 @@ import { useSyncExternalStore } from "react";
 import { useAccountId, useSession } from "@/src/features/auth/session";
 import { dateInZone } from "@/src/features/progress/schema";
 import { listRecords } from "./api";
-import type { RecordEntry } from "./schema";
+import { client } from "@/src/lib/supabase";
+import { recordSchema, type RecordEntry } from "./schema";
 import { t } from "@/src/lib/i18n";
 import { recordCurrency, recordMinorAmount } from "./currency";
 import type { CurrencyCode } from "@/src/utils/currency";
@@ -13,6 +14,11 @@ type ExpensePage = {
   rows: RecordEntry[];
   count: number;
   total: number;
+};
+type ExpenseRpcPage = {
+  rows: Record<string, unknown>[];
+  count: number;
+  total_paise: string;
 };
 export type ExpenseFilters = {
   start: string | null;
@@ -122,11 +128,30 @@ export function useExpenseHistory(
           pageParam,
         );
       }
-      return pageFromLegacy(
-        await listRecords(user!, vehicle!.id, "expenses", false),
-        filters,
-        pageParam,
-      );
+      const { data, error } = await client().rpc("expense_history_page", {
+        p_vehicle: vehicle!.id,
+        p_start: filters.start,
+        p_status: filters.status,
+        p_search: filters.search,
+        p_before_created_at: pageParam?.created_at ?? null,
+        p_before_id: pageParam?.id ?? null,
+        p_limit: pageSize,
+      });
+      if (error) throw new Error(error.message);
+      if (!data || typeof data !== "object")
+        throw new Error("EXPENSE_HISTORY_RESPONSE_INVALID");
+      const result = data as unknown as ExpenseRpcPage;
+      const rows = recordSchema.array().parse(result.rows);
+      if (
+        !Number.isSafeInteger(Number(result.count)) ||
+        Number(result.count) < 0
+      )
+        throw new Error("EXPENSE_HISTORY_COUNT_INVALID");
+      return {
+        rows,
+        count: Number(result.count),
+        total: safePaise(result.total_paise),
+      };
     },
     getNextPageParam: (last, pages): Cursor | undefined => {
       const loaded = pages.reduce((sum, page) => sum + page.rows.length, 0);

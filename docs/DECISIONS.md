@@ -297,3 +297,7 @@ Expose the complete current 45-language list in onboarding and Settings from the
 ## 2026-11-28 — Meter history refresh after save
 
 The meter history screen and record form now share the `[userId, vehicleId, "observations"]` TanStack Query key. After a successful new meter-reading save, the form invalidates and awaits active observation-query refresh before showing success and navigating back, so the latest saved reading appears immediately in history. Other record saves retain background invalidation behavior. No schema or user data changes.
+
+## Performance audit — 2026-11-28
+
+Use existing Expo Router production route laziness; defer root reminder reconciliation until after initial render. Decorative banners load at low image priority. Keep server history pagination bounded to 30-row requests through existing security-invoker RPCs; preserve development preview semantics and complete-history report/insight APIs. Set query data freshness to 30 seconds and cache retention to five minutes for short navigation return paths while preserving user/vehicle scope. Removed `expo-sqlite`, `@supabase/server` and `@supabase/ssr` after confirming the current online-only source has no imports. Device profiling, bundle-size comparison and raster conversion remain unverified and are listed in `docs/PERFORMANCE_HANDOFF.md`.

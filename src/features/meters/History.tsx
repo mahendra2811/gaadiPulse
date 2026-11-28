@@ -60,9 +60,10 @@ function MeterHistoryContent() {
   const [type, setType] = useState("ALL");
   const [limit, setLimit] = useState(12);
   const query = useQuery({
-    queryKey: [user, vehicle?.id, "observations"],
+    queryKey: [user, vehicle?.id, "observations", limit],
     enabled: !!vehicle,
-    queryFn: () => loadObservations(user!, vehicle!.id, development, true),
+    queryFn: () =>
+      loadObservations(user!, vehicle!.id, development, true, 0, limit),
   });
   const correct = async (retract = false) => {
     if (!selected || !vehicle || busy) return;
@@ -93,7 +94,9 @@ function MeterHistoryContent() {
         if (error) throw new Error(error.message);
       }
       setOperation(Crypto.randomUUID());
-      await qc.invalidateQueries();
+      await qc.invalidateQueries({
+        queryKey: [user, vehicle.id, "observations"],
+      });
       setSelected(null);
       setCorrecting(false);
       toast(r("saved"), "success");
@@ -163,7 +166,7 @@ function MeterHistoryContent() {
         />
       ) : filteredReadings.length ? (
         <Card style={{ padding: 0, gap: 0, overflow: "hidden" }}>
-          {filteredReadings.slice(0, limit).map((row, index) => (
+          {filteredReadings.map((row, index) => (
             <HistoryRow
               key={row.id}
               primary={`${formatNumber(row.value, { maximumFractionDigits: 3 })} ${row.reading_type === "KM" ? "km" : "hrs"}`}
@@ -207,11 +210,11 @@ function MeterHistoryContent() {
             body={t("emptyMeterFilterBody")}
           />
         )}
-      {filteredReadings.length > limit && (
+      {(query.data?.length ?? 0) === limit && (
         <TextAction
           label={r("more")}
           icon="chevron-down"
-          onPress={() => setLimit((value) => value + 12)}
+          onPress={() => setLimit((value) => value + 30)}
         />
       )}
       <Sheet

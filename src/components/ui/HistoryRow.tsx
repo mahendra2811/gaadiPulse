@@ -1,10 +1,11 @@
+import { memo } from "react";
 import { Text, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { MotionPress } from "@/src/components/ui/premium";
 import { useTheme } from "@/src/lib/theme";
 import { r } from "@/src/features/records/copy";
 
-export function HistoryRow({
+function HistoryRowComponent({
   primary,
   detail,
   secondary,
@@ -43,9 +44,13 @@ export function HistoryRow({
               gap: 6,
             }}
           >
-            <Text style={{ color: c.ink, fontWeight: "700", fontSize: 19 }}>{primary}</Text>
+            <Text style={{ color: c.ink, fontWeight: "700", fontSize: 19 }}>
+              {primary}
+            </Text>
             {!!detail && (
-              <Text style={{ color: c.muted, fontWeight: "500", fontSize: 14 }}>{detail}</Text>
+              <Text style={{ color: c.muted, fontWeight: "500", fontSize: 14 }}>
+                {detail}
+              </Text>
             )}
           </View>
           <View
@@ -56,8 +61,12 @@ export function HistoryRow({
               alignItems: "center",
             }}
           >
-            <Text style={{ color: c.primary, fontSize: 12, fontWeight: "600" }}>{secondary}</Text>
-            {status && <Text style={{ color: c.muted, fontSize: 12 }}>{status}</Text>}
+            <Text style={{ color: c.primary, fontSize: 12, fontWeight: "600" }}>
+              {secondary}
+            </Text>
+            {status && (
+              <Text style={{ color: c.muted, fontSize: 12 }}>{status}</Text>
+            )}
             <Text
               style={{
                 color: c.muted,
@@ -70,13 +79,17 @@ export function HistoryRow({
             </Text>
           </View>
         </View>
-        {onPress && <Ionicons name="chevron-forward" size={20} color={c.primary} />}
+        {onPress && (
+          <Ionicons name="chevron-forward" size={20} color={c.primary} />
+        )}
       </View>
     </View>
   );
   return onPress ? (
     <MotionPress
-      label={[r("detail"), primary, detail, secondary, date, status].filter(Boolean).join(", ")}
+      label={[r("detail"), primary, detail, secondary, date, status]
+        .filter(Boolean)
+        .join(", ")}
       onPress={onPress}
     >
       {content}
@@ -85,3 +98,4 @@ export function HistoryRow({
     content
   );
 }
+export const HistoryRow = memo(HistoryRowComponent);

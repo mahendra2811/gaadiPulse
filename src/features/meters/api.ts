@@ -17,30 +17,27 @@ export async function observations(
   vehicle: string,
   development: boolean,
   history = false,
+  offset = 0,
+  limit = 30,
 ) {
   if (development)
     return observationSchema
       .array()
-      .parse(await developmentReadings(vehicle, history));
+      .parse(await developmentReadings(vehicle, history))
+      .slice(offset, offset + limit);
   const permissions = await access(vehicle, false);
   if (!permissions["meters.read"]) throw new Error("PERMISSION_DENIED");
-  let rows: z.infer<typeof observationSchema>[] = [];
-  for (let offset = 0; ; offset += 250) {
-    let request = client()
-      .from("meter_readings")
-      .select(
-        "id,reading_type,value,observed_at,entered_at,source,status,is_reset",
-      )
-      .eq("vehicle_id", vehicle)
-      .order("observed_at", { ascending: false })
-      .order("id", { ascending: false })
-      .range(offset, offset + 249);
-    if (!history) request = request.eq("status", "ACTIVE");
-    const { data, error } = await request;
-    if (error) throw new Error(error.message);
-    const page = observationSchema.array().parse(data);
-    rows = rows.concat(page);
-    if (page.length < 250) break;
-  }
-  return rows;
+  let request = client()
+    .from("meter_readings")
+    .select(
+      "id,reading_type,value,observed_at,entered_at,source,status,is_reset",
+    )
+    .eq("vehicle_id", vehicle)
+    .order("observed_at", { ascending: false })
+    .order("id", { ascending: false })
+    .range(offset, offset + Math.max(1, Math.min(limit, 100)) - 1);
+  if (!history) request = request.eq("status", "ACTIVE");
+  const { data, error } = await request;
+  if (error) throw new Error(error.message);
+  return observationSchema.array().parse(data);
 }

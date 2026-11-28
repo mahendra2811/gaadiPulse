@@ -102,7 +102,7 @@ export function Legal() {
     else router.replace(auth.session ? "/settings/security" : "/auth/login");
   };
   return (
-    <Screen title={t("legal")} compact>
+    <Screen title={t("account.legal")} compact>
       <AppText muted>
         Pre-release information. The app operator must review and publish the
         final policy and terms before distribution.
@@ -120,7 +120,7 @@ export function Legal() {
           Records require an internet connection. Open forms are held in memory;
           durable offline record drafts and caches are not provided. The app
           schedules optional local reminders on this device. It does not provide
-          GPS tracking, ads, or document photo upload.
+          GPS tracking or ads.
         </AppText>
         <AppText>
           Reports you export or share create copies outside the app. Other

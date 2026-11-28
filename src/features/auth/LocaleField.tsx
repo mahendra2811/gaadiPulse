@@ -10,7 +10,12 @@ export function LocaleField({
   onChange: (value: SupportedLocale) => void;
   disabled: boolean;
 }) {
-  const selected = localeOptions.find((option) => option.code === value);
+  const enabledLocales = new Set(["en-IN", "hi-IN"]);
+  const orderedLocales = [
+    ...localeOptions.filter((option) => enabledLocales.has(option.code)),
+    ...localeOptions.filter((option) => !enabledLocales.has(option.code)),
+  ];
+  const selected = orderedLocales.find((option) => option.code === value);
   return (
     <SearchPickerField
       label={t("language")}
@@ -18,9 +23,10 @@ export function LocaleField({
       valueLabel={
         selected ? `${selected.englishName} (${selected.nativeName})` : ""
       }
-      options={localeOptions.map(({ code, englishName, nativeName }) => ({
+      options={orderedLocales.map(({ code, englishName, nativeName }) => ({
         value: code,
         label: `${englishName} (${nativeName})`,
+        disabled: !enabledLocales.has(code),
       }))}
       onChange={(next) => onChange(next as SupportedLocale)}
       disabled={disabled}

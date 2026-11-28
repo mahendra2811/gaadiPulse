@@ -64,7 +64,6 @@
     "name": "Display name",
     "networkError": "Unable to confirm the request. Keep this form open, check your connection and retry. Nothing will upload automatically.",
     "noAccess": "You do not have permission to read meter history.",
-    "noPhoto": "Photo capture and uploads are coming later.",
     "noReadings": "No observed readings yet",
     "numericOnly": "Use numbers only, with the allowed decimal places.",
     "offline": "You are offline. Connect to the internet to load or save records. Unsaved changes remain only while this form is open.",
@@ -110,7 +109,8 @@
     "uiTime": "Time",
     "unsaved": "Leave this form?",
     "unsavedBody": "Your changes have not been saved. Leave and discard them, or keep editing.",
-    "validPastTime": "Choose the actual observation time; future readings are not allowed."
+    "validPastTime": "Choose the actual observation time; future readings are not allowed.",
+    "noPhoto": "Photo"
   },
   "onboarding": {
     "onboardingContinue": "Continue to Home",
@@ -658,7 +658,6 @@
     "multiselect": "Select multiple",
     "nextService": "Next service",
     "no": "No",
-    "noAttachment": "No file attached",
     "noData": "No records yet",
     "noVehicle": "Choose or add a vehicle first.",
     "notes": "Notes",
@@ -682,13 +681,10 @@
     "partialFillShort": "PF",
     "pastDays": "Allowed past days (0–365)",
     "payment": "Payment method",
-    "pdf": "PDF summaries are not available yet; use CSV or JSON.",
     "pendingReading": "Reading pending",
     "permission": "You do not have permission for this action.",
     "permissionHelp": "Read and create permissions are independent. Disabling read also hides amounts from database queries and exports.",
     "permissions": "Pilot permissions",
-    "photo": "Photo and file attachments are coming later. No file is attached.",
-    "photoDisabled": "Required photos are disabled until capture is implemented.",
     "policy": "Policy number",
     "position": "Position",
     "preview": "Preview as Pilot",
@@ -771,17 +767,21 @@
     "week": "This week",
     "year": "This year",
     "yes": "Yes",
-    "yesterday": "Yesterday"
+    "yesterday": "Yesterday",
+    "noAttachment": "Attachment",
+    "pdf": "PDF",
+    "photo": "Photo",
+    "photoDisabled": "Photo required"
   },
   "reminders": {
     "documentExpiry": "Expiry / renewal date",
-    "documentStorage": "Document details and linked reminders sync with your account. Photo/PDF attachments are not implemented yet; future files will stay on your phone.",
-    "linkedReminder": "Create a linked reminder",
-    "linkedReminderDue": "Choose a date before enabling the linked reminder.",
-    "linkedReminderHelp": "Optional. The details and reminder sync together. Notification delivery settings will be planned separately.",
     "nextEmiDue": "Next EMI due date",
     "recurringDate": "Monthly/yearly reminders require a due date and no meter thresholds. Use a separate reminder for meter-based service.",
-    "reminderCriterion": "Choose a due date or at least one meter threshold."
+    "reminderCriterion": "Choose a due date or at least one meter threshold.",
+    "documentStorage": "Document details",
+    "linkedReminder": "Create a linked reminder",
+    "linkedReminderDue": "Choose a date before enabling the linked reminder.",
+    "linkedReminderHelp": "Optional. The details and reminder sync together. Notification delivery settings will be planned separately."
   },
   "members": {
     "backdateLimitAnyDate": "any date",
@@ -1057,7 +1057,7 @@
     "language": "Language",
     "legal": "Privacy and terms",
     "light": "Light",
-    "localeEnglish": "English (India)",
+    "localeEnglish": "English",
     "localeHindi": "Hindi (India)",
     "localeHint": "Labels use your selected language. Missing translations fall back to English.",
     "logout": "Sign out",
@@ -1191,7 +1191,7 @@
     "helpContent056": "Confirm the email was verified, the grant is active, and the right account is signed in. Ask the Owner to check the member and permission settings.",
     "helpContent057": "Documents and reminders",
     "helpContent058": "How do I record a document?",
-    "helpContent059": "Open More → Document details, add its title and available information and expiry date, then save. This records metadata; file upload is not available.",
+    "helpContent059": "Open More → Document details, enter the document title and details, then save.",
     "helpContent060": "Are document details official proof?",
     "helpContent061": "No. Entries are reminders and personal records, not legal RC or licence documents. Use the relevant official source for proof.",
     "helpContent062": "How do I create a reminder?",
@@ -1262,5 +1262,8 @@
     "time": "Use HH:MM",
     "title": "Enter a title.",
     "twoValues": "Enter any two: amount, quantity and unit price."
-  }
+  },
+  "_locale": "en-IN",
+  "_fallback": "",
+  "_status": ""
 }

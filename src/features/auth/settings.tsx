@@ -208,6 +208,13 @@ export function Settings() {
           tone="amber"
           onPress={() => router.push("/settings/help")}
         />
+        <MenuRow
+          label={t("about")}
+          subtitle={t("appPlayPageHint")}
+          icon="information-circle"
+          tone="blue"
+          onPress={() => router.push("/settings/about")}
+        />
       </Card>
       <SignOutButton />
       {error && <ErrorState message={error} retry={() => setError("")} />}
@@ -446,7 +453,7 @@ export function About() {
       <Card style={{ padding: 16 }}>
         <AppText>{t("roleInfo")}</AppText>
         <MenuRow
-          label={t("legal")}
+          label={t("account.legal")}
           icon="document-text"
           tone="amber"
           onPress={() => router.push("/auth/legal")}

@@ -10,16 +10,16 @@ This directory contains 45 catalogs: English plus 44 non-English languages. All 
 | [ ]  | Bodo                 | brx-IN | `brx.json` | Translation pending; English fallback        |
 | [ ]  | Chinese (Simplified) | zh-CN  | `zh.json`  | Translation pending; English fallback        |
 | [ ]  | Dogri                | doi-IN | `doi.json` | Translation pending; English fallback        |
-| [ ]  | Dutch                | nl-NL  | `nl.json`  | Translation pending; English fallback        |
+| [ ]  | Dutch                | nl-NL  | `nl.json`  | In progress: 49/1,232; English fallback      |
 | [x]  | English (India)      | en-IN  | `en.json`  | Complete canonical source; grouped by domain |
 | [ ]  | Filipino             | fil-PH | `fil.json` | Translation pending; English fallback        |
-| [ ]  | French               | fr-FR  | `fr.json`  | Translation pending; English fallback        |
-| [ ]  | German               | de-DE  | `de.json`  | Translation pending; English fallback        |
+| [ ]  | French               | fr-FR  | `fr.json`  | In progress: 49/1,232; English fallback      |
+| [ ]  | German               | de-DE  | `de.json`  | In progress: 49/1,232; English fallback      |
 | [ ]  | Gujarati             | gu-IN  | `gu.json`  | Translation pending; English fallback        |
 | [ ]  | Hebrew               | he-IL  | `he.json`  | Translation pending; English fallback        |
 | [x]  | Hindi                | hi-IN  | `hi.json`  | Complete catalog; 1,232 translated strings   |
 | [ ]  | Indonesian           | id-ID  | `id.json`  | Translation pending; English fallback        |
-| [ ]  | Italian              | it-IT  | `it.json`  | Translation pending; English fallback        |
+| [ ]  | Italian              | it-IT  | `it.json`  | In progress: 49/1,232; English fallback      |
 | [ ]  | Japanese             | ja-JP  | `ja.json`  | Translation pending; English fallback        |
 | [ ]  | Korean               | ko-KR  | `ko.json`  | Translation pending; English fallback        |
 | [ ]  | Kannada              | kn-IN  | `kn.json`  | Translation pending; English fallback        |
@@ -40,7 +40,7 @@ This directory contains 45 catalogs: English plus 44 non-English languages. All 
 | [ ]  | Sanskrit             | sa-IN  | `sa.json`  | Translation pending; English fallback        |
 | [ ]  | Santali              | sat-IN | `sat.json` | Translation pending; English fallback        |
 | [ ]  | Sindhi               | sd-IN  | `sd.json`  | Translation pending; English fallback        |
-| [ ]  | Spanish              | es-ES  | `es.json`  | Translation pending; English fallback        |
+| [ ]  | Spanish              | es-ES  | `es.json`  | In progress: 49/1,232; English fallback      |
 | [ ]  | Swedish              | sv-SE  | `sv.json`  | Translation pending; English fallback        |
 | [ ]  | Swahili              | sw-KE  | `sw.json`  | Translation pending; English fallback        |
 | [ ]  | Tamil                | ta-IN  | `ta.json`  | Translation pending; English fallback        |

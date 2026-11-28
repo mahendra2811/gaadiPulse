@@ -1718,10 +1718,71 @@ export function RecordForm() {
           "LOAN",
           "OTHER",
         ])}
+      {kind === "documents" && (
+        <>
+          {field("title", r("title"))}
+          {field("reference", r("reference"))}
+          {field("due_at", t("documentExpiry"))}
+          {releaseFeatures.advancedTools &&
+            access.data?.["reminders.create"] && (
+              <Card style={{ padding: 16, gap: 10 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 10,
+                  }}
+                >
+                  <View style={{ flex: 1 }}>
+                    <AppText>{t("linkedReminder")}</AppText>
+                  </View>
+                  <Switch
+                    accessibilityLabel={t("linkedReminder")}
+                    value={metadata.create_reminder === true}
+                    onValueChange={(value) =>
+                      updateMeta("create_reminder", value)
+                    }
+                  />
+                </View>
+                {metadata.create_reminder === true && (
+                  <>
+                    <AppText muted>{t("linkedReminderHelp")}</AppText>
+                    <AppText muted>{t("linkedOwnerOnly")}</AppText>
+                  </>
+                )}
+              </Card>
+            )}
+          {field("notes", r("notes"))}
+          <AppText>{r("legal")}</AppText>
+        </>
+      )}
       {kind === "reminders" &&
         choose("category", ["SERVICE", "EMI", "INSURANCE", "OTHER"])}
-      {["documents", "reminders"].includes(kind) && field("title", r("title"))}
+      {kind === "reminders" && field("title", r("title"))}
       {kind === "reminders" && field("due_at", r("due"))}
+      {kind === "reminders" && owner && (
+        <View style={{ gap: 8 }}>
+          <AppText>{r("sharePilot")}</AppText>
+          <Switch
+            accessibilityLabel={r("sharePilot")}
+            value={values.pilot_visible}
+            onValueChange={(value) =>
+              form.setValue("pilot_visible", value, { shouldDirty: true })
+            }
+          />
+        </View>
+      )}
+      {kind === "reminders" && (
+        <>
+          {v.meter_mode !== "HOURS" &&
+            field("threshold_km", r("thresholdKm"), true)}
+          {v.meter_mode !== "KM" &&
+            field("threshold_hours", r("thresholdHours"), true)}
+          {choose("recurrence", ["NONE", "MONTHLY", "YEARLY"])}
+          {field("notes", r("notes"))}
+        </>
+      )}
       {(kind === "fuel" ||
         kind === "meters" ||
         (kind === "progress" &&
@@ -1731,301 +1792,268 @@ export function RecordForm() {
         definition.notes_visible &&
         definition.notes_required &&
         field("notes", r("notes"))}
-      <AdditionalOptions
-        compact={["fuel", "expenses"].includes(kind)}
-        open={additionalOpen}
-        onToggle={() => setAdditionalOpen((value) => !value)}
-      >
-        {kind === "fuel" && (
-          <>
-            {field(
-              "unit_price",
-              t(
-                values.unit === "KWH"
-                  ? "chargePrice"
-                  : values.unit === "KG"
-                    ? "massPrice"
-                    : "volumePrice",
-              ),
-              true,
-            )}
-            {field("station_name", r("station"))}
-          </>
-        )}
-        {kind === "expenses" && (
-          <>
-            {owner && (
-              <Card>
-                <InputField
-                  label={r("customCategory")}
-                  required
-                  maxLength={60}
-                  value={customCategory}
-                  onChangeText={setCustomCategory}
-                />
-                <AppButton
-                  secondary
-                  label={r("addCategory")}
-                  disabled={!customCategory.trim()}
-                  onPress={() => {
-                    void addExpenseCategory(v.id, customCategory, development)
-                      .then(() => {
-                        setCustomCategory("");
-                        void categories.refetch();
-                        toast(r("saved"), "success");
-                      })
-                      .catch((e) => setError(String(e)));
-                  }}
-                />
-              </Card>
-            )}
-            {values.category === "EMI" && (
-              <>
-                {field("principal", r("principal"), true)}
-                {field("interest", r("interest"), true)}
-                {metaField("lender", r("lender"))}
-              </>
-            )}
-            {values.category === "INSURANCE" && (
-              <>
-                {metaField("provider", r("provider"))}
-                {metaField("policy", r("policy"))}
-                {metaField("start_date", r("startDate"))}
-                {metaField("expiry_date", r("expiryDate"))}
-              </>
-            )}
-            {values.category === "TYRES" && (
-              <>
-                {metaField("size", r("tyreSize"))}
-                {metaField("position", r("position"))}
-              </>
-            )}
-            {["SERVICE", "REPAIR", "BATTERY"].includes(values.category) && (
-              <>
-                {metaField("components", r("components"))}
-                {releaseFeatures.advancedTools &&
-                  access.data?.["reminders.create"] && (
-                    <>
-                      {metaField("next_date", r("nextService"))}
-                      {metaField("next_km", r("thresholdKm"))}
-                      {metaField("next_hours", r("thresholdHours"))}
-                    </>
-                  )}
-              </>
-            )}
-            <AppText>{r("items")}</AppText>
-            <AppText muted>{r("itemsHelp")}</AppText>
-            {items.map((item, index) => (
-              <Card key={index}>
-                <InputField
-                  label={r("itemTitle")}
-                  required
-                  maxLength={160}
-                  value={item.title}
-                  onChangeText={(title) =>
-                    form.setValue(
-                      "items",
-                      JSON.stringify(
-                        items.map((v, i) =>
-                          i === index ? { ...v, title } : v,
-                        ),
-                      ),
-                      { shouldDirty: true },
-                    )
-                  }
-                />
-                <InputField
-                  label={r("itemAmount")}
-                  required
-                  numeric={{ scale: 2, wholeDigits: 15 }}
-                  value={
-                    itemAmounts[index] ??
-                    minorUnitsDecimal(
-                      item.amount_minor ?? item.amount_paise ?? 0,
-                      (values.currency_code ?? "INR") as CurrencyCode,
-                    )
-                  }
-                  keyboardType="decimal-pad"
-                  onChangeText={(text) => {
-                    const decimals = currencyDecimals(
-                      (values.currency_code ?? "INR") as CurrencyCode,
-                    );
-                    if (
-                      new RegExp(`^(?:\\d+(?:\\.\\d{0,${decimals}})?)?$`).test(
-                        text,
-                      )
-                    ) {
-                      setItemAmounts((amounts) => ({
-                        ...amounts,
-                        [index]: text,
-                      }));
+      {kind !== "documents" && kind !== "reminders" && (
+        <AdditionalOptions
+          compact={["fuel", "expenses"].includes(kind)}
+          open={additionalOpen}
+          onToggle={() => setAdditionalOpen((value) => !value)}
+        >
+          {kind === "fuel" && (
+            <>
+              {field(
+                "unit_price",
+                t(
+                  values.unit === "KWH"
+                    ? "chargePrice"
+                    : values.unit === "KG"
+                      ? "massPrice"
+                      : "volumePrice",
+                ),
+                true,
+              )}
+              {field("station_name", r("station"))}
+            </>
+          )}
+          {kind === "expenses" && (
+            <>
+              {owner && (
+                <Card>
+                  <InputField
+                    label={r("customCategory")}
+                    required
+                    maxLength={60}
+                    value={customCategory}
+                    onChangeText={setCustomCategory}
+                  />
+                  <AppButton
+                    secondary
+                    label={r("addCategory")}
+                    disabled={!customCategory.trim()}
+                    onPress={() => {
+                      void addExpenseCategory(v.id, customCategory, development)
+                        .then(() => {
+                          setCustomCategory("");
+                          void categories.refetch();
+                          toast(r("saved"), "success");
+                        })
+                        .catch((e) => setError(String(e)));
+                    }}
+                  />
+                </Card>
+              )}
+              {values.category === "EMI" && (
+                <>
+                  {field("principal", r("principal"), true)}
+                  {field("interest", r("interest"), true)}
+                  {metaField("lender", r("lender"))}
+                </>
+              )}
+              {values.category === "INSURANCE" && (
+                <>
+                  {metaField("provider", r("provider"))}
+                  {metaField("policy", r("policy"))}
+                  {metaField("start_date", r("startDate"))}
+                  {metaField("expiry_date", r("expiryDate"))}
+                </>
+              )}
+              {values.category === "TYRES" && (
+                <>
+                  {metaField("size", r("tyreSize"))}
+                  {metaField("position", r("position"))}
+                </>
+              )}
+              {["SERVICE", "REPAIR", "BATTERY"].includes(values.category) && (
+                <>
+                  {metaField("components", r("components"))}
+                  {releaseFeatures.advancedTools &&
+                    access.data?.["reminders.create"] && (
+                      <>
+                        {metaField("next_date", r("nextService"))}
+                        {metaField("next_km", r("thresholdKm"))}
+                        {metaField("next_hours", r("thresholdHours"))}
+                      </>
+                    )}
+                </>
+              )}
+              <AppText>{r("items")}</AppText>
+              <AppText muted>{r("itemsHelp")}</AppText>
+              {items.map((item, index) => (
+                <Card key={index}>
+                  <InputField
+                    label={r("itemTitle")}
+                    required
+                    maxLength={160}
+                    value={item.title}
+                    onChangeText={(title) =>
                       form.setValue(
                         "items",
                         JSON.stringify(
                           items.map((v, i) =>
-                            i === index
-                              ? {
-                                  ...v,
-                                  amount_minor: text
-                                    ? parseMinorUnits(
-                                        text,
-                                        (values.currency_code ??
-                                          "INR") as CurrencyCode,
-                                        true,
-                                      )
-                                    : 0,
-                                }
-                              : v,
+                            i === index ? { ...v, title } : v,
                           ),
                         ),
                         { shouldDirty: true },
-                      );
+                      )
                     }
+                  />
+                  <InputField
+                    label={r("itemAmount")}
+                    required
+                    numeric={{ scale: 2, wholeDigits: 15 }}
+                    value={
+                      itemAmounts[index] ??
+                      minorUnitsDecimal(
+                        item.amount_minor ?? item.amount_paise ?? 0,
+                        (values.currency_code ?? "INR") as CurrencyCode,
+                      )
+                    }
+                    keyboardType="decimal-pad"
+                    onChangeText={(text) => {
+                      const decimals = currencyDecimals(
+                        (values.currency_code ?? "INR") as CurrencyCode,
+                      );
+                      if (
+                        new RegExp(
+                          `^(?:\\d+(?:\\.\\d{0,${decimals}})?)?$`,
+                        ).test(text)
+                      ) {
+                        setItemAmounts((amounts) => ({
+                          ...amounts,
+                          [index]: text,
+                        }));
+                        form.setValue(
+                          "items",
+                          JSON.stringify(
+                            items.map((v, i) =>
+                              i === index
+                                ? {
+                                    ...v,
+                                    amount_minor: text
+                                      ? parseMinorUnits(
+                                          text,
+                                          (values.currency_code ??
+                                            "INR") as CurrencyCode,
+                                          true,
+                                        )
+                                      : 0,
+                                  }
+                                : v,
+                            ),
+                          ),
+                          { shouldDirty: true },
+                        );
+                      }
+                    }}
+                  />
+                  <AppButton
+                    secondary
+                    label={r("remove")}
+                    onPress={() => {
+                      setItemAmounts({});
+                      form.setValue(
+                        "items",
+                        JSON.stringify(items.filter((_, i) => i !== index)),
+                        {
+                          shouldDirty: true,
+                        },
+                      );
+                    }}
+                  />
+                </Card>
+              ))}
+              <AppButton
+                secondary
+                label={r("addItem")}
+                onPress={() =>
+                  form.setValue(
+                    "items",
+                    JSON.stringify([...items, { title: "", amount_minor: 0 }]),
+                    {
+                      shouldDirty: true,
+                    },
+                  )
+                }
+              />
+              {field("vendor", r("vendor"))}
+            </>
+          )}
+          {kind === "expenses" &&
+            values.category === "EMI" &&
+            releaseFeatures.advancedTools &&
+            access.data?.["reminders.create"] && (
+              <Card style={{ padding: 16, gap: 10 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 10,
                   }}
-                />
-                <AppButton
-                  secondary
-                  label={r("remove")}
-                  onPress={() => {
-                    setItemAmounts({});
-                    form.setValue(
-                      "items",
-                      JSON.stringify(items.filter((_, i) => i !== index)),
-                      {
-                        shouldDirty: true,
-                      },
-                    );
-                  }}
-                />
+                >
+                  <View style={{ flex: 1 }}>
+                    <AppText>{t("linkedReminder")}</AppText>
+                  </View>
+                  <Switch
+                    accessibilityLabel={t("linkedReminder")}
+                    value={metadata.create_reminder === true}
+                    onValueChange={(value) =>
+                      updateMeta("create_reminder", value)
+                    }
+                  />
+                </View>
+                {metadata.create_reminder === true && (
+                  <>
+                    <AppText muted>{t("linkedReminderHelp")}</AppText>
+                    <AppText muted>{t("linkedOwnerOnly")}</AppText>
+                    {kind === "expenses" && (
+                      <>
+                        {metaField("reminder_due_at", t("nextEmiDue"))}
+                        <FilterChips
+                          items={(["NONE", "MONTHLY", "YEARLY"] as const).map(
+                            (id) => ({
+                              id,
+                              label: r(id),
+                            }),
+                          )}
+                          value={String(
+                            metadata.reminder_recurrence ?? "MONTHLY",
+                          )}
+                          onChange={(value) =>
+                            updateMeta("reminder_recurrence", value)
+                          }
+                        />
+                      </>
+                    )}
+                  </>
+                )}
               </Card>
-            ))}
-            <AppButton
-              secondary
-              label={r("addItem")}
-              onPress={() =>
+            )}
+          {["fuel", "expenses"].includes(kind) &&
+            choose("payment_method", ["CASH", "UPI", "CARD", "BANK", "OTHER"])}
+          {(kind === "expenses" ||
+            (kind === "progress" &&
+              !definition.km_required &&
+              !definition.hours_required)) &&
+            readingEditor}
+          {(kind !== "progress" ||
+            (definition.notes_visible && !definition.notes_required)) &&
+            field("notes", r("notes"))}
+          {kind === "progress" && (
+            <DynamicFields
+              fields={definition.fields.filter((field) => !field.required)}
+              answers={values.answers}
+              owner={owner}
+              onChange={(field, value) =>
                 form.setValue(
-                  "items",
-                  JSON.stringify([...items, { title: "", amount_minor: 0 }]),
-                  {
-                    shouldDirty: true,
-                  },
+                  "answers",
+                  { ...values.answers, [field]: value },
+                  { shouldDirty: true },
                 )
               }
             />
-            {field("vendor", r("vendor"))}
-          </>
-        )}
-        {kind === "documents" && (
-          <>
-            {field("reference", r("reference"))}
-            {field("due_at", t("documentExpiry"))}
-          </>
-        )}
-        {(kind === "documents" ||
-          (kind === "expenses" && values.category === "EMI")) &&
-          releaseFeatures.advancedTools &&
-          access.data?.["reminders.create"] && (
-            <Card style={{ padding: 16, gap: 10 }}>
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 10,
-                }}
-              >
-                <View style={{ flex: 1 }}>
-                  <AppText>{t("linkedReminder")}</AppText>
-                </View>
-                <Switch
-                  accessibilityLabel={t("linkedReminder")}
-                  value={metadata.create_reminder === true}
-                  onValueChange={(value) =>
-                    updateMeta("create_reminder", value)
-                  }
-                />
-              </View>
-              {metadata.create_reminder === true && (
-                <>
-                  <AppText muted>{t("linkedReminderHelp")}</AppText>
-                  <AppText muted>{t("linkedOwnerOnly")}</AppText>
-                  {kind === "expenses" && (
-                    <>
-                      {metaField("reminder_due_at", t("nextEmiDue"))}
-                      <FilterChips
-                        items={(["NONE", "MONTHLY", "YEARLY"] as const).map(
-                          (id) => ({
-                            id,
-                            label: r(id),
-                          }),
-                        )}
-                        value={String(
-                          metadata.reminder_recurrence ?? "MONTHLY",
-                        )}
-                        onChange={(value) =>
-                          updateMeta("reminder_recurrence", value)
-                        }
-                      />
-                    </>
-                  )}
-                </>
-              )}
-            </Card>
           )}
-        {kind === "reminders" && owner && (
-          <View style={{ gap: 8 }}>
-            <AppText>{r("sharePilot")}</AppText>
-            <Switch
-              accessibilityLabel={r("sharePilot")}
-              value={values.pilot_visible}
-              onValueChange={(value) =>
-                form.setValue("pilot_visible", value, { shouldDirty: true })
-              }
-            />
-          </View>
-        )}
-        {kind === "reminders" && (
-          <>
-            {v.meter_mode !== "HOURS" &&
-              field("threshold_km", r("thresholdKm"), true)}
-            {v.meter_mode !== "KM" &&
-              field("threshold_hours", r("thresholdHours"), true)}
-            {choose("recurrence", ["NONE", "MONTHLY", "YEARLY"])}
-          </>
-        )}
-        {["fuel", "expenses"].includes(kind) &&
-          choose("payment_method", ["CASH", "UPI", "CARD", "BANK", "OTHER"])}
-        {(kind === "expenses" ||
-          (kind === "progress" &&
-            !definition.km_required &&
-            !definition.hours_required)) &&
-          readingEditor}
-        {(kind !== "progress" ||
-          (definition.notes_visible && !definition.notes_required)) &&
-          field("notes", r("notes"))}
-        {kind === "progress" && (
-          <DynamicFields
-            fields={definition.fields.filter((field) => !field.required)}
-            answers={values.answers}
-            owner={owner}
-            onChange={(field, value) =>
-              form.setValue(
-                "answers",
-                { ...values.answers, [field]: value },
-                { shouldDirty: true },
-              )
-            }
-          />
-        )}
-        <AppText muted>{r("photo")}</AppText>
-        {kind === "documents" && (
-          <>
-            <AppText>{r("legal")}</AppText>
-            <AppText muted>{t("documentStorage")}</AppText>
-          </>
-        )}
-      </AdditionalOptions>
-      {kind === "documents" && <AppText muted>{r("noAttachment")}</AppText>}
+        </AdditionalOptions>
+      )}
       {kind === "progress" && forms.error && (
         <ErrorState
           message={forms.error.message}
@@ -2601,7 +2629,6 @@ export function RecordDetail({
           {kind === "documents" && (
             <>
               <AppText>{r("legal")}</AppText>
-              <AppText>{r("noAttachment")}</AppText>
               <AppButton
                 secondary
                 label={r("official")}

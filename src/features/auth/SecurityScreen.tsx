@@ -27,9 +27,7 @@ export default function SecurityScreen() {
       if (permission === "granted")
         toast(t("notificationBrowserEnabled"), "success");
       else if (permission === "denied")
-        setError(
-          t("notificationBrowserBlocked"),
-        );
+        setError(t("notificationBrowserBlocked"));
       return;
     }
     if (typeof Linking.openSettings !== "function") {
@@ -40,14 +38,10 @@ export default function SecurityScreen() {
   };
   return (
     <Screen title={r("security")} compact>
-      <AppText muted>
-        {t("securityDescription")}
-      </AppText>
+      <AppText muted>{t("securityDescription")}</AppText>
       <Card style={{ padding: 16 }}>
         <SectionHeading title={t("securityAccountTitle")} />
-        <AppText muted>
-          {t("securityAccountBody")}
-        </AppText>
+        <AppText muted>{t("securityAccountBody")}</AppText>
         {!auth.development && !!auth.session?.user.email && (
           <MenuRow
             label={t("changePassword")}
@@ -67,11 +61,9 @@ export default function SecurityScreen() {
       </Card>
       <Card style={{ padding: 16 }}>
         <SectionHeading title={t("securityDataTitle")} />
-        <AppText muted>
-          {t("securityDataBody")}
-        </AppText>
+        <AppText muted>{t("securityDataBody")}</AppText>
         <MenuRow
-          label={t("legal")}
+          label={t("account.legal")}
           icon="document-text"
           tone="violet"
           onPress={() => router.push("/auth/legal")}

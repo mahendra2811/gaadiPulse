@@ -10,6 +10,7 @@ export type SearchPickerOption = {
   value: string;
   label: string;
   detail?: string;
+  disabled?: boolean;
 };
 
 export function SearchPickerField({
@@ -140,7 +141,11 @@ export function SearchPickerField({
               <Pressable
                 key={option.value}
                 accessibilityRole="radio"
-                accessibilityState={{ checked: selected }}
+                accessibilityState={{
+                  checked: selected,
+                  disabled: disabled || option.disabled === true,
+                }}
+                disabled={disabled || option.disabled === true}
                 onPress={() => {
                   onChange(option.value);
                   setOpen(false);
@@ -155,11 +160,16 @@ export function SearchPickerField({
                   backgroundColor: selected
                     ? colors.background
                     : colors.surface,
+                  opacity: option.disabled ? 0.45 : 1,
                 }}
               >
                 <View style={{ flex: 1 }}>
                   <Text
-                    style={{ color: colors.ink, fontSize: 16, lineHeight: 26 }}
+                    style={{
+                      color: option.disabled ? colors.muted : colors.ink,
+                      fontSize: 16,
+                      lineHeight: 26,
+                    }}
                   >
                     {option.label}
                   </Text>

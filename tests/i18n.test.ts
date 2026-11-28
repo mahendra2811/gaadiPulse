@@ -47,6 +47,13 @@ describe("locale registry and fallback", () => {
     expect(t("language")).toBe("Language");
   });
 
+  it("uses the namespaced privacy link instead of the document disclaimer", () => {
+    expect(t("account.legal")).toBe("Privacy and terms");
+    expect(t("records.legal")).toBe(
+      "Entered details are not an official RC or DL. Use official DigiLocker or mParivahan for authoritative documents.",
+    );
+  });
+
   it("formats numbers and dates with the selected locale and timezone", () => {
     setLocale("hi-IN");
     const date = new Date("2026-01-02T12:00:00.000Z");

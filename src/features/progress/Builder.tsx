@@ -336,7 +336,6 @@ function BuilderEditor() {
               {toggle("notes_visible", r("hideNotes"))}
               {definition.notes_visible &&
                 toggle("notes_required", r("notesRequired"))}
-              <AppText muted>{r("photoDisabled")}</AppText>
               {definition.fields.map((field, index) => (
                 <Card key={field.id} style={{ padding: 16, gap: 8 }}>
                   <SectionHeading

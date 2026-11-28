@@ -12,7 +12,7 @@
 
 ## Translation coverage and remaining work
 
-`npm run i18n:check` reports 1,232 English keys. Hindi has 1,232 populated strings. The other 43 non-English catalogs currently have 0 populated strings; they are selectable and fall back to English. In particular, the first five non-English options (Arabic, Assamese, Bengali, Bodo, and Simplified Chinese) still need translation and linguistic review. The README checkboxes represent completion, not selectability. Do not mark a catalog complete until translated and reviewed. The strict completion command intentionally fails while any locale remains partial.
+`npm run i18n:check` reports 1,232 English keys. Hindi has 1,232 populated strings. Spanish, French, German, Italian, and Dutch currently have 49 populated strings each and use English fallback for the remainder. The other 38 non-English catalogs currently have 0 populated strings. In particular, the first five non-English options (Arabic, Assamese, Bengali, Bodo, and Simplified Chinese) still need translation and linguistic review. The README checkboxes represent completion, not selectability. Do not mark a catalog complete until translated and reviewed. The strict completion command intentionally fails while any locale remains partial.
 
 RTL direction is represented in registry metadata and exposed by `getLocaleDirection()`. RTL languages are selectable, but native/web RTL layout is not implemented or device-verified. Complete that wiring and device QA before treating an RTL locale as release-ready.
 

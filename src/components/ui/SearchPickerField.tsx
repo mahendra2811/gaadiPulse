@@ -75,6 +75,7 @@ export function SearchPickerField({
             flex: 1,
             color: valueLabel ? colors.ink : colors.muted,
             fontSize: 16,
+            lineHeight: 26,
           }}
         >
           {valueLabel || t("selectOption")}
@@ -157,7 +158,9 @@ export function SearchPickerField({
                 }}
               >
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: colors.ink, fontSize: 15 }}>
+                  <Text
+                    style={{ color: colors.ink, fontSize: 16, lineHeight: 26 }}
+                  >
                     {option.label}
                   </Text>
                   {!!option.detail && (

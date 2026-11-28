@@ -363,7 +363,8 @@
     "vehicleFullName": "",
     "vehicleIdentityHelp": "",
     "vehicleNameConfirmation": "",
-    "vehicleNotFound": ""
+    "vehicleNotFound": "",
+    "subtypeOptionalPhotoHint": ""
   },
   "fuel": {
     "BOTH": "",
@@ -1095,7 +1096,9 @@
     "updateAvailableTitle": "",
     "updateCheckFailed": "",
     "updateLater": "",
-    "yourData": ""
+    "yourData": "",
+    "languageSearch": "",
+    "languageNoResults": ""
   },
   "currency": {
     "currency": "",

@@ -284,8 +284,16 @@ Keep all app-authored English copy in `src/lib/i18n/locales/en.json`. `src/lib/i
 
 ## Group locale catalogs by app domain — 2026-11-28
 
-Keep translation JSON structured with the same domain sections and keys across locales. The English source has 1,229 leaf strings across app, common, onboarding, authentication, garage, fuel, entries, records, reminders, members, reports, account, currency, help, banners and validation. Runtime lookup supports typed `section.key` paths and existing flat key call sites. Empty or missing locale values always resolve to the matching English value. Untranslated locales stay out of runtime selection.
+Keep translation JSON structured with the same domain sections and keys across locales. The English source has 1,232 leaf strings across app, common, onboarding, authentication, garage, fuel, entries, records, reminders, members, reports, account, currency, help, banners and validation. Runtime lookup supports typed `section.key` paths and existing flat key call sites. Empty or missing locale values always resolve to the matching English value. All registry locales are selectable, including locales with unfinished catalogs.
 
 ## Locale registry and incomplete-catalog behavior — 2026-11-28
 
-`src/lib/i18n/locales/registry.json` is the sole registry for app-enabled locale codes and catalog metadata. English remains the canonical catalog and runtime fallback. A partial locale may remain selectable only when its Settings copy explicitly explains English fallback and the registry records `partial`; it must not be represented as complete or reviewed. Unregistered locale JSON files remain drafts and do not enter profile validation, the Settings picker, or Expo's native localization allowlist. UI date, number, and money formatters follow the selected locale; persisted timestamps and integer minor-unit amounts remain unchanged. RTL locales require native/web direction wiring and device verification before registration.
+`src/lib/i18n/locales/registry.json` is the sole registry for app-enabled locale codes and catalog metadata. English remains the canonical catalog and runtime fallback. A partial locale may remain selectable only when the user sees its English-fallback status and the registry records `partial`; it must not be represented as complete or reviewed. UI date, number, and money formatters follow the selected locale; persisted timestamps and integer minor-unit amounts remain unchanged. RTL locales require native/web direction wiring and device verification before release.
+
+### All 45 locale choices — 2026-11-28
+
+Expose the complete current 45-language list in onboarding and Settings from the shared locale registry and shared `LocaleField`. Use `en.json` as the source of truth; a selected locale uses its own non-empty translated values and falls back to the matching English value for blank/missing values. The additive supported-locales migration enables profile persistence. Selection does not imply translation completion: Hindi is complete, while Arabic, Assamese, Bengali, Bodo, Simplified Chinese, and the remaining 38 non-English catalogs are still pending and must remain marked partial in the README/registry. RTL metadata does not itself implement RTL layout.
+
+## 2026-11-28 — Meter history refresh after save
+
+The meter history screen and record form now share the `[userId, vehicleId, "observations"]` TanStack Query key. After a successful new meter-reading save, the form invalidates and awaits active observation-query refresh before showing success and navigating back, so the latest saved reading appears immediately in history. Other record saves retain background invalidation behavior. No schema or user data changes.

@@ -1,58 +1,58 @@
 # Locale catalogs
 
-This directory contains 45 catalog files: the English source and 44 locale drafts. Only the locales in `registry.json` are enabled in the app. English is complete; Hindi is runtime-enabled with explicitly partial coverage and English fallback. The other 43 locale drafts are not selectable and remain untranslated.
+This directory contains 45 catalogs: English plus 44 non-English languages. All 45 are available in onboarding and Settings. `en.json` is the source of truth. A locale whose catalog is unfinished remains selectable but displays English for missing or blank translations until that language is completed. The checkboxes below track verified catalog completion, not whether a language can be selected.
 
-| Language             | Locale | File       | Status                                       |
-| -------------------- | ------ | ---------- | -------------------------------------------- |
-| Arabic               | ar-SA  | `ar.json`  | Schema aligned; translation pending          |
-| Assamese             | as-IN  | `as.json`  | Schema aligned; translation pending          |
-| Bengali              | bn-IN  | `bn.json`  | Schema aligned; translation pending          |
-| Bodo                 | brx-IN | `brx.json` | Schema aligned; translation pending          |
-| Chinese (Simplified) | zh-CN  | `zh.json`  | Schema aligned; translation pending          |
-| Dogri                | doi-IN | `doi.json` | Schema aligned; translation pending          |
-| Dutch                | nl-NL  | `nl.json`  | Schema aligned; translation pending          |
-| English (India)      | en-IN  | `en.json`  | Complete canonical source; grouped by domain |
-| Filipino             | fil-PH | `fil.json` | Schema aligned; translation pending          |
-| French               | fr-FR  | `fr.json`  | Schema aligned; translation pending          |
-| German               | de-DE  | `de.json`  | Schema aligned; translation pending          |
-| Gujarati             | gu-IN  | `gu.json`  | Schema aligned; translation pending          |
-| Hebrew               | he-IL  | `he.json`  | Schema aligned; translation pending          |
-| Hindi                | hi-IN  | `hi.json`  | Partial; blank entries fall back to English  |
-| Indonesian           | id-ID  | `id.json`  | Schema aligned; translation pending          |
-| Italian              | it-IT  | `it.json`  | Schema aligned; translation pending          |
-| Japanese             | ja-JP  | `ja.json`  | Schema aligned; translation pending          |
-| Korean               | ko-KR  | `ko.json`  | Schema aligned; translation pending          |
-| Kannada              | kn-IN  | `kn.json`  | Schema aligned; translation pending          |
-| Kashmiri             | ks-IN  | `ks.json`  | Schema aligned; translation pending          |
-| Konkani              | kok-IN | `kok.json` | Schema aligned; translation pending          |
-| Maithili             | mai-IN | `mai.json` | Schema aligned; translation pending          |
-| Malayalam            | ml-IN  | `ml.json`  | Schema aligned; translation pending          |
-| Manipuri (Meitei)    | mni-IN | `mni.json` | Schema aligned; translation pending          |
-| Marathi              | mr-IN  | `mr.json`  | Schema aligned; translation pending          |
-| Malay                | ms-MY  | `ms.json`  | Schema aligned; translation pending          |
-| Nepali               | ne-NP  | `ne.json`  | Schema aligned; translation pending          |
-| Odia                 | or-IN  | `or.json`  | Schema aligned; translation pending          |
-| Persian              | fa-IR  | `fa.json`  | Schema aligned; translation pending          |
-| Polish               | pl-PL  | `pl.json`  | Schema aligned; translation pending          |
-| Portuguese (Brazil)  | pt-BR  | `pt.json`  | Schema aligned; translation pending          |
-| Punjabi              | pa-IN  | `pa.json`  | Schema aligned; translation pending          |
-| Russian              | ru-RU  | `ru.json`  | Schema aligned; translation pending          |
-| Sanskrit             | sa-IN  | `sa.json`  | Schema aligned; translation pending          |
-| Santali              | sat-IN | `sat.json` | Schema aligned; translation pending          |
-| Sindhi               | sd-IN  | `sd.json`  | Schema aligned; translation pending          |
-| Spanish              | es-ES  | `es.json`  | Schema aligned; translation pending          |
-| Swedish              | sv-SE  | `sv.json`  | Schema aligned; translation pending          |
-| Swahili              | sw-KE  | `sw.json`  | Schema aligned; translation pending          |
-| Tamil                | ta-IN  | `ta.json`  | Schema aligned; translation pending          |
-| Telugu               | te-IN  | `te.json`  | Schema aligned; translation pending          |
-| Thai                 | th-TH  | `th.json`  | Schema aligned; translation pending          |
-| Turkish              | tr-TR  | `tr.json`  | Schema aligned; translation pending          |
-| Urdu                 | ur-PK  | `ur.json`  | Schema aligned; translation pending          |
-| Vietnamese           | vi-VN  | `vi.json`  | Schema aligned; translation pending          |
+| Done | Language             | Locale | File       | Status                                       |
+| ---- | -------------------- | ------ | ---------- | -------------------------------------------- |
+| [ ]  | Arabic               | ar-SA  | `ar.json`  | Translation pending; English fallback        |
+| [ ]  | Assamese             | as-IN  | `as.json`  | Translation pending; English fallback        |
+| [ ]  | Bengali              | bn-IN  | `bn.json`  | Translation pending; English fallback        |
+| [ ]  | Bodo                 | brx-IN | `brx.json` | Translation pending; English fallback        |
+| [ ]  | Chinese (Simplified) | zh-CN  | `zh.json`  | Translation pending; English fallback        |
+| [ ]  | Dogri                | doi-IN | `doi.json` | Translation pending; English fallback        |
+| [ ]  | Dutch                | nl-NL  | `nl.json`  | Translation pending; English fallback        |
+| [x]  | English (India)      | en-IN  | `en.json`  | Complete canonical source; grouped by domain |
+| [ ]  | Filipino             | fil-PH | `fil.json` | Translation pending; English fallback        |
+| [ ]  | French               | fr-FR  | `fr.json`  | Translation pending; English fallback        |
+| [ ]  | German               | de-DE  | `de.json`  | Translation pending; English fallback        |
+| [ ]  | Gujarati             | gu-IN  | `gu.json`  | Translation pending; English fallback        |
+| [ ]  | Hebrew               | he-IL  | `he.json`  | Translation pending; English fallback        |
+| [x]  | Hindi                | hi-IN  | `hi.json`  | Complete catalog; 1,232 translated strings   |
+| [ ]  | Indonesian           | id-ID  | `id.json`  | Translation pending; English fallback        |
+| [ ]  | Italian              | it-IT  | `it.json`  | Translation pending; English fallback        |
+| [ ]  | Japanese             | ja-JP  | `ja.json`  | Translation pending; English fallback        |
+| [ ]  | Korean               | ko-KR  | `ko.json`  | Translation pending; English fallback        |
+| [ ]  | Kannada              | kn-IN  | `kn.json`  | Translation pending; English fallback        |
+| [ ]  | Kashmiri             | ks-IN  | `ks.json`  | Translation pending; English fallback        |
+| [ ]  | Konkani              | kok-IN | `kok.json` | Translation pending; English fallback        |
+| [ ]  | Maithili             | mai-IN | `mai.json` | Translation pending; English fallback        |
+| [ ]  | Malayalam            | ml-IN  | `ml.json`  | Translation pending; English fallback        |
+| [ ]  | Manipuri (Meitei)    | mni-IN | `mni.json` | Translation pending; English fallback        |
+| [ ]  | Marathi              | mr-IN  | `mr.json`  | Translation pending; English fallback        |
+| [ ]  | Malay                | ms-MY  | `ms.json`  | Translation pending; English fallback        |
+| [ ]  | Nepali               | ne-NP  | `ne.json`  | Translation pending; English fallback        |
+| [ ]  | Odia                 | or-IN  | `or.json`  | Translation pending; English fallback        |
+| [ ]  | Persian              | fa-IR  | `fa.json`  | Translation pending; English fallback        |
+| [ ]  | Polish               | pl-PL  | `pl.json`  | Translation pending; English fallback        |
+| [ ]  | Portuguese (Brazil)  | pt-BR  | `pt.json`  | Translation pending; English fallback        |
+| [ ]  | Punjabi              | pa-IN  | `pa.json`  | Translation pending; English fallback        |
+| [ ]  | Russian              | ru-RU  | `ru.json`  | Translation pending; English fallback        |
+| [ ]  | Sanskrit             | sa-IN  | `sa.json`  | Translation pending; English fallback        |
+| [ ]  | Santali              | sat-IN | `sat.json` | Translation pending; English fallback        |
+| [ ]  | Sindhi               | sd-IN  | `sd.json`  | Translation pending; English fallback        |
+| [ ]  | Spanish              | es-ES  | `es.json`  | Translation pending; English fallback        |
+| [ ]  | Swedish              | sv-SE  | `sv.json`  | Translation pending; English fallback        |
+| [ ]  | Swahili              | sw-KE  | `sw.json`  | Translation pending; English fallback        |
+| [ ]  | Tamil                | ta-IN  | `ta.json`  | Translation pending; English fallback        |
+| [ ]  | Telugu               | te-IN  | `te.json`  | Translation pending; English fallback        |
+| [ ]  | Thai                 | th-TH  | `th.json`  | Translation pending; English fallback        |
+| [ ]  | Turkish              | tr-TR  | `tr.json`  | Translation pending; English fallback        |
+| [ ]  | Urdu                 | ur-PK  | `ur.json`  | Translation pending; English fallback        |
+| [ ]  | Vietnamese           | vi-VN  | `vi.json`  | Translation pending; English fallback        |
 
-`en.json` is the only source catalog for app-authored English copy. `registry.json` is the authoritative app locale registry; `../i18n.ts` uses it for supported locale codes and `LocaleField` uses it for the settings picker. Profile validation derives its accepted locale values from the same registry. English (`en-IN`) is the default and fallback. Hindi (`hi-IN`) remains selectable as a partial translation; a blank or missing value resolves to English. Its picker hint tells users that some copy remains English. The other 43 locale files are drafts only and are not registered or selectable.
+`en.json` is the only source catalog for app-authored English copy. `registry.json` is the authoritative registry for all 45 options; `../i18n.ts`, profile validation, `LocaleField`, Expo's native locale list, and the additive supported-locales migration use those codes. English (`en-IN`) is the default and fallback. Any blank or missing value resolves to English, including while a locale is being translated. The onboarding and Settings picker is compact and searchable; each option shows its English language name followed by the native name in parentheses.
 
-`registry.json` records each enabled locale's catalog file, translated display-name key, native name, direction, and translation status (`complete` or `partial`). Do not set a locale to `complete` until its catalog is fully translated and linguistically reviewed. Use `npm run i18n:check` for structural/placeholder validation and coverage reporting; `npm run i18n:check:complete` fails while any registered locale is partial.
+`registry.json` records each locale's catalog file, English and native names, direction, and translation status (`complete` or `partial`). Do not set a locale to `complete` until its catalog is fully translated and checked. Use `npm run i18n:check` for structural/placeholder validation and coverage reporting; `npm run i18n:check:complete` fails while any locale is partial.
 
 ## Localization quality rules
 
@@ -94,20 +94,25 @@ English fallback; unregistered drafts are never loaded by the app.
 1. Copy the English key shape into a new locale JSON and set root metadata:
    `_locale`, `_fallback: "en-IN"`, and an accurate `_status`. Metadata is
    ignored as translation content.
-2. Import the JSON file in `../i18n.ts` and add it to the `importedCatalogs`
-   file map. Translate and validate the catalog. Add it to `registry.json` only
-   when it is appropriate to expose in Settings. Set the display `labelKey`, native
-   name, and correct `ltr`/`rtl` direction.
-3. Add the language to Expo's `supportedLocales` in `app.config.ts`. Update the
-   profile locale allowlist on the backend with an additive migration, and
-   keep old profile values safely mapped if a locale is retired.
-4. Disabling a locale means removing it from the registry and native locale
+2. Add its static JSON import to `catalogs.ts` and an entry to `registry.json`
+   with its native name, locale code, catalog filename, direction, and
+   `partial` status. Every registered locale appears in onboarding and Settings,
+   even while translation is in progress; blank strings use English fallback.
+3. Translate every English key, preserve interpolation placeholders, and run
+   `npm run i18n:check`. Mark the registry entry `complete` only after the
+   catalog is fully translated and reviewed. Once it is registered, completed
+   translations work through the existing runtime without additional UI wiring.
+4. Add the language to Expo's `supportedLocales` in `app.config.ts`. Update the
+   profile locale allowlist on the backend with an additive migration, and keep
+   old profile values safely mapped if a locale is retired.
+5. Disabling a locale means removing it from the registry and native locale
    config and adding a migration to deactivate its server allowlist entry. Do
    not delete historical catalogs or rewrite saved profile values casually.
-5. RTL enablement also requires applying native/web direction at startup and
-   checking screens, navigation, icons, date pickers, and mixed-direction
-   identifiers on a device. The current enabled locales are both LTR; merely
-   setting `direction: "rtl"` is not sufficient to ship an RTL locale.
+6. RTL locales are listed and selectable, but app-level RTL layout is not
+   implemented yet. Before treating Arabic, Hebrew, Persian, Kashmiri, Sindhi,
+   or Urdu as release-ready, apply native/web direction at startup and check
+   screens, navigation, icons, date pickers, and mixed-direction identifiers
+   on devices. Registry direction metadata alone does not flip the app layout.
 
 ### Add or remove a domain section
 

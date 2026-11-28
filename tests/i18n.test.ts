@@ -17,18 +17,28 @@ describe("locale registry and fallback", () => {
     expect(localeOptions.map((option) => option.code)).toEqual(
       supportedLocales,
     );
-    expect(localeOptions.map((option) => option.code)).toEqual([
-      "en-IN",
-      "hi-IN",
-    ]);
+    expect(supportedLocales).toHaveLength(45);
+    expect(localeOptions.map((option) => option.nativeName)).toContain(
+      "简体中文",
+    );
+    expect(localeOptions.map((option) => option.englishName)).toContain(
+      "Chinese (Simplified)",
+    );
+    expect(t("languageSearch")).toBe("Search languages");
+    setLocale("ar-SA");
+    expect(t("languageNoResults")).toBe("No languages match your search.");
+    expect(localeOptions.map((option) => option.code)).toContain("brx-IN");
   });
 
-  it("uses a translated Hindi string and falls back for a blank Hindi entry", () => {
+  it("uses a translated Hindi string and falls back for an unfinished locale", () => {
     setLocale("hi-IN");
     expect(t("language")).toBe("भाषा");
     expect(t("deletionContactBody")).toBe(
-      "For deletion or privacy questions, contact the app operator. Do not send your password or verification code.",
+      "खाता हटाने या गोपनीयता से जुड़े सवालों के लिए ऐप ऑपरेटर से संपर्क करें। अपना पासवर्ड या सत्यापन कोड न भेजें।",
     );
+    setLocale("ar-SA");
+    expect(t("language")).toBe("Language");
+    expect(getLocaleDirection()).toBe("rtl");
   });
 
   it("falls back to English for an unknown locale and unknown key", () => {

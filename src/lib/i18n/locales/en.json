@@ -272,6 +272,7 @@
     "subtype": "Subtype",
     "subtypeCommon": "Common types",
     "subtypeIllustration": "Illustration only; model and energy type are entered separately.",
+    "subtypeOptionalPhotoHint": "Choose your vehicle above. Select an optional type below to preview its picture and name; you can continue without choosing one.",
     "subtypeManual": "Other vehicle type",
     "subtypeNoMatch": "No matching vehicle types.",
     "subtypeRequired": "Choose a vehicle type to continue.",
@@ -1092,7 +1093,9 @@
     "updateAvailableTitle": "GaadiPulse update available",
     "updateCheckFailed": "Could not check for updates. Open Google Play to check manually.",
     "updateLater": "Remind me later",
-    "yourData": "Your data"
+    "yourData": "Your data",
+    "languageSearch": "Search languages",
+    "languageNoResults": "No languages match your search."
   },
   "currency": {
     "currency": "Currency",

@@ -111,16 +111,10 @@ for (const [code, metadata] of Object.entries(registry)) {
     failures.push(`registry: ${code} has no catalog metadata`);
   if (!catalogs.includes(metadata.file))
     failures.push(`registry: ${code} catalog ${metadata.file} does not exist`);
-  if (
-    ![...source.keys()].some(
-      (key) =>
-        key === metadata.labelKey || key.endsWith(`.${metadata.labelKey}`),
-    )
-  ) {
-    failures.push(
-      `registry: ${code} label key ${metadata.labelKey} is not in en.json`,
-    );
-  }
+  if (typeof metadata.nativeName !== "string" || !metadata.nativeName.trim())
+    failures.push(`registry: ${code} has no native display name`);
+  if (typeof metadata.englishName !== "string" || !metadata.englishName.trim())
+    failures.push(`registry: ${code} has no English display name`);
   if (!["ltr", "rtl"].includes(metadata.direction))
     failures.push(`registry: ${code} has invalid direction`);
   if (!["complete", "partial"].includes(metadata.status))

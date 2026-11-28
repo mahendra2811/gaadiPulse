@@ -1,16 +1,317 @@
 {
   "en-IN": {
     "file": "en.json",
-    "labelKey": "localeEnglish",
-    "nativeName": "English (India)",
+    "nativeName": "English",
     "direction": "ltr",
-    "status": "complete"
+    "status": "complete",
+    "englishName": "English (India)"
+  },
+  "ar-SA": {
+    "file": "ar.json",
+    "nativeName": "العربية",
+    "direction": "rtl",
+    "status": "partial",
+    "englishName": "Arabic"
+  },
+  "as-IN": {
+    "file": "as.json",
+    "nativeName": "অসমীয়া",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Assamese"
+  },
+  "bn-IN": {
+    "file": "bn.json",
+    "nativeName": "বাংলা",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Bengali"
+  },
+  "brx-IN": {
+    "file": "brx.json",
+    "nativeName": "बर’",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Bodo"
+  },
+  "de-DE": {
+    "file": "de.json",
+    "nativeName": "Deutsch",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "German"
+  },
+  "doi-IN": {
+    "file": "doi.json",
+    "nativeName": "डोगरी",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Dogri"
+  },
+  "es-ES": {
+    "file": "es.json",
+    "nativeName": "Español",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Spanish"
+  },
+  "fa-IR": {
+    "file": "fa.json",
+    "nativeName": "فارسی",
+    "direction": "rtl",
+    "status": "partial",
+    "englishName": "Persian"
+  },
+  "fil-PH": {
+    "file": "fil.json",
+    "nativeName": "Filipino",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Filipino"
+  },
+  "fr-FR": {
+    "file": "fr.json",
+    "nativeName": "Français",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "French"
+  },
+  "gu-IN": {
+    "file": "gu.json",
+    "nativeName": "ગુજરાતી",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Gujarati"
+  },
+  "he-IL": {
+    "file": "he.json",
+    "nativeName": "עברית",
+    "direction": "rtl",
+    "status": "partial",
+    "englishName": "Hebrew"
   },
   "hi-IN": {
     "file": "hi.json",
-    "labelKey": "localeHindi",
-    "nativeName": "हिन्दी (भारत)",
+    "nativeName": "हिन्दी",
     "direction": "ltr",
-    "status": "partial"
+    "status": "complete",
+    "englishName": "Hindi"
+  },
+  "id-ID": {
+    "file": "id.json",
+    "nativeName": "Bahasa Indonesia",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Indonesian"
+  },
+  "it-IT": {
+    "file": "it.json",
+    "nativeName": "Italiano",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Italian"
+  },
+  "ja-JP": {
+    "file": "ja.json",
+    "nativeName": "日本語",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Japanese"
+  },
+  "kn-IN": {
+    "file": "kn.json",
+    "nativeName": "ಕನ್ನಡ",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Kannada"
+  },
+  "ko-KR": {
+    "file": "ko.json",
+    "nativeName": "한국어",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Korean"
+  },
+  "kok-IN": {
+    "file": "kok.json",
+    "nativeName": "कोंकणी",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Konkani"
+  },
+  "ks-IN": {
+    "file": "ks.json",
+    "nativeName": "कॉशुर",
+    "direction": "rtl",
+    "status": "partial",
+    "englishName": "Kashmiri"
+  },
+  "mai-IN": {
+    "file": "mai.json",
+    "nativeName": "मैथिली",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Maithili"
+  },
+  "ml-IN": {
+    "file": "ml.json",
+    "nativeName": "മലയാളം",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Malayalam"
+  },
+  "mni-IN": {
+    "file": "mni.json",
+    "nativeName": "ꯃꯩꯇꯩꯂꯣꯟ",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Manipuri (Meitei)"
+  },
+  "mr-IN": {
+    "file": "mr.json",
+    "nativeName": "मराठी",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Marathi"
+  },
+  "ms-MY": {
+    "file": "ms.json",
+    "nativeName": "Bahasa Melayu",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Malay"
+  },
+  "ne-NP": {
+    "file": "ne.json",
+    "nativeName": "नेपाली",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Nepali"
+  },
+  "nl-NL": {
+    "file": "nl.json",
+    "nativeName": "Nederlands",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Dutch"
+  },
+  "or-IN": {
+    "file": "or.json",
+    "nativeName": "ଓଡ଼ିଆ",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Odia"
+  },
+  "pa-IN": {
+    "file": "pa.json",
+    "nativeName": "ਪੰਜਾਬੀ",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Punjabi"
+  },
+  "pl-PL": {
+    "file": "pl.json",
+    "nativeName": "Polski",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Polish"
+  },
+  "pt-BR": {
+    "file": "pt.json",
+    "nativeName": "Português (Brasil)",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Portuguese (Brazil)"
+  },
+  "ru-RU": {
+    "file": "ru.json",
+    "nativeName": "Русский",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Russian"
+  },
+  "sa-IN": {
+    "file": "sa.json",
+    "nativeName": "संस्कृतम्",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Sanskrit"
+  },
+  "sat-IN": {
+    "file": "sat.json",
+    "nativeName": "ᱥᱟᱱᱛᱟᱲᱤ",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Santali"
+  },
+  "sd-IN": {
+    "file": "sd.json",
+    "nativeName": "سنڌي",
+    "direction": "rtl",
+    "status": "partial",
+    "englishName": "Sindhi"
+  },
+  "sv-SE": {
+    "file": "sv.json",
+    "nativeName": "Svenska",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Swedish"
+  },
+  "sw-KE": {
+    "file": "sw.json",
+    "nativeName": "Kiswahili",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Swahili"
+  },
+  "ta-IN": {
+    "file": "ta.json",
+    "nativeName": "தமிழ்",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Tamil"
+  },
+  "te-IN": {
+    "file": "te.json",
+    "nativeName": "తెలుగు",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Telugu"
+  },
+  "th-TH": {
+    "file": "th.json",
+    "nativeName": "ไทย",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Thai"
+  },
+  "tr-TR": {
+    "file": "tr.json",
+    "nativeName": "Türkçe",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Turkish"
+  },
+  "ur-PK": {
+    "file": "ur.json",
+    "nativeName": "اردو",
+    "direction": "rtl",
+    "status": "partial",
+    "englishName": "Urdu"
+  },
+  "vi-VN": {
+    "file": "vi.json",
+    "nativeName": "Tiếng Việt",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Vietnamese"
+  },
+  "zh-CN": {
+    "file": "zh.json",
+    "nativeName": "简体中文",
+    "direction": "ltr",
+    "status": "partial",
+    "englishName": "Chinese (Simplified)"
   }
 }

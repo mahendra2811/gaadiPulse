@@ -364,7 +364,8 @@
     "vehicleFullName": "वाहन का पूरा नाम (वैकल्पिक)",
     "vehicleIdentityHelp": "इनमें से कम से कम एक जानकारी दें: गाड़ी का नाम, रजिस्ट्रेशन या मॉडल।",
     "vehicleNameConfirmation": "हटाने की पुष्टि के लिए गाड़ी का नाम",
-    "vehicleNotFound": "गाड़ी नहीं मिली।"
+    "vehicleNotFound": "गाड़ी नहीं मिली।",
+    "subtypeOptionalPhotoHint": "ऊपर अपनी गाड़ी चुनें। तस्वीर और नाम देखने के लिए नीचे कोई वैकल्पिक प्रकार चुनें; आप इसे चुने बिना भी आगे बढ़ सकते हैं।"
   },
   "fuel": {
     "BOTH": "किलोमीटर और घंटे",
@@ -1096,7 +1097,9 @@
     "updateAvailableTitle": "GaadiPulse का अपडेट उपलब्ध है",
     "updateCheckFailed": "अपडेट नहीं देखे जा सके। Google Play खोलकर खुद जाँचें।",
     "updateLater": "बाद में याद दिलाएँ",
-    "yourData": "आपका डेटा"
+    "yourData": "आपका डेटा",
+    "languageSearch": "भाषाएँ खोजें",
+    "languageNoResults": "आपकी खोज से कोई भाषा नहीं मिली।"
   },
   "currency": {
     "currency": "मुद्रा",

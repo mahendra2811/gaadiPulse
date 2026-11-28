@@ -1172,10 +1172,9 @@ export function RecordForm() {
         existing?.revision,
         status,
       );
-      // A committed record must not wait for every screen's background query
-      // before the form can navigate away. Mark cached data stale immediately;
-      // active observers can refresh in the background.
-      void qc.invalidateQueries({
+      // Keep the meter history cache aligned with the save form's observation
+      // query. Await its refresh before showing success and returning to history.
+      const refresh = qc.invalidateQueries({
         predicate: (query) =>
           query.queryKey[0] === user &&
           query.queryKey[1] === v.id &&
@@ -1183,10 +1182,13 @@ export function RecordForm() {
             "records",
             "expense-history",
             "fuel-history",
+            "meter-history",
+            "meter-history-for-entry",
             "observations",
           ].includes(String(query.queryKey[2])),
         refetchType: "active",
       });
+      if (kind === "meters" && !another) await refresh;
       if (!id && !development && ["fuel", "expenses", "meters"].includes(kind))
         void maybeRequestReviewAfterSave();
       if (kind === "fuel") active.select(v.id);

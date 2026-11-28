@@ -60,7 +60,7 @@ function MeterHistoryContent() {
   const [type, setType] = useState("ALL");
   const [limit, setLimit] = useState(12);
   const query = useQuery({
-    queryKey: [user, vehicle?.id, "meter-history"],
+    queryKey: [user, vehicle?.id, "observations"],
     enabled: !!vehicle,
     queryFn: () => loadObservations(user!, vehicle!.id, development, true),
   });

@@ -40,6 +40,9 @@ vi.mock("expo-notifications", () => ({
   setNotificationHandler: vi.fn(),
   addNotificationReceivedListener: vi.fn(() => ({ remove: vi.fn() })),
 }));
+vi.mock("expo-constants", () => ({
+  default: { expoConfig: null, easConfig: null },
+}));
 vi.mock("react-native", () => ({
   AppState: { currentState: "background", addEventListener: vi.fn() },
   Platform: { OS: "android" },

@@ -16,7 +16,10 @@ import { FilterChips } from "@/src/components/ui/FilterChips";
 import { useAccountId, useSession } from "@/src/features/auth/session";
 import { t } from "@/src/lib/i18n";
 import { errorMessage } from "@/src/lib/errors";
-import { loadNotificationPreferences, saveNotificationPreferences } from "./api";
+import {
+  loadNotificationPreferences,
+  saveNotificationPreferences,
+} from "./api";
 import type { NotificationPreferences } from "./schema";
 import { enablePushNotifications } from "@/src/features/reminders/notifications";
 
@@ -25,7 +28,8 @@ function timeInput(value: string) {
 }
 
 function toDatabaseTime(value: string) {
-  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(value)) throw new Error(t("notifications.timeFormat"));
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(value))
+    throw new Error(t("notifications.timeFormat"));
   return `${value}:00`;
 }
 
@@ -42,7 +46,10 @@ export function NotificationSettings() {
     queryFn: loadNotificationPreferences,
     staleTime: 60_000,
   });
-  const current = useMemo(() => draft ?? preferences.data ?? null, [draft, preferences.data]);
+  const current = useMemo(
+    () => draft ?? preferences.data ?? null,
+    [draft, preferences.data],
+  );
   useEffect(() => {
     if (Platform.OS === "web") return;
     let alive = true;
@@ -71,7 +78,7 @@ export function NotificationSettings() {
   });
   const update = <K extends keyof NotificationPreferences>(
     key: K,
-    value: NotificationPreferences[K]
+    value: NotificationPreferences[K],
   ) => {
     if (current) setDraft({ ...current, [key]: value });
   };
@@ -96,7 +103,11 @@ export function NotificationSettings() {
       toast(errorMessage(error), "warning");
     }
   };
-  const toggle = (label: string, value: boolean, onChange: (next: boolean) => void) => (
+  const toggle = (
+    label: string,
+    value: boolean,
+    onChange: (next: boolean) => void,
+  ) => (
     <View
       key={label}
       style={{
@@ -108,7 +119,11 @@ export function NotificationSettings() {
       }}
     >
       <AppText>{label}</AppText>
-      <Switch accessibilityLabel={label} value={value} onValueChange={onChange} />
+      <Switch
+        accessibilityLabel={label}
+        value={value}
+        onValueChange={onChange}
+      />
     </View>
   );
 
@@ -119,7 +134,10 @@ export function NotificationSettings() {
           <AppText>{t("notifications.signInForSettings")}</AppText>
         </Card>
       ) : preferences.error ? (
-        <ErrorState message={preferences.error.message} retry={() => void preferences.refetch()} />
+        <ErrorState
+          message={preferences.error.message}
+          retry={() => void preferences.refetch()}
+        />
       ) : preferences.isPending || !current ? (
         <PageSkeleton shape="rows" />
       ) : (
@@ -132,7 +150,10 @@ export function NotificationSettings() {
                 : t("notifications.permissionDenied")}
             </AppText>
             {!permission ? (
-              <AppButton label={t("notifications.enablePush")} onPress={() => void enable()} />
+              <AppButton
+                label={t("notifications.enablePush")}
+                onPress={() => void enable()}
+              />
             ) : null}
             {permission === false ? (
               <AppButton
@@ -144,23 +165,29 @@ export function NotificationSettings() {
           </Card>
           <Card style={{ padding: 16, gap: 8 }}>
             {toggle(t("notifications.inApp"), current.in_app_enabled, (v) =>
-              update("in_app_enabled", v)
+              update("in_app_enabled", v),
             )}
-            {toggle(t("notifications.reminderAlerts"), current.reminders_enabled, (v) =>
-              update("reminders_enabled", v)
+            {toggle(
+              t("notifications.reminderAlerts"),
+              current.reminders_enabled,
+              (v) => update("reminders_enabled", v),
             )}
-            {toggle(t("notifications.accountUpdates"), current.account_updates_enabled, (v) =>
-              update("account_updates_enabled", v)
+            {toggle(
+              t("notifications.accountUpdates"),
+              current.account_updates_enabled,
+              (v) => update("account_updates_enabled", v),
             )}
             {toggle(t("notifications.pushEnabled"), current.push_enabled, (v) =>
-              update("push_enabled", v)
+              update("push_enabled", v),
             )}
           </Card>
           <Card style={{ padding: 16, gap: 12 }}>
             <AppText>{t("notifications.language")}</AppText>
             <FilterChips
               value={current.language}
-              onChange={(value) => update("language", value as NotificationPreferences["language"])}
+              onChange={(value) =>
+                update("language", value as NotificationPreferences["language"])
+              }
               items={[
                 { id: "AUTO", label: t("notifications.autoLanguage") },
                 { id: "en-IN", label: t("localeEnglish") },
@@ -169,8 +196,10 @@ export function NotificationSettings() {
             />
           </Card>
           <Card style={{ padding: 16, gap: 12 }}>
-            {toggle(t("notifications.quietHours"), current.quiet_hours_enabled, (v) =>
-              update("quiet_hours_enabled", v)
+            {toggle(
+              t("notifications.quietHours"),
+              current.quiet_hours_enabled,
+              (v) => update("quiet_hours_enabled", v),
             )}
             {current.quiet_hours_enabled ? (
               <>
@@ -199,7 +228,9 @@ export function NotificationSettings() {
               }))}
             />
           </Card>
-          {save.error ? <ErrorState message={save.error.message} retry={saveAll} /> : null}
+          {save.error ? (
+            <ErrorState message={save.error.message} retry={saveAll} />
+          ) : null}
           <AppButton
             label={t("notifications.savePreferences")}
             disabled={save.isPending}

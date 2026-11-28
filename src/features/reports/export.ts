@@ -33,9 +33,7 @@ export async function exportPdf(html: string) {
   }
   const Sharing = await import("expo-sharing");
   if (!(await Sharing.isAvailableAsync()))
-    throw new Error(
-      t("exportSharingUnavailable"),
-    );
+    throw new Error(t("exportSharingUnavailable"));
   const file = await Print.printToFileAsync({ html });
   await Sharing.shareAsync(file.uri, {
     mimeType: "application/pdf",

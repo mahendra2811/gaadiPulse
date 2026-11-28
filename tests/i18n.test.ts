@@ -30,7 +30,7 @@ describe("locale registry and fallback", () => {
     expect(localeOptions.map((option) => option.code)).toContain("brx-IN");
   });
 
-  it("uses a translated Hindi string and falls back for an unfinished locale", () => {
+  it("uses Hindi translations and English for every other locale", () => {
     setLocale("hi-IN");
     expect(t("language")).toBe("भाषा");
     expect(t("deletionContactBody")).toBe(
@@ -39,6 +39,8 @@ describe("locale registry and fallback", () => {
     setLocale("ar-SA");
     expect(t("language")).toBe("Language");
     expect(getLocaleDirection()).toBe("rtl");
+    setLocale("brx-IN");
+    expect(t("language")).toBe("Language");
   });
 
   it("falls back to English for an unknown locale and unknown key", () => {

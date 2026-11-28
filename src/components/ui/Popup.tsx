@@ -150,8 +150,8 @@ export function Popup({
                 hitSlop={2}
                 style={({ pressed }) => ({
                   marginLeft: "auto",
-                  width: 44,
-                  height: 44,
+                  width: 56,
+                  height: 56,
                   borderRadius: 22,
                   backgroundColor: c.background,
                   alignItems: "center",

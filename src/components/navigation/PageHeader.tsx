@@ -42,7 +42,7 @@ export function PageHeader({
         paddingHorizontal: 16,
         paddingVertical: 12,
         backgroundColor: path === "/" ? c.background : c.surface,
-        borderBottomWidth: path === "/" ? 0 : 1,
+        borderBottomWidth: 1,
         borderBottomColor: c.line,
         flexDirection: "row",
         alignItems: "center",
@@ -61,8 +61,8 @@ export function PageHeader({
             })
           }
           style={({ pressed }) => ({
-            width: 44,
-            height: 44,
+            width: 56,
+            height: 56,
             borderRadius: 16,
             alignItems: "center",
             justifyContent: "center",

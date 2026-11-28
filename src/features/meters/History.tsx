@@ -121,7 +121,13 @@ function MeterHistoryContent() {
     (row) => type === "ALL" || row.reading_type === type,
   );
   return (
-    <Screen compact title={r("meters")} loading={query.isPending || busy}>
+    <Screen
+      compact
+      title={r("meters")}
+      loading={query.isPending || busy}
+      onRefresh={() => void query.refetch()}
+      refreshing={query.isRefetching}
+    >
       <VehicleHeader />
       {active.error && (
         <ErrorState

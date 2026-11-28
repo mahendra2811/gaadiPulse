@@ -95,7 +95,7 @@ export function ToastHost() {
             gap: 7,
             paddingLeft: 9,
             paddingRight: 2,
-            minHeight: 44,
+            minHeight: 48,
           }}
         >
           <View
@@ -130,8 +130,8 @@ export function ToastHost() {
             accessibilityLabel={t("dismiss")}
             onPress={() => dismissToast(toast.id)}
             style={({ pressed }) => ({
-              width: 40,
-              height: 44,
+              width: 56,
+              height: 56,
               alignItems: "center",
               justifyContent: "center",
               opacity: pressed ? 0.5 : 1,

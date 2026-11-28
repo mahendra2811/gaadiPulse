@@ -99,7 +99,7 @@ function Chart({
         accessibilityLabel={`${expanded ? t("insightsChartHideDetails") : t("insightsChartShowDetails")}: ${unit}`}
         accessibilityState={{ expanded }}
         onPress={() => setExpanded((value) => !value)}
-        style={{ minHeight: 44, justifyContent: "center" }}
+        style={{ minHeight: 56, justifyContent: "center" }}
       >
         <Text style={{ color: theme.primary, fontWeight: "600" }}>
           {expanded
@@ -254,7 +254,27 @@ export function Insights() {
     ),
   ];
   return (
-    <Screen title={t("insightsTitle")} compact loading={loading}>
+    <Screen
+      title={t("insightsTitle")}
+      compact
+      loading={loading}
+      onRefresh={() => {
+        void Promise.all([
+          active.refetch(),
+          perms.refetch(),
+          ...queries
+            .filter((_, index) => canRead(kinds[index]))
+            .map((query) => query.refetch()),
+          ...(canMeasure ? [meterQuery.refetch()] : []),
+        ]);
+      }}
+      refreshing={
+        active.isRefetching ||
+        perms.isRefetching ||
+        queries.some((query) => query.isRefetching) ||
+        (canMeasure && meterQuery.isRefetching)
+      }
+    >
       {!!vehicle && <VehicleHeader />}
       {!!vehicle && (
         <AppText muted>

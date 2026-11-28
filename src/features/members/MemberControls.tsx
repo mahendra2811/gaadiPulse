@@ -100,7 +100,7 @@ export const PermissionEditor = memo(function PermissionEditor({
             <View
               key={key}
               style={{
-                minHeight: 52,
+                minHeight: 56,
                 flexDirection: "row",
                 alignItems: "center",
                 gap: 8,
@@ -134,7 +134,7 @@ export const PermissionEditor = memo(function PermissionEditor({
           accessibilityState={{ disabled }}
           disabled={disabled}
           onPress={() => onChange(resetPilotOverrides(value))}
-          style={{ minHeight: 44, justifyContent: "center" }}
+          style={{ minHeight: 56, justifyContent: "center" }}
         >
           <Text style={{ color: c.primary, fontWeight: "700" }}>
             {t("memberUseDefaults")}
@@ -178,7 +178,7 @@ export const BackdateEditor = memo(function BackdateEditor({
               disabled={disabled}
               onPress={() => onChange(days)}
               style={{
-                minHeight: 44,
+                minHeight: 56,
                 justifyContent: "center",
                 paddingHorizontal: 14,
                 borderWidth: 1,
@@ -205,7 +205,7 @@ export const BackdateEditor = memo(function BackdateEditor({
             disabled={disabled}
             onPress={() => onChange(null)}
             style={{
-              minHeight: 44,
+              minHeight: 56,
               justifyContent: "center",
               paddingHorizontal: 14,
               borderWidth: 1,

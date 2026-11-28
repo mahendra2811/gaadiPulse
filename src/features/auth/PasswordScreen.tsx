@@ -375,7 +375,7 @@ function LegacyPasswordScreen({ mode }: { mode: Mode }) {
                   setError("");
                 }}
                 style={({ pressed }) => ({
-                  minHeight: 52,
+                  minHeight: 56,
                   flexDirection: "row",
                   alignItems: "center",
                   justifyContent: "center",

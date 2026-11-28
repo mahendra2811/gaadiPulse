@@ -1,9 +1,20 @@
 import { FlashList } from "@shopify/flash-list";
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { router } from "expo-router";
 import { useCallback, useMemo } from "react";
 import { Pressable, View } from "react-native";
-import { AppButton, AppText, Card, ErrorState, Screen } from "@/src/components/ui";
+import {
+  AppButton,
+  AppText,
+  Card,
+  ErrorState,
+  Screen,
+} from "@/src/components/ui";
 import { PageSkeleton } from "@/src/components/ui/PageSkeleton";
 import type { ListRenderItem } from "@shopify/flash-list";
 import { formatDate, getLocale, t } from "@/src/lib/i18n";
@@ -21,7 +32,8 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useTheme } from "@/src/lib/theme";
 
 const feedKey = (user: string | null) => [user, "notification-inbox"] as const;
-const countKey = (user: string | null) => [user, "notification-unread-count"] as const;
+const countKey = (user: string | null) =>
+  [user, "notification-unread-count"] as const;
 
 function notificationRoute(row: AppNotification) {
   const route = row.route_data;
@@ -95,7 +107,7 @@ export function NotificationCenter() {
           .then(afterRead)
           .catch(() => {});
     },
-    [markRead]
+    [markRead],
   );
   const renderItem: ListRenderItem<AppNotification> = useCallback(
     ({ item }) => {
@@ -110,9 +122,15 @@ export function NotificationCenter() {
           style={({ pressed }) => ({ opacity: pressed ? 0.82 : 1 })}
         >
           <Card style={{ padding: 16, minHeight: 88, gap: 8 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+            >
               <Ionicons
-                name={item.category === "REMINDER" ? "notifications" : "information-circle"}
+                name={
+                  item.category === "REMINDER"
+                    ? "notifications"
+                    : "information-circle"
+                }
                 size={22}
                 color={item.read_at ? colors.muted : colors.primary}
               />
@@ -142,7 +160,7 @@ export function NotificationCenter() {
         </Pressable>
       );
     },
-    [colors.muted, colors.primary, hindi, open]
+    [colors.muted, colors.primary, hindi, open],
   );
   const footer = feed.hasNextPage ? (
     <View style={{ paddingTop: 12 }}>
@@ -172,7 +190,10 @@ export function NotificationCenter() {
           </Card>
         ) : null}
         {feed.error ? (
-          <ErrorState message={feed.error.message} retry={() => void feed.refetch()} />
+          <ErrorState
+            message={feed.error.message}
+            retry={() => void feed.refetch()}
+          />
         ) : null}
         {feed.isPending && !development ? <PageSkeleton shape="rows" /> : null}
         {!feed.isPending && !feed.error && !rows.length && !development ? (
@@ -188,7 +209,8 @@ export function NotificationCenter() {
             ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
             contentContainerStyle={{ paddingBottom: 12 }}
             onEndReached={() => {
-              if (feed.hasNextPage && !feed.isFetchingNextPage) void feed.fetchNextPage();
+              if (feed.hasNextPage && !feed.isFetchingNextPage)
+                void feed.fetchNextPage();
             }}
             onEndReachedThreshold={0.35}
             refreshing={feed.isRefetching}

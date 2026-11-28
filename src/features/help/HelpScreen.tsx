@@ -10,9 +10,7 @@ export default function HelpScreen() {
   const [open, setOpen] = useState<string | null>(null);
   return (
     <Screen title={t("helpTitle")} compact>
-      <AppText muted>
-        {t("helpDescription")}
-      </AppText>
+      <AppText muted>{t("helpDescription")}</AppText>
       {helpSections.map((section) => (
         <Card key={section.title} style={{ padding: 16 }}>
           <AppText large>{section.title}</AppText>
@@ -29,7 +27,7 @@ export default function HelpScreen() {
                   accessibilityState={{ expanded }}
                   onPress={() => setOpen(expanded ? null : item.question)}
                   style={{
-                    minHeight: 48,
+                    minHeight: 56,
                     flexDirection: "row",
                     alignItems: "center",
                     gap: 10,

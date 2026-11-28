@@ -51,6 +51,7 @@ describe("vehicle setup choices", () => {
       model: "",
       category: "two_wheeler",
       subtype: "scooter",
+      model_year: "",
       energy_type: "PETROL",
       meter_mode: "KM",
       timezone: defaultVehicleTimezone,

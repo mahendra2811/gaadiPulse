@@ -45,7 +45,7 @@ export function AuthLink({
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => ({
-        minHeight: 48,
+        minHeight: 56,
         justifyContent: "center",
         alignItems: "center",
         paddingHorizontal: 8,

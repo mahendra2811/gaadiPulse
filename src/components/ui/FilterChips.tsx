@@ -26,7 +26,7 @@ export function FilterChips({
           accessibilityState={{ checked: value === item.id }}
           onPress={() => onChange(item.id)}
           style={({ pressed }) => ({
-            minHeight: 44,
+            minHeight: 56,
             paddingHorizontal: 14,
             paddingVertical: 12,
             borderRadius: 14,

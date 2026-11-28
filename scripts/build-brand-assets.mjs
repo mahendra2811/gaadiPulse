@@ -6,10 +6,7 @@ const output = "assets/brand/generated/";
 await mkdir(output, { recursive: true });
 const logoWhite = `${output}logo_white_background.png`;
 const symbol = `${source}01-symbol-transparent.png`;
-await sharp(logoWhite)
-  .resize(1024, 1024)
-  .png()
-  .toFile(`${output}app-icon.png`);
+await sharp(logoWhite).resize(1024, 1024).png().toFile(`${output}app-icon.png`);
 await sharp(logoWhite).resize(96, 96).png().toFile(`${output}favicon.png`);
 const foreground = await sharp(symbol)
   .resize(280, 280, { fit: "contain" })

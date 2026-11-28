@@ -111,7 +111,9 @@
     "unsaved": "Leave this form?",
     "unsavedBody": "Your changes have not been saved. Leave and discard them, or keep editing.",
     "validPastTime": "Choose the actual observation time; future readings are not allowed.",
-    "noPhoto": "Photo"
+    "noPhoto": "Photo",
+    "slowConnection": "Requests are taking longer than usual. Check your connection and retry if needed.",
+    "unstableConnection": "Your connection is unstable. Keep this screen open while requests finish."
   },
   "onboarding": {
     "onboardingContinue": "Continue to Home",
@@ -1011,6 +1013,12 @@
     "reportVehicleId": "Vehicle ID"
   },
   "account": {
+    "minimumVersionTitle": "Update required",
+    "minimumVersionBody": "This version is no longer supported. Update GaadiPulse to continue.",
+    "whatsNewTitle": "What’s new in GaadiPulse",
+    "whatsNewUpdates": "Compatible over-the-air and Play Store updates, with a safer optional update flow.",
+    "whatsNewReviews": "Review requests wait until after meaningful use. About now includes Rate, Share and Send Feedback.",
+    "whatsNewDismiss": "Got it",
     "about": "About",
     "accountNameHelp": "You will choose your display name after verification. Sign in with your email address; a separate username is not required.",
     "accountSecurityTitle": "Account security",
@@ -1053,6 +1061,9 @@
     "deletionSubmit": "Submit deletion request",
     "emailOperator": "Email the operator",
     "english": "English",
+    "feedback": "Send feedback",
+    "feedbackHint": "Email the GaadiPulse team with suggestions or problems.",
+    "feedbackUnavailable": "Could not open the requested app or email action.",
     "hindi": "Hindi — coming later",
     "installUpdate": "Install update",
     "invalidCurrency": "Choose a supported currency.",
@@ -1076,6 +1087,9 @@
     "profileLoadError": "We couldn’t load your profile. Please retry or sign out.",
     "rateApp": "Rate GaadiPulse",
     "rateAppHint": "Open the Google Play reviews page.",
+    "shareApp": "Share GaadiPulse",
+    "shareAppHint": "Share the app page with someone who may find it useful.",
+    "updateNow": "Update now",
     "securityAccountBody": "Keep your password and verification codes private. Access to each vehicle is controlled by its Owner and your verified account.",
     "securityAccountTitle": "Account security",
     "securityDataBody": "Records are stored online. Vehicle access may be revoked by an Owner. Exports create copies that recipients can keep. Signing out clears this device’s session and scheduled local notifications.",

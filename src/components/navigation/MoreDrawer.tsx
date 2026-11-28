@@ -162,8 +162,8 @@ export function MoreDrawerProvider({ children }: { children: ReactNode }) {
                 accessibilityLabel={t("closePopup")}
                 onPress={close}
                 style={({ pressed }) => ({
-                  width: 44,
-                  height: 44,
+                  width: 56,
+                  height: 56,
                   borderRadius: 22,
                   backgroundColor: c.background,
                   alignItems: "center",

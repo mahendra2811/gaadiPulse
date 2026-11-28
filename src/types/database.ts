@@ -71,6 +71,17 @@ export type VehicleRow = {
 export type Database = {
   public: {
     Tables: {
+      app_release_policy: Table<
+        {
+          policy_id: "global";
+          minimum_supported_version: string | null;
+          minimum_version_critical: boolean;
+          minimum_version_message: string | null;
+          feature_flags: Json;
+          updated_at: string;
+        },
+        never
+      >;
       profiles: Table<{
         id: string;
         display_name: string;

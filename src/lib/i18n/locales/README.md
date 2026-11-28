@@ -1,54 +1,158 @@
 # Locale catalogs
 
+## Current editing rule
+
+For now, edit translation strings only in `en.json` and `hi.json`. Do not add,
+change, reformat, or remove content in any other language catalog (`*.json`).
+All other locales use `en.json` at runtime until translation work is explicitly
+resumed. Keep their files untouched.
+
 This directory contains 45 catalogs: English plus 44 non-English languages. All 45 are available in onboarding and Settings. `en.json` is the source of truth. A locale whose catalog is unfinished remains selectable but displays English for missing or blank translations until that language is completed. The checkboxes below track verified catalog completion, not whether a language can be selected.
 
-| Done | Language             | Locale | File       | Status                                       |
+| Done | Language | Locale | File | 6. Play Store ratings and reviews
+Medium
+
+12 of 12 selected
+
+Deselect all
+
+Integrate expo-store-review for native in-app review requests
+
+Show review requests after meaningful successful user actions
+
+Avoid showing review prompts immediately after installation
+
+Apply reasonable cooldown periods between review requests
+
+Store the last review-request timestamp
+
+Avoid interrupting forms, errors and important user workflows
+
+Add a permanent Rate GaadiPulse option in Settings
+
+Implement Play Store deep linking with browser fallback
+
+Add Share GaadiPulse functionality
+
+Add a separate Send Feedback option
+
+Avoid incentivized reviews and positive-review filtering
+
+Respect Google Play review quotas and policies
+
+7. Application update management
+   High
+
+13 of 13 selected
+
+Deselect all
+
+Implement application version checking
+
+Show an optional update available popup
+
+Implement minimum supported version configuration
+
+Implement mandatory updates only for critical compatibility or security issues
+
+Add Update Now and Later actions for optional updates
+
+Redirect users to the correct Play Store listing
+
+Implement Expo EAS Update for compatible OTA updates
+
+Configure runtimeVersion compatibility
+
+Maintain separate development, preview and production update channels
+
+Implement staged rollouts and rollback strategy
+
+Display What's New after significant updates
+
+Maintain application changelog
+
+Implement remote feature flags
+
+8. Error handling and application reliability
+   High
+
+0 of 14 selected
+
+Select all
+
+Implement global React Error Boundary
+
+Integrate Sentry or an equivalent crash-reporting service
+
+Capture handled and unhandled exceptions
+
+Implement user-friendly error messages
+
+Create reusable error and retry components
+
+Handle API timeouts and server failures
+
+Handle expired authentication sessions
+
+Prevent duplicate submissions from repeated button taps
+
+Use idempotency for critical record creation
+
+Implement graceful handling of unexpected application states
+
+Monitor crash-free sessions and Android ANRs
+
+Upload production source maps securely
+
+Remove unnecessary production console logs
+
+Avoid logging tokens, passwords and personal informationStatus |
 | ---- | -------------------- | ------ | ---------- | -------------------------------------------- |
-| [ ]  | Arabic               | ar-SA  | `ar.json`  | Translation pending; English fallback        |
-| [ ]  | Assamese             | as-IN  | `as.json`  | Translation pending; English fallback        |
-| [ ]  | Bengali              | bn-IN  | `bn.json`  | Translation pending; English fallback        |
-| [ ]  | Bodo                 | brx-IN | `brx.json` | Translation pending; English fallback        |
-| [ ]  | Chinese (Simplified) | zh-CN  | `zh.json`  | Translation pending; English fallback        |
-| [ ]  | Dogri                | doi-IN | `doi.json` | Translation pending; English fallback        |
-| [ ]  | Dutch                | nl-NL  | `nl.json`  | In progress: 49/1,232; English fallback      |
-| [x]  | English (India)      | en-IN  | `en.json`  | Complete canonical source; grouped by domain |
-| [ ]  | Filipino             | fil-PH | `fil.json` | Translation pending; English fallback        |
-| [ ]  | French               | fr-FR  | `fr.json`  | In progress: 49/1,232; English fallback      |
-| [ ]  | German               | de-DE  | `de.json`  | In progress: 49/1,232; English fallback      |
-| [ ]  | Gujarati             | gu-IN  | `gu.json`  | Translation pending; English fallback        |
-| [ ]  | Hebrew               | he-IL  | `he.json`  | Translation pending; English fallback        |
-| [x]  | Hindi                | hi-IN  | `hi.json`  | Complete catalog; 1,232 translated strings   |
-| [ ]  | Indonesian           | id-ID  | `id.json`  | Translation pending; English fallback        |
-| [ ]  | Italian              | it-IT  | `it.json`  | In progress: 49/1,232; English fallback      |
-| [ ]  | Japanese             | ja-JP  | `ja.json`  | Translation pending; English fallback        |
-| [ ]  | Korean               | ko-KR  | `ko.json`  | Translation pending; English fallback        |
-| [ ]  | Kannada              | kn-IN  | `kn.json`  | Translation pending; English fallback        |
-| [ ]  | Kashmiri             | ks-IN  | `ks.json`  | Translation pending; English fallback        |
-| [ ]  | Konkani              | kok-IN | `kok.json` | Translation pending; English fallback        |
-| [ ]  | Maithili             | mai-IN | `mai.json` | Translation pending; English fallback        |
-| [ ]  | Malayalam            | ml-IN  | `ml.json`  | Translation pending; English fallback        |
-| [ ]  | Manipuri (Meitei)    | mni-IN | `mni.json` | Translation pending; English fallback        |
-| [ ]  | Marathi              | mr-IN  | `mr.json`  | Translation pending; English fallback        |
-| [ ]  | Malay                | ms-MY  | `ms.json`  | Translation pending; English fallback        |
-| [ ]  | Nepali               | ne-NP  | `ne.json`  | Translation pending; English fallback        |
-| [ ]  | Odia                 | or-IN  | `or.json`  | Translation pending; English fallback        |
-| [ ]  | Persian              | fa-IR  | `fa.json`  | Translation pending; English fallback        |
-| [ ]  | Polish               | pl-PL  | `pl.json`  | Translation pending; English fallback        |
-| [ ]  | Portuguese (Brazil)  | pt-BR  | `pt.json`  | Translation pending; English fallback        |
-| [ ]  | Punjabi              | pa-IN  | `pa.json`  | Translation pending; English fallback        |
-| [ ]  | Russian              | ru-RU  | `ru.json`  | Translation pending; English fallback        |
-| [ ]  | Sanskrit             | sa-IN  | `sa.json`  | Translation pending; English fallback        |
-| [ ]  | Santali              | sat-IN | `sat.json` | Translation pending; English fallback        |
-| [ ]  | Sindhi               | sd-IN  | `sd.json`  | Translation pending; English fallback        |
-| [ ]  | Spanish              | es-ES  | `es.json`  | In progress: 49/1,232; English fallback      |
-| [ ]  | Swedish              | sv-SE  | `sv.json`  | Translation pending; English fallback        |
-| [ ]  | Swahili              | sw-KE  | `sw.json`  | Translation pending; English fallback        |
-| [ ]  | Tamil                | ta-IN  | `ta.json`  | Translation pending; English fallback        |
-| [ ]  | Telugu               | te-IN  | `te.json`  | Translation pending; English fallback        |
-| [ ]  | Thai                 | th-TH  | `th.json`  | Translation pending; English fallback        |
-| [ ]  | Turkish              | tr-TR  | `tr.json`  | Translation pending; English fallback        |
-| [ ]  | Urdu                 | ur-PK  | `ur.json`  | Translation pending; English fallback        |
-| [ ]  | Vietnamese           | vi-VN  | `vi.json`  | Translation pending; English fallback        |
+| [ ] | Arabic | ar-SA | `ar.json` | Translation pending; English fallback |
+| [ ] | Assamese | as-IN | `as.json` | Translation pending; English fallback |
+| [ ] | Bengali | bn-IN | `bn.json` | Translation pending; English fallback |
+| [ ] | Bodo | brx-IN | `brx.json` | Translation pending; English fallback |
+| [ ] | Chinese (Simplified) | zh-CN | `zh.json` | Translation pending; English fallback |
+| [ ] | Dogri | doi-IN | `doi.json` | Translation pending; English fallback |
+| [ ] | Dutch | nl-NL | `nl.json` | In progress: 49/1,232; English fallback |
+| [x] | English (India) | en-IN | `en.json` | Complete canonical source; grouped by domain |
+| [ ] | Filipino | fil-PH | `fil.json` | Translation pending; English fallback |
+| [ ] | French | fr-FR | `fr.json` | In progress: 49/1,232; English fallback |
+| [ ] | German | de-DE | `de.json` | In progress: 49/1,232; English fallback |
+| [ ] | Gujarati | gu-IN | `gu.json` | Translation pending; English fallback |
+| [ ] | Hebrew | he-IL | `he.json` | Translation pending; English fallback |
+| [ ] | Hindi | hi-IN | `hi.json` | In progress; missing strings use English fallback |
+| [ ] | Indonesian | id-ID | `id.json` | Translation pending; English fallback |
+| [ ] | Italian | it-IT | `it.json` | In progress: 49/1,232; English fallback |
+| [ ] | Japanese | ja-JP | `ja.json` | Translation pending; English fallback |
+| [ ] | Korean | ko-KR | `ko.json` | Translation pending; English fallback |
+| [ ] | Kannada | kn-IN | `kn.json` | Translation pending; English fallback |
+| [ ] | Kashmiri | ks-IN | `ks.json` | Translation pending; English fallback |
+| [ ] | Konkani | kok-IN | `kok.json` | Translation pending; English fallback |
+| [ ] | Maithili | mai-IN | `mai.json` | Translation pending; English fallback |
+| [ ] | Malayalam | ml-IN | `ml.json` | Translation pending; English fallback |
+| [ ] | Manipuri (Meitei) | mni-IN | `mni.json` | Translation pending; English fallback |
+| [ ] | Marathi | mr-IN | `mr.json` | Translation pending; English fallback |
+| [ ] | Malay | ms-MY | `ms.json` | Translation pending; English fallback |
+| [ ] | Nepali | ne-NP | `ne.json` | Translation pending; English fallback |
+| [ ] | Odia | or-IN | `or.json` | Translation pending; English fallback |
+| [ ] | Persian | fa-IR | `fa.json` | Translation pending; English fallback |
+| [ ] | Polish | pl-PL | `pl.json` | Translation pending; English fallback |
+| [ ] | Portuguese (Brazil) | pt-BR | `pt.json` | Translation pending; English fallback |
+| [ ] | Punjabi | pa-IN | `pa.json` | Translation pending; English fallback |
+| [ ] | Russian | ru-RU | `ru.json` | Translation pending; English fallback |
+| [ ] | Sanskrit | sa-IN | `sa.json` | Translation pending; English fallback |
+| [ ] | Santali | sat-IN | `sat.json` | Translation pending; English fallback |
+| [ ] | Sindhi | sd-IN | `sd.json` | Translation pending; English fallback |
+| [ ] | Spanish | es-ES | `es.json` | In progress: 49/1,232; English fallback |
+| [ ] | Swedish | sv-SE | `sv.json` | Translation pending; English fallback |
+| [ ] | Swahili | sw-KE | `sw.json` | Translation pending; English fallback |
+| [ ] | Tamil | ta-IN | `ta.json` | Translation pending; English fallback |
+| [ ] | Telugu | te-IN | `te.json` | Translation pending; English fallback |
+| [ ] | Thai | th-TH | `th.json` | Translation pending; English fallback |
+| [ ] | Turkish | tr-TR | `tr.json` | Translation pending; English fallback |
+| [ ] | Urdu | ur-PK | `ur.json` | Translation pending; English fallback |
+| [ ] | Vietnamese | vi-VN | `vi.json` | Translation pending; English fallback |
 
 `en.json` is the only source catalog for app-authored English copy. `registry.json` is the authoritative registry for all 45 options; `../i18n.ts`, profile validation, `LocaleField`, Expo's native locale list, and the additive supported-locales migration use those codes. English (`en-IN`) is the default and fallback. Any blank or missing value resolves to English, including while a locale is being translated. The onboarding and Settings picker is compact and searchable; each option shows its English language name followed by the native name in parentheses.
 

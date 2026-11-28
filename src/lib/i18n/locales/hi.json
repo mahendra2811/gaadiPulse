@@ -115,7 +115,9 @@
     "unsavedBody": "आपके बदलाव सेव नहीं हुए हैं। बाहर जाने पर उन्हें छोड़ दें या बदलाव जारी रखें।",
     "validPastTime": "रीडिंग दर्ज करने का असली समय चुनें। भविष्य का समय नहीं चुन सकते।",
     "noPhoto": "फ़ोटो",
-    "lastUpdatedAt": ""
+    "lastUpdatedAt": "",
+    "slowConnection": "अनुरोध में सामान्य से अधिक समय लग रहा है। ज़रूरत हो तो इंटरनेट जाँचकर फिर कोशिश करें।",
+    "unstableConnection": "इंटरनेट कनेक्शन स्थिर नहीं है। अनुरोध पूरा होने तक यह स्क्रीन खुली रखें।"
   },
   "onboarding": {
     "onboardingContinue": "होम पर जाएँ",
@@ -1101,7 +1103,19 @@
     "updateLater": "बाद में याद दिलाएँ",
     "yourData": "आपका डेटा",
     "languageSearch": "भाषाएँ खोजें",
-    "languageNoResults": "आपकी खोज से कोई भाषा नहीं मिली।"
+    "languageNoResults": "आपकी खोज से कोई भाषा नहीं मिली।",
+    "feedback": "",
+    "feedbackHint": "",
+    "feedbackUnavailable": "",
+    "shareApp": "",
+    "shareAppHint": "",
+    "updateNow": "",
+    "minimumVersionTitle": "अपडेट ज़रूरी है",
+    "minimumVersionBody": "यह संस्करण अब समर्थित नहीं है। जारी रखने के लिए GaadiPulse अपडेट करें।",
+    "whatsNewTitle": "GaadiPulse में नया क्या है",
+    "whatsNewUpdates": "सुरक्षित वैकल्पिक अपडेट के साथ संगत ओवर-द-एयर और Play Store अपडेट।",
+    "whatsNewReviews": "समीक्षा अनुरोध सार्थक उपयोग के बाद दिखेंगे। About में Rate, Share और Send Feedback विकल्प हैं।",
+    "whatsNewDismiss": "ठीक है"
   },
   "currency": {
     "currency": "मुद्रा",

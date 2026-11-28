@@ -35,7 +35,7 @@ export function AdditionalOptions({
           flexDirection: "row",
           alignItems: "center",
           gap: 10,
-          minHeight: 48,
+          minHeight: 56,
           paddingHorizontal: 14,
           paddingVertical: 10,
           opacity: pressed ? 0.65 : 1,

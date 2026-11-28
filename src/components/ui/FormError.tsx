@@ -39,7 +39,7 @@ export function FormError({
         <Text
           accessibilityRole="alert"
           accessibilityLiveRegion="assertive"
-          style={{ color: colors.danger, fontSize: 14, lineHeight: 20 }}
+          style={{ color: colors.danger, fontSize: 14, lineHeight: 23 }}
         >
           {readableError(message)}
         </Text>
@@ -49,8 +49,8 @@ export function FormError({
         accessibilityLabel={t("dismiss")}
         onPress={onDismiss}
         style={{
-          width: 44,
-          height: 44,
+          width: 56,
+          height: 56,
           alignItems: "center",
           justifyContent: "center",
         }}

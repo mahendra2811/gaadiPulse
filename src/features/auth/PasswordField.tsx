@@ -23,8 +23,8 @@ export function PasswordField({
         disabled={props.editable === false}
         onPress={() => setVisible((value) => !value)}
         style={({ pressed }) => ({
-          width: 52,
-          minHeight: 52,
+          width: 56,
+          minHeight: 56,
           alignItems: "center",
           justifyContent: "center",
           borderRadius: 14,

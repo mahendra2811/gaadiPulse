@@ -40,7 +40,9 @@ export function WizardSteps({
         >
           {t("uiStep")} {step + 1} {t("uiOf")} {titles.length}
         </Text>
-        <Text style={{ fontSize: 12, color: c.muted }}>{t("uiVehicleSetup")}</Text>
+        <Text style={{ fontSize: 12, color: c.muted }}>
+          {t("uiVehicleSetup")}
+        </Text>
       </View>
       <View style={{ flexDirection: "row", gap: 6 }}>
         {titles.map((title, index) => (
@@ -63,7 +65,7 @@ export function WizardSteps({
             onPress={() => onStep(index)}
             style={{
               flex: 1,
-              minHeight: 44,
+              minHeight: 56,
               alignItems: "center",
               justifyContent: "center",
               gap: 5,

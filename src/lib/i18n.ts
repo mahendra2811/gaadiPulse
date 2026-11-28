@@ -1,6 +1,6 @@
 import enCatalog from "./i18n/locales/en.json";
+import hiCatalog from "./i18n/locales/hi.json";
 import localeRegistry from "./i18n/locales/registry.json";
-import { importedCatalogs } from "./i18n/locales/catalogs";
 
 export const en = enCatalog;
 type CatalogSection = keyof typeof en;
@@ -26,13 +26,10 @@ export const localeOptions = Object.entries(localeRegistry).map(
   }),
 );
 const localeCatalogs = Object.fromEntries(
-  Object.entries(localeRegistry).map(([code, metadata]) => {
-    const catalog =
-      importedCatalogs[metadata.file as keyof typeof importedCatalogs];
-    if (!catalog)
-      throw new Error(`Locale catalog is not imported: ${metadata.file}`);
-    return [code, catalog];
-  }),
+  Object.keys(localeRegistry).map((code) => [
+    code,
+    code === "hi-IN" ? hiCatalog : enCatalog,
+  ]),
 ) as unknown as Record<SupportedLocale, Readonly<Record<string, unknown>>>;
 
 let activeLocale: SupportedLocale = "en-IN";

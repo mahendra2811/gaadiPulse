@@ -43,7 +43,7 @@ export function DropdownField<T extends string>({
         disabled={disabled}
         onPress={() => setOpen(true)}
         style={{
-          minHeight: 52,
+          minHeight: 56,
           padding: 14,
           borderRadius: 14,
           borderWidth: 1,

@@ -17,7 +17,11 @@ describe("vehicle meter choices", () => {
         "BOTH",
       ]);
   });
-  it("waits for subtype selection", () => {
-    expect(allowedMeterModes("four_wheeler", "")).toEqual([]);
+  it("keeps meter modes editable before subtype selection", () => {
+    expect(allowedMeterModes("four_wheeler", "")).toEqual([
+      "KM",
+      "HOURS",
+      "BOTH",
+    ]);
   });
 });

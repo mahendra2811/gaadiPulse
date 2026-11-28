@@ -1,7 +1,38 @@
+import { useSyncExternalStore } from "react";
+
 /** Reversible product rollout controls. These never replace server authorization. */
-export const releaseFeatures: Record<"advancedTools", boolean> = {
-  advancedTools: true,
-};
+let remoteFlags: Record<string, boolean> = {};
+let releaseRevision = 0;
+const releaseListeners = new Set<() => void>();
+
+export function setRemoteReleaseFlags(value: Record<string, boolean>) {
+  const next = { ...value };
+  if (JSON.stringify(next) === JSON.stringify(remoteFlags)) return;
+  remoteFlags = next;
+  releaseRevision++;
+  for (const listener of releaseListeners) listener();
+}
+
+export function useReleaseFlagsRevision() {
+  return useSyncExternalStore(
+    (listener) => {
+      releaseListeners.add(listener);
+      return () => releaseListeners.delete(listener);
+    },
+    () => releaseRevision,
+    () => 0,
+  );
+}
+
+export const releaseFeatures = new Proxy(
+  { advancedTools: true } as Record<"advancedTools", boolean>,
+  {
+    get: (_target, key) =>
+      typeof key === "string" && typeof remoteFlags[key] === "boolean"
+        ? remoteFlags[key]
+        : true,
+  },
+);
 export function supportsVehicle(category: string) {
   const basic = ["two_wheeler", "three_wheeler", "four_wheeler"];
   const advanced = ["commercial", "agricultural", "heavy_machinery"];

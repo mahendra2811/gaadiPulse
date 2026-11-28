@@ -26,6 +26,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { Svg, Path } from "react-native-svg";
 import { router } from "expo-router";
 import { LoadingLine } from "@/src/components/ui";
+import { ConnectivityNotice } from "@/src/components/ui/ConnectivityNotice";
 import { GradientSurface } from "@/src/components/ui/GradientSurface";
 import { artwork } from "@/src/lib/assets";
 import { useTheme } from "@/src/lib/theme";
@@ -116,6 +117,7 @@ export function PremiumAuthLayout({
       style={{ flex: 1, minHeight: 0, backgroundColor: c.background }}
     >
       <LoadingLine loading={loading} />
+      <ConnectivityNotice />
       <ScrollView
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{
@@ -179,7 +181,7 @@ export function PremiumAuthLayout({
               disabled={loading}
               onPress={onBack}
               style={{
-                minHeight: 44,
+                minHeight: 56,
                 justifyContent: "center",
                 alignSelf: "flex-start",
               }}
@@ -245,7 +247,7 @@ export function AuthTextField({
       </Text>
       <View
         style={{
-          minHeight: 52,
+          minHeight: 56,
           flexDirection: "row",
           alignItems: "center",
           gap: 10,
@@ -280,7 +282,7 @@ export function AuthTextField({
             onPress={() => setVisible(!visible)}
             style={{
               minWidth: 48,
-              minHeight: 48,
+              minHeight: 56,
               alignItems: "center",
               justifyContent: "center",
             }}
@@ -334,7 +336,7 @@ export function GoogleAuthButton({
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => ({
-        minHeight: 52,
+        minHeight: 56,
         borderWidth: 1,
         borderColor: c.primary,
         borderRadius: 14,
@@ -374,7 +376,7 @@ export function AuthPrimaryButton({
     >
       <GradientSurface
         style={{
-          minHeight: 54,
+          minHeight: 56,
           borderRadius: 18,
           alignItems: "center",
           justifyContent: "center",
@@ -420,7 +422,7 @@ export function AuthConsent({
           flexDirection: "row",
           alignItems: "center",
           gap: 9,
-          minHeight: 44,
+          minHeight: 56,
         }}
       >
         <Ionicons
@@ -433,7 +435,7 @@ export function AuthConsent({
       <Pressable
         accessibilityRole="link"
         onPress={() => router.push("/auth/legal")}
-        style={{ minHeight: 44, justifyContent: "center", paddingLeft: 32 }}
+        style={{ minHeight: 56, justifyContent: "center", paddingLeft: 32 }}
       >
         <Text style={{ color: c.primary, fontWeight: "600" }}>
           {t("account.legal")}

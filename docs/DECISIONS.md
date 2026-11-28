@@ -23,6 +23,12 @@ Any new implementation decision should be appended by Codex with date, context, 
 | ADR-016 | Expo SDK 58 template and Expo-managed compatible native versions | Installed scaffold selected React 19.3 / RN 0.88; lockfile pins reproducible dependencies. |
 | ADR-017 | PostgreSQL RPCs for foundation privileged workflows | Atomic authorization/grants need no service key or Edge Function. |
 | ADR-018 | PGlite security tests in addition to required Supabase integration | Docker/Supabase CLI absent; actual PostgreSQL migration and RLS can still be tested, with hosted integration explicitly unverified. |
+
+| ADR-028 | 2026-11-28: retain online-only private data behavior | Reconnect and foreground revalidate authorized server state; no private offline cache reads or automatic write replay. Form values may remain in memory while the user stays on the form. |
+| ADR-029 | 2026-11-28: connectivity health is aggregate and in-memory | NetInfo plus recent request latency/failure signals support useful degraded-network feedback without storing URLs, request bodies, credentials or personal data. |
+| ADR-030 | 2026-11-28: decorative screen banners load at low priority | Expo Image memory/disk caching and low priority keep screen data and controls usable before banners finish loading. |
+| ADR-031 | 2026-11-28: favor 56dp shared touch controls and Hindi-readable line height | Improve Android touch usability while preserving system font scaling and readable Devanagari text. |
+| ADR-032 | 2026-11-28: add rate limits at the audit-event write boundary | A serialized trigger backstops high-impact membership, vehicle and record mutations without exposing a client-callable limiter; deployment remains separately reviewed. Preserve the operator-managed 30-day account deletion delay. |
 | ADR-019 | Stage 1 offline garage drafts; collaborative outbox in Stage 3 | Server remains authority for vehicle creation; local draft is never presented as a confirmed vehicle. |
 | ADR-020 | PNG rasterizations of supplied SVG illustrations | Android-resolvable bundled assets retain editable vector sources and no runtime SVG-transformer dependency. |
 | ADR-021 | Restrict privilege revocation to foundation functions | Avoid changing unrelated public-schema RPCs on a configured Supabase project; every new function has explicit execute privileges. |
@@ -310,6 +316,16 @@ Use TanStack Query for all server state with keys beginning `[userId, vehicleId,
 
 Use Expo Push Notifications with Android FCM V1, authenticated installation registration, a Supabase RLS inbox, and a private outbox/delivery log. The scheduled Edge Function accepts a dedicated Vault-stored worker secret and uses server-only service credentials; no service key is bundled. Reminder events are unique by account/event and device, scoped to verified active vehicle members and Pilot visibility. Inbox history remains available when push is denied. Date alerts run at 09:00 vehicle local time; quiet hours and daily limits use the user's profile timezone. Deployment and real-device delivery require operator steps in `docs/NOTIFICATIONS_AND_REMINDERS.md`.
 
+## Play review request policy — 2026-11-28
+
+Only count successful production Fuel, Expense and meter record creation as meaningful actions. Do not request a review until 14 days after first app launch and five successful actions; later attempts require ten additional successful actions and a 90-day cooldown. Count on save, but invoke Expo StoreReview only after navigation to a stable Home screen; store the request timestamp before the native call because Play may suppress prompts without returning whether a review happened. Never ask for a positive rating or gate features on a review. Keep a permanent explicit Rate action separate from the in-app request.
+
 ## Supabase database performance — 2026-11-28
 
 Additive migration `202611280006_query_indexes.sql` adds vehicle-scoped list/history and RLS lookup indexes, refreshes planner statistics, and narrows the fuel page CTE to returned columns without changing its RPC contract. Retain existing uniqueness constraints and atomic record writes. Do not normalize/index JSON event timestamps until legacy data is validated and time-zone semantics are preserved. Do not rewrite RLS or change the general financial history response until production plans and all consumers are reviewed. Production EXPLAIN plans, hosted backup/PITR, restore drills, monitoring thresholds and server-side pooler configuration are operational verification items, documented in `DATABASE_PERFORMANCE.md`; the Expo client uses HTTPS/PostgREST and does not hold database connections.
+
+## Application review and update management — 2026-11-28
+
+Approved design: Expo StoreReview + Android Play listing deep links; Expo Updates with `appVersion` runtime compatibility and separate EAS development/preview/production channels; additive Supabase public-read release policy for minimum versions and presentation-only feature flags. A minimum version blocks only when an operator explicitly sets a critical policy. The initial policy row is non-critical and no deployment/flag activation occurred. Optional OTA updates are checked on Android Home with `checkAutomatically: NEVER`, then offered before fetching/reloading; Play updates have a separate optional prompt. What's New and update cards render only on Home. Release version 1.0.8 notes live in `docs/CHANGELOG.md`.
+
+Native EAS builds, channels, staged rollout and rollback have not been exercised. Rollback is through EAS Update's rollback/re-publish operations on the same compatible channel/runtime; native incompatibilities require a new binary. Supabase policy migration is local only. Expo Notifications response emitters are guarded so web startup does not call missing native module methods.

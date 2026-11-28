@@ -10,8 +10,14 @@ const config: ExpoConfig = {
   extra: {
     eas: { projectId: "ce82f4c1-96f7-4b68-9a4a-7334b3370332" },
   },
+  runtimeVersion: { policy: "appVersion" },
+  updates: {
+    url: "https://u.expo.dev/ce82f4c1-96f7-4b68-9a4a-7334b3370332",
+    checkAutomatically: "NEVER",
+    fallbackToCacheTimeout: 0,
+  },
   scheme: "gaadipulse",
-  version: "1.0.7",
+  version: "1.0.8",
   orientation: "portrait",
   userInterfaceStyle: "automatic",
   icon: "./assets/brand/generated/app-icon.png",
@@ -38,6 +44,9 @@ const config: ExpoConfig = {
   plugins: [
     "./plugins/withOptionalAndroidFeatures",
     "expo-router",
+    "expo-updates",
+    "expo-status-bar",
+    "expo-web-browser",
     "expo-image",
     "expo-font",
     "expo-sharing",

@@ -40,7 +40,7 @@ export function DatePickerField({
                 alignItems: "center",
                 gap: 8,
                 paddingHorizontal: 12,
-                minHeight: 50,
+                minHeight: 56,
                 borderRadius: 15,
                 borderWidth: 1,
                 borderColor: error ? c.danger : c.line,
@@ -93,7 +93,7 @@ export function DatePickerField({
 
                   width: "100%",
                   minWidth: 0,
-                  minHeight: 48,
+                  minHeight: 56,
                 },
               })}
             </View>

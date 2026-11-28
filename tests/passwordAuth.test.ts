@@ -48,9 +48,7 @@ describe("password account boundaries", () => {
       email: "user@example.com",
       password: "old",
     });
-    await expect(
-      passwordSignup("user@example.com", "four"),
-    ).rejects.toThrow();
+    await expect(passwordSignup("user@example.com", "four")).rejects.toThrow();
     expect(auth.signUp).not.toHaveBeenCalled();
   });
   it("does not claim sign-up completed before email verification", async () => {

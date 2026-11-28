@@ -156,7 +156,7 @@ export function MoreMenu({ navigate }: { navigate: (href: Href) => void }) {
             alignItems: "center",
             gap: 12,
             paddingBottom: 4,
-            minHeight: 48,
+            minHeight: 56,
           }}
         >
           <View

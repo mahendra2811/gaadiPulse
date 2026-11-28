@@ -249,6 +249,16 @@ it("applies every authoritative migration in order on PostgreSQL", async () => {
       count: 0,
       total_paise: "0",
     });
+    await db.exec(`reset role;
+      insert into public.audit_events(vehicle_id,actor_id,action)
+      select '20000000-0000-4000-8000-000000000001',
+        '10000000-0000-4000-8000-000000000001','ACCESS_REVOKED'
+      from generate_series(1,30);`);
+    await expect(
+      db.exec(`insert into public.audit_events(vehicle_id,actor_id,action)
+        values ('20000000-0000-4000-8000-000000000001',
+          '10000000-0000-4000-8000-000000000001','ACCESS_REVOKED')`),
+    ).rejects.toThrow("RATE_LIMIT");
   } finally {
     await db.close();
   }

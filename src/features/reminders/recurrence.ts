@@ -1,5 +1,9 @@
 /** Advances calendar recurrence in the vehicle's IANA zone, including DST and month ends. */
-export function nextRecurrence(value: string, repeat: string, timezone = "Asia/Kolkata") {
+export function nextRecurrence(
+  value: string,
+  repeat: string,
+  timezone = "Asia/Kolkata",
+) {
   if (repeat !== "MONTHLY" && repeat !== "YEARLY") return null;
   const instant = new Date(value);
   if (!Number.isFinite(instant.getTime())) return null;
@@ -13,7 +17,8 @@ export function nextRecurrence(value: string, repeat: string, timezone = "Asia/K
     second: "2-digit",
     hourCycle: "h23",
   }).formatToParts(instant);
-  const part = (name: string) => Number(parts.find((item) => item.type === name)?.value);
+  const part = (name: string) =>
+    Number(parts.find((item) => item.type === name)?.value);
   const year = part("year");
   const month = part("month");
   const day = part("day");
@@ -36,7 +41,7 @@ export function nextRecurrence(value: string, repeat: string, timezone = "Asia/K
     Math.min(day, lastDay),
     hour,
     minute,
-    second
+    second,
   );
   let guess = targetWallTime;
   for (let attempt = 0; attempt < 4; attempt++) {
@@ -50,14 +55,15 @@ export function nextRecurrence(value: string, repeat: string, timezone = "Asia/K
       second: "2-digit",
       hourCycle: "h23",
     }).formatToParts(new Date(guess));
-    const valueOf = (name: string) => Number(local.find((item) => item.type === name)?.value);
+    const valueOf = (name: string) =>
+      Number(local.find((item) => item.type === name)?.value);
     const represented = Date.UTC(
       valueOf("year"),
       valueOf("month") - 1,
       valueOf("day"),
       valueOf("hour"),
       valueOf("minute"),
-      valueOf("second")
+      valueOf("second"),
     );
     guess += targetWallTime - represented;
   }

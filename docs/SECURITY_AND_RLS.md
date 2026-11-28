@@ -1,6 +1,6 @@
 # Security architecture and current verification boundary
 
-> Current override: authenticated account data is online-only. Offline cache/outbox descriptions below are historical and superseded by [ONLINE_ONLY_PLAN.md](ONLINE_ONLY_PLAN.md). A standalone Sync/Connection destination was removed. Treat database policy and client security as unverified until the current migrations and direct API/RLS scenarios pass against the target Supabase environment.
+> Current override: authenticated account data is online-only. Offline cache/outbox descriptions below are historical and superseded by [ONLINE_ONLY_PLAN.md](ONLINE_ONLY_PLAN.md). A standalone Sync/Connection destination was removed. On 2026-11-28 a read-only catalog review of the linked Supabase project found RLS enabled on ordinary public tables, no anon table privileges, and no authenticated direct insert/update/delete grants. These catalog checks and local PostgreSQL tests do not replace adversarial hosted Auth/JWT/PostgREST tests.
 
 ## Backend authority
 
@@ -9,6 +9,8 @@ Supabase Auth is the identity authority; PostgreSQL RLS and fixed-search-path SE
 Every application public table enables RLS. Vehicle/member/grant mutations and financial/progress workflows are RPC-only. Authenticated direct INSERT/UPDATE/DELETE grants are absent for protected entities. Catalog/category mutations are Owner RPCs. Audits and operation receipts are server-controlled.
 
 Owners can assign existing verified users immediately or leave an unresolved normalized-email grant for later verified sign-in. No invitation acceptance is involved. Membership updates serialize on the vehicle, protect primary/final Owner, validate permission keys, and audit changes. Revocation blocks future writes and cache refresh. Reassignment updates/removes the previous assignment under the same protections.
+
+Migration `202611280009_sensitive_operation_limits.sql` adds a serialized rolling-hour rate limit at the audit-event insertion boundary for sensitive membership, vehicle and record mutations. Limits are enforced server-side and cannot be bypassed by calling the RPC repeatedly from a client. Existing Auth provider throttles remain dashboard configuration. Validate normal product traffic against these limits in staging before deployment.
 
 ## Financial and custom-field privacy
 
@@ -24,7 +26,7 @@ Approved progress adds independent observations; same vehicle/type/time conflict
 
 ## Device and account lifecycle
 
-SecureStore holds refresh tokens. SQLite caches have account/vehicle scopes and expiring authorization leases. Explicit logout clears user data; session expiry retains personal drafts while clearing live sensitive caches. Offline copies cannot be remotely recalled; see SYNC_PROTOCOL.md. Debug bypass is guarded by __DEV__ and writes only to a separate local namespace.
+SecureStore holds refresh tokens. The online-only release does not expose private cached server data while offline and has no automatic write replay. Connectivity feedback is aggregate, in-memory state only. Logout and permission revocation clear account-scoped query/device notification state through their existing lifecycle handlers. Debug bypass is guarded by `__DEV__` and writes only to a separate local namespace.
 
 Deletion requests require a verified account and archiving protected administered vehicles first. Access is revoked immediately; new writes/memberships are blocked. The separately authorized operator Edge job bans/anonymizes the account and clears Auth identities/sessions after the configured retention period. Operational attribution UUIDs and shared ledger history remain under the operator's retention policy.
 
@@ -34,6 +36,8 @@ No upload buckets or public files are configured. Deferred attachment metadata c
 
 The client receives only project URL and publishable key. Service-role and deletion-job secret exist only as server environment variables. No private key, provider secret or signing credential belongs in .env public fields, a bundle, logs or an export.
 
-## Verification
+## Verification and operations
 
-The Stage 1 baseline PostgreSQL fixture tests passed earlier. The later ledger, private JSON redaction, sync, correction and deletion migrations have NOT been executed or tested, per the user instruction. No current release-ready or live-provider claim is made. Run the full adversarial matrix in QA_TEST_MATRIX.md against all migrations and real Supabase REST/JWT sessions before release.
+The 2026-11-28 read-only hosted catalog audit and PGlite suites are recorded in `docs/STAGE_3_HANDOFF.md`. The local full migration chain and tests pass, including Owner/Pilot/outsider and rate-limit fixtures. Local migrations 005–009 remain absent from the linked project's migration history, and no migration was deployed. Live Owner/Pilot/outsider JWT tests, revoke-then-read/write attempts, hosted RLS checks and restore drills remain release gates.
+
+Enable provider-level daily backups or PITR according to the project's recovery objectives, and maintain a separate protected logical backup for critical releases. Test restores into an isolated project before relying on backups. Database backups do not contain Storage objects. Monitor Supabase query performance, database/API usage, storage, connection counts and pooler connections. This app uses Supabase's HTTP Data API from mobile; use the managed transaction pooler for server-side scripts/functions that open direct Postgres connections, not a direct connection per device. See `docs/EXTERNAL_SETUP_AND_RELEASE.md` for operator steps.

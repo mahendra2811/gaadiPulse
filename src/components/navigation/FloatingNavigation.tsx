@@ -62,15 +62,21 @@ export function FloatingNavigation({
 }) {
   const { vehicle } = useActiveVehicle();
   const tabLabel = (item: (typeof items)[number]) =>
-    item.id === "fuel" && vehicle?.energy_type === "ELECTRIC" ? t("charging") : t(item.label);
+    item.id === "fuel" && vehicle?.energy_type === "ELECTRIC"
+      ? t("charging")
+      : t(item.label);
   const c = useTheme();
   const inset = useSafeAreaInsets();
   const path = usePathname();
   const drawer = useOptionalMoreDrawer();
   const [keyboard, setKeyboard] = useState(false);
   useEffect(() => {
-    const show = Keyboard.addListener("keyboardDidShow", () => setKeyboard(true));
-    const hide = Keyboard.addListener("keyboardDidHide", () => setKeyboard(false));
+    const show = Keyboard.addListener("keyboardDidShow", () =>
+      setKeyboard(true),
+    );
+    const hide = Keyboard.addListener("keyboardDidHide", () =>
+      setKeyboard(false),
+    );
     return () => {
       show.remove();
       hide.remove();
@@ -80,7 +86,11 @@ export function FloatingNavigation({
   const current = drawer.visible
     ? "more"
     : (selected ??
-      (path.includes("/fuel") ? "fuel" : path.includes("/expenses") ? "expenses" : "more"));
+      (path.includes("/fuel")
+        ? "fuel"
+        : path.includes("/expenses")
+          ? "expenses"
+          : "more"));
   return (
     <View
       style={{
@@ -123,7 +133,11 @@ export function FloatingNavigation({
                 backgroundColor: "transparent",
               }}
             >
-              <Ionicons name={item.icon} size={22} color={active ? c.primary : c.muted} />
+              <Ionicons
+                name={item.icon}
+                size={22}
+                color={active ? c.primary : c.muted}
+              />
             </View>
             <Text
               style={{
@@ -156,7 +170,7 @@ export function FloatingNavigation({
                   ? "/(tabs)"
                   : item.id === "fuel"
                     ? "/(tabs)/fuel"
-                    : "/(tabs)/expenses"
+                    : "/(tabs)/expenses",
               );
             }}
             style={({ pressed }) => ({

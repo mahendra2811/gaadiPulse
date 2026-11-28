@@ -59,7 +59,7 @@ export function SearchPickerField({
           setOpen(true);
         }}
         style={{
-          minHeight: 52,
+          minHeight: 56,
           borderRadius: 14,
           borderWidth: 1,
           borderColor: colors.line,
@@ -99,7 +99,7 @@ export function SearchPickerField({
           autoCapitalize="none"
           autoCorrect={false}
           style={{
-            minHeight: 52,
+            minHeight: 56,
             paddingHorizontal: 14,
             borderRadius: 14,
             borderWidth: 1,
@@ -122,7 +122,7 @@ export function SearchPickerField({
                 setOpen(false);
               }}
               style={{
-                minHeight: 52,
+                minHeight: 56,
                 justifyContent: "center",
                 paddingHorizontal: 14,
               }}

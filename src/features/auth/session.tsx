@@ -8,7 +8,14 @@ import {
   clearDevelopment,
   requireDevelopment,
 } from "@/src/features/development/repository";
-import { createContext, useContext, useEffect, useState, useRef, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useRef,
+  type ReactNode,
+} from "react";
 import { AppState } from "react-native";
 import { type Session } from "@supabase/supabase-js";
 import { useQueryClient } from "@tanstack/react-query";
@@ -50,7 +57,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           query.clear();
           useUI.getState().setActive(null);
         }
-        if (next && alive && generation === authGeneration.current) setSession(next);
+        if (next && alive && generation === authGeneration.current)
+          setSession(next);
         if (next) {
           const result = await client().rpc("resolve_my_access_grants");
           if (result.error) throw new Error(result.error.message);
@@ -58,7 +66,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         if (alive && generation === authGeneration.current) {
           previousUser.current = next?.user.id ?? null;
           setSession(next);
-          const active = next ? await secureStorage.getItem(`active.${next.user.id}`) : null;
+          const active = next
+            ? await secureStorage.getItem(`active.${next.user.id}`)
+            : null;
           useUI.getState().setActive(active);
         }
       } catch (e) {
@@ -66,7 +76,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           alive &&
           generation === authGeneration.current &&
           /EMAIL_NOT_VERIFIED|ACCOUNT_DELETION_PENDING/.test(
-            e instanceof Error ? e.message : String(e)
+            e instanceof Error ? e.message : String(e),
           )
         )
           setSession(null);
@@ -109,10 +119,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
             .setItem(`active.${session.user.id}`, state.active ?? "")
             .catch((e) => setError(String(e)));
       }),
-    [session]
+    [session],
   );
   const signOut = async () => {
-    const user = session?.user.id ?? (development ? DEVELOPMENT_USER : undefined);
+    const user =
+      session?.user.id ?? (development ? DEVELOPMENT_USER : undefined);
     invalidateReminderSession(user);
     await query.cancelQueries();
     if (session?.user.id) await deactivateCurrentPushToken().catch(() => {});

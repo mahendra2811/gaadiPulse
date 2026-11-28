@@ -1,5 +1,6 @@
 import { onlineManager } from "@tanstack/react-query";
 import { t } from "./i18n";
+import { recordNetworkRequest } from "./networkHealth";
 
 /** Fail promptly rather than pause work for an automatic upload on reconnect. */
 export const onlineFetch: typeof fetch = async (input, init) => {
@@ -9,6 +10,7 @@ export const onlineFetch: typeof fetch = async (input, init) => {
     throw error;
   }
   const controller = new AbortController();
+  const startedAt = Date.now();
   const original = init?.signal;
   let timedOut = false;
   const abort = () => controller.abort(original?.reason);
@@ -19,9 +21,12 @@ export const onlineFetch: typeof fetch = async (input, init) => {
     controller.abort();
   }, 20000);
   try {
-    return await fetch(input, { ...init, signal: controller.signal });
+    const response = await fetch(input, { ...init, signal: controller.signal });
+    recordNetworkRequest(Date.now() - startedAt, true);
+    return response;
   } catch (error) {
     if (timedOut) {
+      recordNetworkRequest(Date.now() - startedAt, false);
       const timeoutError = new Error(
         "The request was aborted after timing out.",
       );
@@ -29,6 +34,7 @@ export const onlineFetch: typeof fetch = async (input, init) => {
       Object.assign(timeoutError, { code: "REQUEST_TIMEOUT" });
       throw timeoutError;
     }
+    if (!original?.aborted) recordNetworkRequest(Date.now() - startedAt, false);
     throw error;
   } finally {
     clearTimeout(timeout);

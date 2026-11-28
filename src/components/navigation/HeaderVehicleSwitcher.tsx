@@ -34,7 +34,7 @@ export function HeaderVehicleSwitcher() {
           gap: 6,
           maxWidth: "43%",
           minWidth: 0,
-          minHeight: 44,
+          minHeight: 56,
           paddingHorizontal: 8,
           borderRadius: 12,
           backgroundColor: c.background,

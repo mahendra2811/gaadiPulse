@@ -114,7 +114,9 @@
     "unsaved": "",
     "unsavedBody": "",
     "validPastTime": "",
-    "lastUpdatedAt": ""
+    "lastUpdatedAt": "",
+    "slowConnection": "",
+    "unstableConnection": ""
   },
   "onboarding": {
     "onboardingContinue": "",
@@ -1100,7 +1102,19 @@
     "updateLater": "",
     "yourData": "",
     "languageSearch": "",
-    "languageNoResults": ""
+    "languageNoResults": "",
+    "feedback": "",
+    "feedbackHint": "",
+    "feedbackUnavailable": "",
+    "shareApp": "",
+    "shareAppHint": "",
+    "updateNow": "",
+    "minimumVersionTitle": "",
+    "minimumVersionBody": "",
+    "whatsNewTitle": "",
+    "whatsNewUpdates": "",
+    "whatsNewReviews": "",
+    "whatsNewDismiss": ""
   },
   "currency": {
     "currency": "",

@@ -6,9 +6,24 @@ import { FormError } from "@/src/components/ui/FormError";
 import { t } from "@/src/lib/i18n";
 import { env } from "@/src/lib/env";
 import { AuthLink } from "./AuthLayout";
-import { PremiumAuthLayout, AuthTextField, AuthPrimaryButton, AuthConsent } from "./PremiumAuth";
-import { accountEmail, emailCode, passwordPair, signupName } from "./passwordSchema";
-import { passwordLogin, passwordSignup, resendSignup, verifyAccountCode } from "./passwordApi";
+import {
+  PremiumAuthLayout,
+  AuthTextField,
+  AuthPrimaryButton,
+  AuthConsent,
+} from "./PremiumAuth";
+import {
+  accountEmail,
+  emailCode,
+  passwordPair,
+  signupName,
+} from "./passwordSchema";
+import {
+  passwordLogin,
+  passwordSignup,
+  resendSignup,
+  verifyAccountCode,
+} from "./passwordApi";
 export function PremiumPasswordScreen({ mode }: { mode: "login" | "signup" }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -36,7 +51,11 @@ export function PremiumPasswordScreen({ mode }: { mode: "login" | "signup" }) {
       await action();
     } catch (e) {
       setError(
-        e instanceof ZodError ? e.issues[0].message : e instanceof Error ? e.message : String(e)
+        e instanceof ZodError
+          ? e.issues[0].message
+          : e instanceof Error
+            ? e.message
+            : String(e),
       );
     } finally {
       running.current = false;
@@ -129,7 +148,9 @@ export function PremiumPasswordScreen({ mode }: { mode: "login" | "signup" }) {
             maxLength={128}
             autoCapitalize="none"
             autoCorrect={false}
-            autoComplete={mode === "login" ? "current-password" : "new-password"}
+            autoComplete={
+              mode === "login" ? "current-password" : "new-password"
+            }
             editable={!busy}
           />
           {mode === "signup" && (
@@ -149,9 +170,15 @@ export function PremiumPasswordScreen({ mode }: { mode: "login" | "signup" }) {
             </>
           )}
           {mode === "signup" && (
-            <AuthConsent checked={consent} onChange={() => setConsent(!consent)} disabled={busy} />
+            <AuthConsent
+              checked={consent}
+              onChange={() => setConsent(!consent)}
+              disabled={busy}
+            />
           )}
-          {!!error && <FormError message={error} onDismiss={() => setError("")} />}
+          {!!error && (
+            <FormError message={error} onDismiss={() => setError("")} />
+          )}
           <AuthPrimaryButton
             label={t(mode === "login" ? "login" : "createAccount")}
             disabled={disabled || (mode === "signup" && !consent)}
@@ -168,7 +195,9 @@ export function PremiumPasswordScreen({ mode }: { mode: "login" | "signup" }) {
           <AuthLink
             label={t(mode === "login" ? "authNeedAccount" : "authHaveAccount")}
             disabled={busy}
-            onPress={() => router.replace(mode === "login" ? "/auth/signup" : "/auth/login")}
+            onPress={() =>
+              router.replace(mode === "login" ? "/auth/signup" : "/auth/login")
+            }
           />
         </>
       ) : (
@@ -185,7 +214,9 @@ export function PremiumPasswordScreen({ mode }: { mode: "login" | "signup" }) {
             autoComplete="one-time-code"
             maxLength={8}
           />
-          {!!error && <FormError message={error} onDismiss={() => setError("")} />}
+          {!!error && (
+            <FormError message={error} onDismiss={() => setError("")} />
+          )}
           <AuthPrimaryButton
             label={t("signupVerify")}
             disabled={disabled || !emailCode.safeParse(code.trim()).success}

@@ -36,7 +36,7 @@ import {
 } from "./onboardingDefaults";
 import { setLocale, type SupportedLocale } from "@/src/lib/i18n";
 
-const banner = require("@/assets/media/all_vehicle.png");
+const banner = require("@/assets/media/all_vehicle.webp");
 export default function OnboardingScreen() {
   const c = useTheme(),
     auth = useSession(),

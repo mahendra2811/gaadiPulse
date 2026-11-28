@@ -50,7 +50,7 @@ export function YearPickerField({
         disabled={disabled}
         onPress={() => setVisible(true)}
         style={{
-          minHeight: 52,
+          minHeight: 56,
           paddingHorizontal: 14,
           borderRadius: 14,
           borderWidth: 1,
@@ -106,7 +106,7 @@ export function YearPickerField({
                 <View
                   style={{
                     minWidth: 54,
-                    minHeight: 40,
+                    minHeight: 56,
                     paddingHorizontal: 6,
                     alignItems: "center",
                     justifyContent: "center",
@@ -136,7 +136,7 @@ export function YearPickerField({
               setVisible(false);
             }}
             style={{
-              minHeight: 48,
+              minHeight: 56,
               justifyContent: "center",
               paddingHorizontal: 8,
             }}

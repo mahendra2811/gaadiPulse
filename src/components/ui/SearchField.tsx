@@ -19,7 +19,7 @@ export function SearchField({
       style={{
         flexDirection: "row",
         alignItems: "center",
-        minHeight: 50,
+        minHeight: 56,
         paddingLeft: 14,
         paddingRight: 4,
         borderRadius: 17,
@@ -55,8 +55,8 @@ export function SearchField({
           accessibilityLabel={t("uiClearSearch")}
           onPress={() => onChange("")}
           style={{
-            width: 44,
-            height: 44,
+            width: 56,
+            height: 56,
             alignItems: "center",
             justifyContent: "center",
           }}

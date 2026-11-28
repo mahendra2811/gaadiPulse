@@ -1,4 +1,5 @@
 import { Popup } from "./Popup";
+import { ConnectivityNotice } from "./ConnectivityNotice";
 import { ScreenBanner, type ScreenBannerName } from "./ScreenBanner";
 import {
   isNumericDraft,
@@ -41,7 +42,6 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-import { addEventListener } from "@react-native-community/netinfo";
 import { useTheme } from "@/src/lib/theme";
 import { t, type TranslationKey } from "@/src/lib/i18n";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -61,7 +61,7 @@ export function AppText({
       style={{
         color: muted ? c.muted : c.ink,
         fontSize: large ? 28 : 16,
-        lineHeight: large ? 36 : 24,
+        lineHeight: large ? 46 : 26,
         fontWeight: large ? "700" : "400",
         flexShrink: 1,
       }}
@@ -89,7 +89,7 @@ export function AppButton({
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => ({
-        minHeight: 52,
+        minHeight: 56,
         borderRadius: 16,
         padding: 14,
         alignItems: "center",
@@ -103,6 +103,7 @@ export function AppButton({
       <Text
         style={{
           fontSize: 16,
+          lineHeight: 26,
           fontWeight: "600",
           color: secondary ? c.primary : c.background,
           textAlign: "center",
@@ -167,12 +168,13 @@ export function InputField({
           props.onChangeText?.(value);
         }}
         style={{
-          minHeight: 52,
+          minHeight: 56,
           borderWidth: 1,
           borderColor: validationError ? c.danger : c.line,
           borderRadius: 14,
           padding: 14,
           fontSize: 16,
+          lineHeight: 26,
           color: c.ink,
           backgroundColor: c.surface,
         }}
@@ -314,11 +316,6 @@ export function Screen({
   const inset = useSafeAreaInsets();
   const { fontScale } = useWindowDimensions();
   const showNavigation = !action && hasBrowseNavigation(path);
-  const [offline, setOffline] = useState(false);
-  React.useEffect(
-    () => addEventListener((s) => setOffline(s.isConnected === false)),
-    [],
-  );
   return (
     <SafeAreaView
       edges={["top", "left", "right"]}
@@ -326,11 +323,7 @@ export function Screen({
     >
       <PageHeader title={title} onBack={onBack} />
       <LoadingLine loading={loading} />
-      {offline && (
-        <View style={{ padding: 12 }}>
-          <AppText>{t("offline")}</AppText>
-        </View>
-      )}
+      <ConnectivityNotice />
       <KeyboardAvoidingView
         style={{ flex: 1, minHeight: 0 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -560,7 +553,7 @@ export function Choice<T extends string>({
             accessibilityState={{ checked: v === value }}
             onPress={() => onChange(v)}
             style={({ pressed }) => ({
-              minHeight: 46,
+              minHeight: 56,
               paddingHorizontal: 15,
               paddingVertical: 12,
               borderRadius: 14,

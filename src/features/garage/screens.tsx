@@ -506,12 +506,17 @@ export function Home() {
       onRefresh={() =>
         void Promise.all([
           query.refetch(),
-          access.refetch(),
-          readings.refetch(),
+          queryClient.refetchQueries({
+            queryKey: [user, vehicleId],
+            type: "active",
+          }),
         ])
       }
       refreshing={
-        query.isRefetching || access.isRefetching || readings.isRefetching
+        query.isRefetching ||
+        access.isRefetching ||
+        readings.isRefetching ||
+        queryClient.isFetching({ queryKey: [user, vehicleId] }) > 0
       }
     >
       <View

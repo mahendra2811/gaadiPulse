@@ -39,7 +39,11 @@ import {
 import { setLocale, t } from "@/src/lib/i18n";
 import { useLocaleSubscription } from "@/src/hooks/useLocale";
 import { queryRetryDelay, shouldRetryQuery } from "@/src/lib/query";
-import { releaseFeatures } from "@/src/features/release/scope";
+import {
+  releaseFeatures,
+  setRemoteReleaseFlags,
+  useReleaseFlagsRevision,
+} from "@/src/features/release/scope";
 import {
   clearDeviceNotifications,
   startReminderFeedback,
@@ -48,6 +52,18 @@ import {
 import * as Notifications from "expo-notifications";
 import { markNotificationRead } from "@/src/features/notifications/api";
 import type { Kind } from "@/src/features/records/schema";
+import {
+  initializeReviewPrompt,
+  requestReviewOnSafeScreen,
+} from "@/src/features/auth/reviewPrompt";
+import { PlayUpdatePrompt } from "@/src/features/auth/PlayUpdatePrompt";
+import { WhatsNewPrompt } from "@/src/features/release/WhatsNewPrompt";
+import Constants from "expo-constants";
+import { openPlayStore } from "@/src/features/auth/playStore";
+import {
+  useReleasePolicy,
+  isVersionBelow,
+} from "@/src/features/release/policy";
 const query = new QueryClient({
   defaultOptions: {
     queries: {
@@ -55,6 +71,7 @@ const query = new QueryClient({
       gcTime: 5 * 60_000,
       networkMode: "always",
       refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
       retry: shouldRetryQuery,
       retryDelay: queryRetryDelay,
     },
@@ -120,6 +137,11 @@ function Routes() {
   useLocaleSubscription();
   const auth = useSession();
   const profile = useProfile();
+  const releasePolicy = useReleasePolicy();
+  useReleaseFlagsRevision();
+  useEffect(() => {
+    setRemoteReleaseFlags(releasePolicy.data?.feature_flags ?? {});
+  }, [releasePolicy.data]);
   useEffect(() => {
     if (profile.data?.locale) setLocale(profile.data.locale);
   }, [profile.data?.locale]);
@@ -134,6 +156,21 @@ function Routes() {
   const router = useRouter();
   const segments = useSegments();
   const pathname = usePathname();
+  const currentAppVersion = Constants.expoConfig?.version ?? "0.0.0";
+  useEffect(() => {
+    if (Platform.OS !== "web") void initializeReviewPrompt();
+  }, []);
+  useEffect(() => {
+    if (auth.loading || !auth.session || pathname !== "/") return;
+    let active = true;
+    const timer = setTimeout(() => {
+      if (active) void requestReviewOnSafeScreen();
+    }, 1200);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [auth.loading, auth.session, pathname]);
   useEffect(() => {
     if (auth.loading || Platform.OS === "web") return;
     const user = auth.session?.user.id ?? null;
@@ -203,11 +240,20 @@ function Routes() {
       }
       Notifications.clearLastNotificationResponse();
     };
-    const initial = Notifications.getLastNotificationResponse();
-    if (initial) routeFromResponse(initial);
-    const subscription =
-      Notifications.addNotificationResponseReceivedListener(routeFromResponse);
-    return () => subscription.remove();
+    // Expo Notifications has no response module in browsers/Expo Go web.
+    // Keep all native emitter calls behind this platform boundary.
+    let subscription: Notifications.EventSubscription | undefined;
+    try {
+      const initial = Notifications.getLastNotificationResponse();
+      if (initial) routeFromResponse(initial);
+      subscription =
+        Notifications.addNotificationResponseReceivedListener(
+          routeFromResponse,
+        );
+    } catch {
+      // Native notification deep links are unavailable in this runtime.
+    }
+    return () => subscription?.remove();
   }, [auth.loading, auth.session?.user.id, router]);
   useEffect(() => {
     if (auth.loading || (auth.error && !auth.session && !auth.development))
@@ -238,6 +284,28 @@ function Routes() {
     pathname,
     router,
   ]);
+  if (
+    releasePolicy.data?.minimum_version_critical &&
+    releasePolicy.data.minimum_supported_version &&
+    isVersionBelow(
+      currentAppVersion,
+      releasePolicy.data.minimum_supported_version,
+    )
+  )
+    return (
+      <ThemeContext.Provider value={profile.data?.theme ?? "system"}>
+        <Screen title={t("minimumVersionTitle")}>
+          <AppText>
+            {releasePolicy.data.minimum_version_message ||
+              t("minimumVersionBody")}
+          </AppText>
+          <AppButton
+            label={t("updateNow")}
+            onPress={() => void openPlayStore().catch(() => undefined)}
+          />
+        </Screen>
+      </ThemeContext.Provider>
+    );
   if (auth.loading && !auth.session && !auth.development)
     return (
       <ThemeContext.Provider value="system">
@@ -314,6 +382,8 @@ function Routes() {
           </View>
         )}
         <MoreDrawerProvider>
+          <PlayUpdatePrompt />
+          <WhatsNewPrompt />
           <Stack screenOptions={{ headerShown: false }} />
         </MoreDrawerProvider>
         <ConfirmationHost />

@@ -1,5 +1,17 @@
-import { useEffect, useState, type ReactNode, type ComponentProps } from "react";
-import { Animated, Pressable, Text, View, type StyleProp, type ViewStyle } from "react-native";
+import {
+  useEffect,
+  useState,
+  type ReactNode,
+  type ComponentProps,
+} from "react";
+import {
+  Animated,
+  Pressable,
+  Text,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { palettes, useTheme } from "@/src/lib/theme";
 import { useReducedMotion } from "@/src/hooks/useReducedMotion";
@@ -14,7 +26,10 @@ export const iconTones = {
   coral: { ink: "#B44752", background: "#FFE7E8" },
   cyan: { ink: "#087B91", background: "#DDF5FA" },
 } as const;
-const darkIconTones: Record<keyof typeof iconTones, { ink: string; background: string }> = {
+const darkIconTones: Record<
+  keyof typeof iconTones,
+  { ink: string; background: string }
+> = {
   mint: { ink: "#9DE4CE", background: "#24483F" },
   blue: { ink: "#B3CBFF", background: "#293C5F" },
   amber: { ink: "#F7D497", background: "#4D3C29" },
@@ -120,14 +135,16 @@ export function TextAction({
     <MotionPress label={label} onPress={onPress} disabled={disabled}>
       <View
         style={{
-          minHeight: 44,
+          minHeight: 56,
           flexDirection: "row",
           alignItems: "center",
           gap: 6,
           paddingHorizontal: 4,
         }}
       >
-        <Text style={{ color, fontSize: 14, fontWeight: "700", flexShrink: 1 }}>{label}</Text>
+        <Text style={{ color, fontSize: 14, fontWeight: "700", flexShrink: 1 }}>
+          {label}
+        </Text>
         <Ionicons name={icon} size={16} color={color} />
       </View>
     </MotionPress>
@@ -183,7 +200,11 @@ export function ActionTile({
 }) {
   const c = useTheme();
   return (
-    <MotionPress label={label} onPress={onPress} style={{ flexBasis: "45%", flexGrow: 1 }}>
+    <MotionPress
+      label={label}
+      onPress={onPress}
+      style={{ flexBasis: "45%", flexGrow: 1 }}
+    >
       <View
         style={{
           minHeight: 106,
@@ -258,10 +279,12 @@ export function GradientButton({
 }) {
   return (
     <MotionPress label={label} onPress={onPress} disabled={disabled}>
-      <GradientSurface style={{ borderRadius: 18, shadowOpacity: 0.12, elevation: 3 }}>
+      <GradientSurface
+        style={{ borderRadius: 18, shadowOpacity: 0.12, elevation: 3 }}
+      >
         <View
           style={{
-            minHeight: 52,
+            minHeight: 56,
             paddingHorizontal: 18,
             paddingVertical: 12,
             flexDirection: "row",
@@ -300,7 +323,7 @@ export function ChoiceChip({
     <MotionPress label={label} onPress={onPress} selected={selected}>
       <View
         style={{
-          minHeight: 44,
+          minHeight: 56,
           paddingHorizontal: 14,
           paddingVertical: 11,
           borderRadius: 14,
@@ -323,7 +346,13 @@ export function ChoiceChip({
   );
 }
 
-export function Expandable({ expanded, children }: { expanded: boolean; children: ReactNode }) {
+export function Expandable({
+  expanded,
+  children,
+}: {
+  expanded: boolean;
+  children: ReactNode;
+}) {
   const reduced = useReducedMotion();
   const [progress] = useState(() => new Animated.Value(expanded ? 1 : 0));
   useEffect(() => {
@@ -356,7 +385,11 @@ export function Expandable({ expanded, children }: { expanded: boolean; children
     </Animated.View>
   );
 }
-export function InfoRows({ items }: { items: { label: string; value: string }[] }) {
+export function InfoRows({
+  items,
+}: {
+  items: { label: string; value: string }[];
+}) {
   const c = useTheme();
   return (
     <View>

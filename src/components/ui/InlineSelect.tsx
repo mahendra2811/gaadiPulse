@@ -31,7 +31,7 @@ export function InlineSelect<T extends string>({
         disabled={disabled}
         onPress={() => setOpen((current) => !current)}
         style={{
-          minHeight: 52,
+          minHeight: 56,
           paddingHorizontal: 14,
           borderRadius: 14,
           borderWidth: 1,
@@ -75,7 +75,7 @@ export function InlineSelect<T extends string>({
                 if (option.value !== value) onChange(option.value);
               }}
               style={({ pressed }) => ({
-                minHeight: 44,
+                minHeight: 56,
                 paddingHorizontal: 14,
                 paddingVertical: 10,
                 flexDirection: "row",

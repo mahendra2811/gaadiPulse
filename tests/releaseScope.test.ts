@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   deferredPath,
-  releaseFeatures,
+  setRemoteReleaseFlags,
   supportsRecord,
   supportsVehicle,
 } from "../src/features/release/scope";
@@ -46,13 +46,13 @@ describe("release boundaries", () => {
       expect(deferredPath(path)).toBe(false);
   });
   it("retains the focused-release switch without removing source", () => {
-    releaseFeatures.advancedTools = false;
+    setRemoteReleaseFlags({ advancedTools: false });
     try {
       expect(supportsVehicle("commercial")).toBe(false);
       expect(supportsRecord("progress")).toBe(false);
       expect(deferredPath("/owner/members")).toBe(false);
     } finally {
-      releaseFeatures.advancedTools = true;
+      setRemoteReleaseFlags({ advancedTools: true });
     }
   });
   it("selects charging and correct units without offering petrol to an EV", () => {

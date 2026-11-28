@@ -14,6 +14,12 @@ You are implementing a real app. Begin by reading `PROJECT_REFERENCE.md`, `docs/
 9. Resolve sensitive financial visibility at SQL/RPC layer; don't rely on hidden buttons. Secure every storage path and export.
 10. Network/permission errors must show a retry/recover path; never silently ignore.
 
+## Locale catalog editing rule
+- In `src/lib/i18n/locales/`, edit translation content only in `en.json` and `hi.json` unless the user explicitly authorizes changes to another locale.
+- Do not translate, reformat, regenerate, or otherwise modify any other language catalog. All other locales use the English catalog at runtime for now.
+- Preserve registry metadata and locale picker support; this restriction applies to the non-English translation JSON files, not to necessary runtime/configuration changes.
+- Read `src/lib/i18n/locales/README.md` before locale work; keep this rule consistent there.
+
 ## Architectural organization
 - `app/` Expo Router ONLY route entrypoints and layouts; `src/features/<domain>/` owns data services, schemas, hooks, components and tests.
 - `src/components/ui/` reusable presentational primitives; `src/components/navigation/` floating tabs, global header line, vehicle switcher.

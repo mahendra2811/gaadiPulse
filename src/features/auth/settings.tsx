@@ -26,13 +26,22 @@ import {
 import { setLocale, t } from "@/src/lib/i18n";
 import { LocaleField } from "./LocaleField";
 import { resolveTheme, useThemeMode, type ThemeMode } from "@/src/lib/theme";
-import { Image, Pressable, View, Text, useColorScheme } from "react-native";
+import {
+  Image,
+  Linking,
+  Pressable,
+  Share,
+  View,
+  Text,
+  useColorScheme,
+} from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useTheme } from "@/src/lib/theme";
 import { artwork } from "@/src/lib/assets";
 import {
   checkAndStartPlayUpdate,
   openPlayStore,
+  PLAY_STORE_URL,
   PLAY_REVIEW_URL,
 } from "./playStore";
 export { MoreDrawerRoute as More } from "@/src/components/navigation/MoreDrawer";
@@ -150,7 +159,7 @@ export function Settings() {
             ))}
           </View>
         )}
-        <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 17 }}>
+        <Text style={{ color: colors.muted, fontSize: 14, lineHeight: 23 }}>
           System follows your device appearance.
         </Text>
         {profile.data && (
@@ -385,6 +394,25 @@ export function About() {
   const dark = resolveTheme(useThemeMode(), useColorScheme()) === "dark";
   const [checkingUpdates, setCheckingUpdates] = useState(false);
   const toast = useToast();
+  const sendFeedback = async () => {
+    try {
+      await Linking.openURL(
+        "mailto:mahendrapuniya92@gmail.com?subject=GaadiPulse%20feedback",
+      );
+    } catch {
+      toast(t("feedbackUnavailable"), "warning");
+    }
+  };
+  const shareApp = async () => {
+    try {
+      await Share.share({
+        title: t("app"),
+        message: `${t("app")} — ${t("tagline")}\n${PLAY_STORE_URL}`,
+      });
+    } catch {
+      toast(t("feedbackUnavailable"), "warning");
+    }
+  };
   const checkForUpdates = async () => {
     if (checkingUpdates) return;
     setCheckingUpdates(true);
@@ -437,6 +465,20 @@ export function About() {
           icon="star-outline"
           tone="amber"
           onPress={() => void openPlayStore(PLAY_REVIEW_URL)}
+        />
+        <MenuRow
+          label={t("shareApp")}
+          subtitle={t("shareAppHint")}
+          icon="share-social-outline"
+          tone="mint"
+          onPress={() => void shareApp()}
+        />
+        <MenuRow
+          label={t("feedback")}
+          subtitle={t("feedbackHint")}
+          icon="chatbox-ellipses-outline"
+          tone="coral"
+          onPress={() => void sendFeedback()}
         />
       </Card>
       <Card style={{ padding: 16 }}>

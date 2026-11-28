@@ -80,7 +80,7 @@ export function DatePickerField({
                 flexBasis: part === "date" ? "52%" : "35%",
                 flexGrow: 1,
                 minWidth: 120,
-                minHeight: 52,
+                minHeight: 56,
                 padding: 12,
                 flexDirection: "row",
                 alignItems: "center",
@@ -148,7 +148,7 @@ export function DatePickerField({
               accessibilityRole="button"
               onPress={() => setPicker(null)}
               style={{
-                minHeight: 44,
+                minHeight: 56,
                 justifyContent: "center",
                 padding: 10,
               }}
@@ -162,7 +162,7 @@ export function DatePickerField({
                 setPicker(null);
               }}
               style={{
-                minHeight: 44,
+                minHeight: 56,
                 justifyContent: "center",
                 padding: 10,
               }}

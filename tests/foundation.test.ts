@@ -23,6 +23,7 @@ describe("vehicle foundation", () => {
     registration_number: "",
     category: "agricultural",
     subtype: "tractor",
+    model_year: "",
     brand: "",
     model: "",
     energy_type: "DIESEL",
